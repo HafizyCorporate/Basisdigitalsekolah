@@ -1,13 +1,23 @@
-<div class="login-container animate-fade-in">
-    <h1>Global School Digital</h1>
-    <form action="/auth/login" method="POST">
-        <input type="text" name="kode_instansi" placeholder="Kode Instansi (SCH-XXX)" required>
-        <input type="email" name="email" placeholder="Email Guru/Murid" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <button type="submit">Gaskeun Masuk</button>
-    </form>
-    <div class="links">
-        <a href="/register">Daftar Instansi Baru</a>
-        <a href="/forget">Lupa Kode/Password?</a>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+</head>
+<body class="bg-black text-white flex items-center justify-center min-h-screen font-sans">
+    <div class="bg-white/5 border border-white/10 p-10 rounded-[40px] shadow-2xl w-96 animate__animated animate__zoomIn">
+        <h1 class="text-3xl font-black text-center mb-6 text-blue-500">GLOBAL LOGIN</h1>
+        <% if (msg) { %> <p class="bg-blue-600/20 p-3 rounded-xl mb-4 text-xs text-center border border-blue-500"><%= msg %></p> <% } %>
+        <form action="/auth/login" method="POST" class="space-y-4">
+            <input name="kode_instansi" placeholder="Kode Instansi" class="w-full bg-black/40 border border-white/10 p-4 rounded-2xl outline-none focus:ring-2 ring-blue-500" required>
+            <input name="email" type="email" placeholder="Email" class="w-full bg-black/40 border border-white/10 p-4 rounded-2xl outline-none" required>
+            <input name="password" type="password" placeholder="Password" class="w-full bg-black/40 border border-white/10 p-4 rounded-2xl outline-none" required>
+            <button class="w-full bg-blue-600 py-4 rounded-2xl font-black tracking-widest hover:bg-blue-500 transition-all">MASUK</button>
+        </form>
+        <div class="mt-6 flex justify-between text-[10px] font-bold uppercase text-gray-500">
+            <a href="/register" class="hover:text-blue-400">Daftar Instansi</a>
+            <a href="/forget" class="hover:text-blue-400">Lupa Password?</a>
+        </div>
     </div>
-</div>
+</body>
+</html>
