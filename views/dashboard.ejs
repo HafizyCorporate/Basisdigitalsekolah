@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head><script src="https://cdn.tailwindcss.com"></script></head>
+<body class="bg-[#020202] text-white p-6">
+    <nav class="flex justify-between items-center bg-white/5 p-6 rounded-3xl border border-white/10 mb-8 shadow-xl">
+        <h1 class="text-xl font-black text-blue-400 uppercase tracking-tighter">🏫 <%= instansi %> (<%= kode %>)</h1>
+        <div class="flex gap-4">
+            <button class="bg-red-600 px-6 py-2 rounded-full font-bold text-xs shadow-lg shadow-red-600/20 uppercase">Live</button>
+            <button onclick="window.print()" class="bg-white/10 px-6 py-2 rounded-full font-bold text-xs border border-white/10 uppercase">Cetak</button>
+        </div>
+    </nav>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="bg-white/5 p-8 rounded-[40px] border border-white/10 shadow-2xl">
+            <h2 class="text-lg font-black mb-4 text-blue-500 italic">🧠 GEMINI 2.5 ENGINE</h2>
+            <textarea id="prompt" class="w-full h-44 bg-black/50 border border-white/10 rounded-3xl p-6 outline-none focus:border-blue-500 text-lg transition-all" placeholder="Input instruksi materi..."></textarea>
+            <button id="btnGen" onclick="generate()" class="w-full mt-4 bg-blue-600 py-5 rounded-3xl font-black text-xl hover:scale-[1.01] transition-all shadow-xl shadow-blue-600/20 uppercase tracking-widest">PRODUKSI MATERI</button>
+        </div>
+
+        <div id="preview" class="hidden space-y-6 animate-fadeIn">
+            <div class="bg-amber-500/10 border-l-4 border-amber-500 p-6 rounded-2xl">
+                <h4 class="text-amber-500 font-black italic">⚠️ WARNING!</h4>
+                <p class="text-xs text-amber-200">Cek ulang materi AI sebelum publish!</p>
+            </div>
+            <div id="result" class="bg-white/5 p-10 rounded-[40px] border border-white/10 prose prose-invert max-w-none shadow-2xl overflow-y-auto max-h-[500px]"></div>
+            <button onclick="location.reload()" class="w-full bg-white/5 py-5 rounded-3xl font-bold border border-white/10 uppercase tracking-widest">Mulai Baru</button>
+        </div>
+    </div>
+
+    <script>
+        async function generate() {
+            const btn = document.getElementById('btnGen');
+            const prompt = document.getElementById('prompt').value;
+            if(!prompt) return alert('Ketik perintahnya!');
+            
+            btn.innerText = "MERACIK...";
+            btn.disabled = true;
+            
+            try {
+                const res = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ instruksi: prompt })
+                });
+                const data = await res.json();
+                document.getElementById('preview').classList.remove('hidden');
+                document.getElementById('result').innerHTML = `<h1 class="text-3xl font-black mb-6 text-blue-400">${data.judul}</h1>` + data.html;
+            } catch(e) { alert('Gagal memproses AI!'); }
+            
+            btn.innerText = "PRODUKSI MATERI";
+            btn.disabled = false;
+        }
+    </script>
+</body>
+</html>
