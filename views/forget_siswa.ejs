@@ -1,1 +1,102 @@
 
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Password Siswa - Global School AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-pop { animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        #splash {
+            position: fixed; inset: 0; background: #ffffff; z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.8s ease-out, visibility 0.8s;
+        }
+        .loader-bar { width: 150px; height: 3px; background: #e2e8f0; position: relative; overflow: hidden; margin-top: 20px; border-radius: 10px; }
+        .loader-progress { position: absolute; height: 100%; width: 50%; background: #0ea5e9; animation: loading 1.5s infinite ease-in-out; }
+        @keyframes loading { from { left: -50%; } to { left: 100%; } }
+        body { background-color: #f0f9ff; }
+    </style>
+</head>
+<body class="text-slate-800 flex items-center justify-center min-h-screen p-4 py-10 overflow-hidden font-sans">
+
+    <div id="splash">
+        <div class="text-6xl mb-4 animate-bounce">🔓</div>
+        <h2 class="text-sm font-bold tracking-[0.3em] uppercase text-sky-500">Student Security</h2>
+        <div class="loader-bar"><div class="loader-progress"></div></div>
+        <p class="text-[10px] text-slate-400 mt-4 italic font-serif text-center px-6">"Masa depan adalah milik mereka yang percaya pada keindahan mimpi mereka."</p>
+    </div>
+
+    <div class="animate-pop bg-white p-8 md:p-12 rounded-[30px] w-full max-w-[450px] text-center shadow-2xl shadow-sky-100 border border-slate-100 relative z-10">
+        
+        <div class="text-5xl mb-4 text-sky-400">🔓</div>
+        
+        <h1 class="text-2xl md:text-3xl font-bold text-slate-800 mb-2 uppercase tracking-tight">Lupa Password</h1>
+        <p class="text-slate-400 text-[10px] mb-8 font-bold uppercase tracking-widest leading-relaxed">Pemulihan Akun Siswa</p>
+
+        <% if (locals.msg) { %>
+            <div class="bg-sky-50 text-sky-600 p-4 rounded-xl mb-6 text-center font-bold border border-sky-100 text-xs uppercase tracking-wider">
+                <%= msg %>
+            </div>
+        <% } %>
+        
+        <% if (typeof step === 'undefined' || step === 1) { %>
+            <form action="/auth/forget-siswa" method="POST" class="space-y-4">
+                <div class="group relative">
+                    <input name="email" type="email" placeholder="EMAIL SISWA" 
+                        class="w-full bg-slate-50 border border-slate-200 p-5 rounded-xl outline-none focus:border-sky-400 focus:bg-white text-lg text-center transition-all placeholder:text-slate-300 font-bold text-slate-700" required>
+                </div>
+
+                <button type="submit" 
+                    class="w-full bg-sky-500 py-4 rounded-xl font-bold text-xl hover:bg-sky-600 transition-all shadow-lg shadow-sky-200 uppercase mt-2 active:scale-95 text-white tracking-wide">
+                    Kirim OTP Reset
+                </button>
+            </form>
+
+        <% } else { %>
+            <form action="/auth/reset-password-siswa" method="POST" class="space-y-5 text-left">
+                <input type="hidden" name="email" value="<%= email %>">
+                
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-slate-400 ml-1 uppercase tracking-widest">Masukkan Kode OTP</label>
+                    <input name="otp" type="text" placeholder="000000" maxlength="6"
+                        class="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl outline-none focus:border-sky-400 focus:bg-white text-3xl text-center font-bold tracking-[0.4em] transition-all placeholder:text-slate-200 text-slate-800" required>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-slate-400 ml-1 uppercase tracking-widest">Password Baru Kamu</label>
+                    <input name="newPass" type="password" placeholder="••••••••" 
+                        class="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl outline-none focus:border-sky-400 focus:bg-white text-lg text-center transition-all placeholder:text-slate-300 text-slate-700" required>
+                </div>
+
+                <button type="submit" 
+                    class="w-full bg-sky-500 py-4 rounded-xl font-bold text-xl hover:bg-sky-600 transition-all shadow-lg shadow-sky-200 uppercase mt-4 active:scale-95 text-white tracking-wide">
+                    Update Password
+                </button>
+            </form>
+        <% } %>
+        
+        <div class="mt-10 pt-6 border-t border-slate-100">
+            <a href="/login-siswa" class="text-[10px] text-slate-400 hover:text-sky-500 font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
+                <span>⬅</span> Kembali Belajar
+            </a>
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const splash = document.getElementById('splash');
+                splash.style.opacity = '0';
+                splash.style.visibility = 'hidden';
+                document.body.style.overflow = 'auto';
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
