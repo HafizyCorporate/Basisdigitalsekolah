@@ -18,7 +18,7 @@ const initDb = async () => {
     const client = await pool.connect();
     console.log("🔌 Sedang mensinkronkan tabel ke database...");
     
-    // 1. Tabel untuk Admin Instansi / Sekolah (Ditambah kolom OTP)
+    // 1. Tabel untuk Admin Instansi / Sekolah (KODINGAN ASLI)
     await client.query(`
       CREATE TABLE IF NOT EXISTS global_instansi (
         id SERIAL PRIMARY KEY,
@@ -31,7 +31,7 @@ const initDb = async () => {
       );
     `);
 
-    // 2. Tabel untuk Guru (BARU - Untuk memperbaiki error register guru)
+    // 2. Tabel untuk Guru (KODINGAN ASLI)
     await client.query(`
       CREATE TABLE IF NOT EXISTS global_guru (
         id SERIAL PRIMARY KEY,
@@ -44,7 +44,7 @@ const initDb = async () => {
       );
     `);
 
-    // 3. Tabel untuk Siswa (Ditambah kolom OTP dan Kode Sekolah)
+    // 3. Tabel untuk Siswa (KODINGAN ASLI)
     await client.query(`
       CREATE TABLE IF NOT EXISTS global_siswa (
         id SERIAL PRIMARY KEY,
@@ -56,14 +56,56 @@ const initDb = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // ============================================================
+    // 🚀 TAMBAHAN BARU: FITUR DASHBOARD GURU & SISWA
+    // ============================================================
+
+    // 4. Tabel untuk Chat Real-time (Tersimpan Permanen)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS global_chat (
+        id SERIAL PRIMARY KEY,
+        kode_sekolah TEXT NOT NULL,
+        pengirim_nama TEXT NOT NULL,
+        role TEXT NOT NULL, -- 'guru' atau 'siswa'
+        pesan TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 5. Tabel untuk Media Pembelajaran / Materi AI (Dibuat Guru)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS global_materi (
+        id SERIAL PRIMARY KEY,
+        kode_sekolah TEXT NOT NULL,
+        guru_id INTEGER NOT NULL,
+        judul TEXT NOT NULL,
+        konten_html TEXT NOT NULL,
+        soal_json JSONB, -- Menyimpan soal pilihan ganda dari AI
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 6. Tabel untuk Jawaban & Nilai Siswa
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS global_jawaban (
+        id SERIAL PRIMARY KEY,
+        materi_id INTEGER NOT NULL,
+        siswa_id INTEGER NOT NULL,
+        nama_siswa TEXT NOT NULL,
+        jawaban_user JSONB, -- Pilihan jawaban siswa
+        skor TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
     
-    // LOGIKA TAMBAHAN: Memastikan kolom OTP ada jika tabel sudah terlanjur dibuat sebelumnya
+    // LOGIKA TAMBAHAN (KODINGAN ASLI TETAP ADA)
     await client.query(`ALTER TABLE global_instansi ADD COLUMN IF NOT EXISTS otp TEXT;`);
     await client.query(`ALTER TABLE global_siswa ADD COLUMN IF NOT EXISTS otp TEXT;`);
     await client.query(`ALTER TABLE global_siswa ADD COLUMN IF NOT EXISTS kode_sekolah TEXT;`);
 
     client.release();
-    console.log("✅ Database Global (Instansi, Guru, & Siswa) Siap Digunakan!");
+    console.log("✅ Database Global (Instansi, Guru, Siswa, Chat, & Materi) Siap Digunakan!");
   } catch (err) { 
     console.error("❌ DB Error:", err.message);
   }
