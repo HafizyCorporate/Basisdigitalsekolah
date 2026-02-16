@@ -16,8 +16,6 @@ const { sendMail } = require('./email');
 const app = express();
 
 // --- PERBAIKAN PENTING: TRUST PROXY ---
-// Ini untuk mengatasi error 'X-Forwarded-For' di Railway/hosting 
-// agar express-rate-limit bisa membaca IP user dengan benar.
 app.set('trust proxy', 1); 
 
 const server = http.createServer(app);
@@ -48,7 +46,7 @@ initDb();
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 // ==========================================
-// 🎯 1. ROUTES TAMPILAN (EJS) - TETAP SAMA
+// 🎯 1. ROUTES TAMPILAN (EJS)
 // ==========================================
 
 app.get('/', (req, res) => res.render('landing'));
@@ -62,8 +60,11 @@ app.get('/login-siswa', (req, res) => res.render('login_siswa', { msg: null }));
 app.get('/register-siswa', (req, res) => res.render('register_siswa', { msg: null }));
 app.get('/forget-siswa', (req, res) => res.render('forget_siswa', { msg: null }));
 
+// TAMBAHAN: Rute Halaman Verifikasi
+app.get('/verify', (req, res) => res.render('verify', { msg: null }));
+
 // ==========================================
-// 👨‍🏫 2. LOGIKA GURU / INSTANSI / ADMIN - TETAP SAMA
+// 👨‍🏫 2. LOGIKA GURU / INSTANSI / ADMIN
 // ==========================================
 
 app.post('/auth/register', async (req, res) => {
@@ -84,8 +85,29 @@ app.post('/auth/register', async (req, res) => {
       "Kode Verifikasi Pendaftaran Sekolah", 
       `<h1>Verifikasi Akun</h1><p>Terima kasih telah mendaftar.</p><p>KODE OTP ANDA: <b style="font-size:24px; color:blue;">${otp}</b></p><p>Kode Instansi: <b>${kode}</b></p>`
     );
-    res.render('login', { msg: `Sukses! Cek OTP & Kode Instansi di email: ${email}` });
+    
+    // PERBAIKAN: Diarahkan ke halaman VERIFY, bukan LOGIN
+    res.render('verify', { msg: `Pendaftaran Berhasil! Silakan masukkan OTP dari email: ${email}` });
   } catch (err) { res.status(500).send("Error Daftar: " + err.message); }
+});
+
+// TAMBAHAN: Logika Proses Verifikasi OTP
+app.post('/auth/verify', async (req, res) => {
+    const { kode, otp } = req.body;
+    try {
+      const result = await pool.query(
+        'SELECT * FROM global_instansi WHERE kode_instansi = $1 AND otp = $2',
+        [kode, otp]
+      );
+  
+      if (result.rows.length > 0) {
+        res.render('login', { msg: "Verifikasi Sukses! Silakan Login." });
+      } else {
+        res.render('verify', { msg: "Kode Instansi atau OTP Salah!" });
+      }
+    } catch (err) {
+      res.status(500).send("Error Verifikasi: " + err.message);
+    }
 });
 
 app.post('/auth/register-guru', async (req, res) => {
@@ -139,13 +161,13 @@ app.post('/auth/forget', async (req, res) => {
     const result = await pool.query('UPDATE global_instansi SET otp = $1 WHERE admin_email = $2 RETURNING nama_instansi', [otp, email]);
     if (result.rows.length > 0) {
       await sendMail(email, "Reset Akses Admin", `<p>Kode OTP Pemulihan: <b>${otp}</b></p>`);
-      res.render('forget', { msg: "OTP Pemulihan sudah dikirim ke email bapak." });
+      res.render('forget', { msg: "OTP Pemulihan sudah dikirim ke email bapak. Silakan cek." });
     } else { res.render('forget', { msg: "Email tidak ditemukan!" }); }
   } catch (err) { res.status(500).send(err.message); }
 });
 
 // ==========================================
-// 🎓 3. LOGIKA SISWA - TETAP SAMA
+// 🎓 3. LOGIKA SISWA
 // ==========================================
 
 app.post('/auth/register-siswa', async (req, res) => {
@@ -186,7 +208,7 @@ app.post('/auth/forget-siswa', async (req, res) => {
 });
 
 // ==========================================
-// 🤖 4. API UNTUK AI & SERVER RUN - TETAP SAMA
+// 🤖 4. API UNTUK AI & SERVER RUN
 // ==========================================
 
 app.post('/api/generate', async (req, res) => {
@@ -196,7 +218,6 @@ app.post('/api/generate', async (req, res) => {
   } catch (err) { res.status(500).json({ error: "AI sedang sibuk." }); }
 });
 
-// Tetap menggunakan 8080 sebagai default jika env PORT tidak ada
 const PORT = process.env.PORT || 8080; 
 server.listen(PORT, () => {
   console.log(`
