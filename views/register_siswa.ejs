@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head><script src="https://cdn.tailwindcss.com"></script></head>
+<body class="bg-[#050505] text-white flex items-center justify-center min-h-screen">
+    <div class="bg-white/5 border border-white/10 p-12 rounded-[40px] w-[450px] shadow-2xl shadow-emerald-900/20">
+        
+        <h1 class="text-4xl font-black text-emerald-500 mb-8">DAFTAR SISWA</h1>
+        
+        <form action="/auth/register-siswa" method="POST" class="space-y-6">
+            
+            <input name="nama" placeholder="NAMA LENGKAP" 
+                class="w-full bg-black/50 border border-white/10 p-6 rounded-2xl outline-none focus:border-emerald-500 text-xl" required>
+            
+            <input name="email" type="email" placeholder="EMAIL SISWA" 
+                class="w-full bg-black/50 border border-white/10 p-6 rounded-2xl outline-none focus:border-emerald-500 text-xl" required>
+            
+            <input name="pass" type="password" placeholder="PASSWORD" 
+                class="w-full bg-black/50 border border-white/10 p-6 rounded-2xl outline-none focus:border-emerald-500 text-xl" required>
+            
+            <button class="w-full bg-emerald-600 py-6 rounded-2xl font-black text-2xl hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20">
+                GABUNG KELAS
+            </button>
+        </form>
+        
+        <a href="/login-siswa" class="block mt-8 text-center text-sm text-gray-500 hover:text-white font-bold uppercase tracking-widest">
+            Kembali ke Login
+        </a>
+    </div>
+</body>
+</html>
