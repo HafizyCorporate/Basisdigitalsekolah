@@ -5,27 +5,115 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login Siswa - Global School AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Animasi Masuk Jendela */
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-pop { animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+        /* Splash Screen Layer */
+        #splash {
+            position: fixed;
+            inset: 0;
+            background: #050505;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease-out, visibility 0.8s;
+        }
+        
+        .loader-bar {
+            width: 150px;
+            height: 2px;
+            background: rgba(255,255,255,0.1);
+            position: relative;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        .loader-progress {
+            position: absolute;
+            height: 100%;
+            width: 50%;
+            background: #10b981; /* Warna Emerald */
+            animation: loading 1.5s infinite ease-in-out;
+        }
+        @keyframes loading {
+            from { left: -50%; }
+            to { left: 100%; }
+        }
+    </style>
 </head>
-<body class="bg-[#050505] text-white flex items-center justify-center min-h-screen p-4 py-10 overflow-y-auto">
-    <div class="bg-white/5 border border-white/10 p-8 md:p-12 rounded-[40px] w-full max-w-[450px] shadow-2xl shadow-emerald-900/20">
-        <h1 class="text-3xl font-black text-emerald-500 mb-8 tracking-tighter uppercase">Login Siswa</h1>
+<body class="bg-[#050505] text-white flex items-center justify-center min-h-screen p-4 py-10 overflow-hidden">
+
+    <div id="splash">
+        <div class="text-5xl mb-4 animate-bounce">🎓</div>
+        <h2 class="text-sm font-black tracking-[0.4em] uppercase text-emerald-500">Student Portal</h2>
+        <div class="loader-bar">
+            <div class="loader-progress"></div>
+        </div>
+        <p class="text-[9px] text-gray-600 mt-4 italic font-mono uppercase tracking-widest">Global School AI System</p>
+    </div>
+
+    <div class="animate-pop bg-white/5 border border-white/10 p-8 md:p-12 rounded-[40px] w-full max-w-[450px] shadow-2xl shadow-emerald-900/20 border-t-4 border-t-emerald-500 relative z-10">
+        
+        <div class="flex justify-between items-start mb-8">
+            <div>
+                <h1 class="text-3xl font-black text-emerald-500 tracking-tighter uppercase">Login Siswa</h1>
+                <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Siap untuk belajar hari ini?</p>
+            </div>
+            <div class="text-3xl opacity-30">✨</div>
+        </div>
 
         <% if (locals.msg) { %>
-            <div class="bg-red-500/20 text-red-200 p-4 rounded-xl mb-6 text-center font-bold border border-red-500/30 text-sm">
+            <div class="bg-red-500/10 text-red-200 p-4 rounded-2xl mb-6 text-center font-bold border border-red-500/30 text-sm">
                 <%= msg %>
             </div>
         <% } %>
 
         <form action="/auth/login-siswa" method="POST" class="space-y-4">
-            <input name="email" type="email" placeholder="EMAIL SISWA" class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-emerald-500 text-lg" required>
-            <input name="pass" type="password" placeholder="PASSWORD" class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-emerald-500 text-lg" required>
-            <button class="w-full bg-emerald-600 py-5 rounded-2xl font-black text-xl hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/30 mt-4 uppercase">Mulai Belajar</button>
+            <div class="space-y-1">
+                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase tracking-widest">Email Siswa</label>
+                <input name="email" type="email" placeholder="EMAIL SISWA" 
+                    class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-emerald-500 text-lg transition-all placeholder:text-gray-800" required>
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase tracking-widest">Password</label>
+                <input name="pass" type="password" placeholder="PASSWORD" 
+                    class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-emerald-500 text-lg transition-all placeholder:text-gray-800" required>
+            </div>
+
+            <button type="submit" 
+                class="w-full bg-emerald-600 py-5 rounded-2xl font-black text-xl hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/30 mt-4 uppercase text-white active:scale-95">
+                Mulai Belajar
+            </button>
         </form>
 
         <div class="mt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-bold text-gray-500 tracking-widest uppercase">
-            <a href="/register-siswa" class="hover:text-emerald-400">Belum Punya Akun?</a>
-            <a href="/forget-siswa" class="hover:text-emerald-400">Lupa Password?</a>
+            <a href="/register-siswa" class="hover:text-emerald-400 transition-colors border-b border-transparent hover:border-emerald-400">Belum Punya Akun?</a>
+            <a href="/forget-siswa" class="hover:text-emerald-400 transition-colors border-b border-transparent hover:border-emerald-400">Lupa Password?</a>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-white/5 text-center">
+            <a href="/" class="text-[9px] font-bold text-gray-600 hover:text-white transition-colors uppercase tracking-[0.2em] flex items-center justify-center gap-2">
+                <span>⬅</span> Kembali ke Portal Utama
+            </a>
         </div>
     </div>
+
+    <script>
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const splash = document.getElementById('splash');
+                splash.style.opacity = '0';
+                splash.style.visibility = 'hidden';
+                document.body.style.overflow = 'auto';
+            }, 1500); // Muncul selama 1.5 detik
+        });
+    </script>
 </body>
 </html>
