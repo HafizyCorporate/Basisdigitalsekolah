@@ -6,70 +6,58 @@
     <title>Verifikasi OTP - Global School AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Animasi Pop In agar tampilan halus */
         @keyframes popIn {
             from { opacity: 0; transform: scale(0.95) translateY(20px); }
             to { opacity: 1; transform: scale(1) translateY(0); }
         }
         .animate-pop { animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-
-        /* Background Gelap Khas Global School */
-        body {
-            background-color: #050505;
-            background-image: 
-                radial-gradient(circle at 20% 35%, rgba(37, 99, 235, 0.1) 0%, transparent 40%),
-                radial-gradient(circle at 80% 65%, rgba(29, 78, 216, 0.05) 0%, transparent 40%);
-        }
+        body { background-color: #f8fafc; }
     </style>
 </head>
-<body class="text-white min-h-screen flex items-center justify-center p-6">
+<body class="text-slate-800 min-h-screen flex items-center justify-center p-6">
 
-    <div class="max-w-md w-full bg-white/5 border border-white/10 p-10 rounded-[40px] shadow-2xl backdrop-blur-md animate-pop">
+    <div class="max-w-md w-full bg-white p-10 rounded-[30px] shadow-2xl shadow-blue-100 border border-slate-100 animate-pop">
         
         <div class="flex justify-center mb-6">
-            <div class="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center shadow-lg shadow-blue-600/40 rotate-3 group-hover:rotate-0 transition-transform">
-                <span class="text-4xl">🔐</span>
+            <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center shadow-inner text-4xl text-blue-600">
+                🔐
             </div>
         </div>
 
-        <h2 class="text-3xl font-black text-center mb-2 tracking-tighter">VERIFIKASI OTP</h2>
-        <p class="text-gray-500 text-center text-xs uppercase tracking-widest mb-8 font-bold">Cek Inbox Email Kamu</p>
+        <h2 class="text-2xl font-bold text-center mb-2 text-slate-800">Verifikasi OTP</h2>
+        <p class="text-slate-400 text-center text-xs uppercase tracking-widest mb-8 font-semibold">Cek Inbox Email Admin</p>
 
         <% if (msg) { %>
-            <div class="bg-blue-600/10 border border-blue-500/50 text-blue-300 p-4 rounded-2xl mb-6 text-xs text-center font-bold uppercase tracking-wider">
+            <div class="bg-blue-50 text-blue-600 p-4 rounded-xl mb-6 text-xs text-center font-bold border border-blue-100">
                 <%= msg %>
             </div>
         <% } %>
 
-        <form action="/auth/verify" method="POST" class="space-y-4">
-            
+        <form action="/auth/verify" method="POST" class="space-y-5">
             <div class="space-y-1">
-                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase tracking-widest">Kode Instansi</label>
+                <label class="text-[11px] font-bold text-slate-400 ml-1 uppercase tracking-wider">Kode Instansi</label>
                 <input name="kode" type="text" placeholder="SCH-XXXXX" 
-                    class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-blue-500 text-center font-black text-xl transition-all placeholder:text-gray-800" 
-                    required>
+                    class="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl outline-none focus:border-blue-500 focus:bg-white text-center font-bold text-xl text-slate-700 transition-all placeholder:text-slate-300" required>
             </div>
 
             <div class="space-y-1">
-                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase tracking-widest">6-Digit OTP</label>
+                <label class="text-[11px] font-bold text-slate-400 ml-1 uppercase tracking-wider">6-Digit OTP</label>
                 <input name="otp" type="text" maxlength="6" placeholder="000000" 
-                    class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-blue-500 text-center text-3xl tracking-[0.3em] font-black transition-all placeholder:text-gray-800" 
-                    required>
+                    class="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl outline-none focus:border-blue-500 focus:bg-white text-center text-3xl tracking-[0.5em] font-bold text-slate-800 transition-all placeholder:text-slate-200" required>
             </div>
 
             <button type="submit" 
-                class="w-full bg-blue-600 py-5 rounded-2xl font-black text-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/30 uppercase mt-4 active:scale-95">
+                class="w-full bg-blue-600 py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 mt-4 text-white active:scale-95 uppercase tracking-wide">
                 Konfirmasi Akun
             </button>
         </form>
 
-        <div class="mt-10 pt-6 border-t border-white/5 text-center">
-            <p class="text-[10px] text-gray-600 uppercase font-bold tracking-widest mb-4">Tidak menerima kode?</p>
-            <a href="/register" class="text-blue-500 hover:text-white transition-colors text-[10px] font-black uppercase tracking-widest">
-                Daftar Ulang Kembali
+        <div class="mt-10 pt-6 border-t border-slate-100 text-center">
+            <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-3">Tidak menerima kode?</p>
+            <a href="/register" class="text-blue-600 hover:text-blue-800 transition-colors text-xs font-bold uppercase tracking-widest">
+                Daftar Ulang
             </a>
         </div>
     </div>
-
 </body>
 </html>
