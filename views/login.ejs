@@ -3,39 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Guru - Global School AI</title>
+    <title>Login Siswa - Global School AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-[#050505] text-white flex items-center justify-center min-h-screen p-4 py-10 overflow-y-auto">
-    <div class="bg-white/5 border border-white/10 p-8 md:p-12 rounded-[40px] w-full max-w-[450px] shadow-2xl">
-        <h1 class="text-3xl font-black text-blue-500 mb-8 tracking-tighter uppercase">Login Guru</h1>
+    
+    <div class="bg-white/5 border border-white/10 p-8 md:p-12 rounded-[40px] w-full max-w-[450px] shadow-2xl shadow-emerald-900/20 border-t-4 border-t-emerald-500">
+        <h1 class="text-3xl font-black text-emerald-500 mb-8 tracking-tighter uppercase">Login Siswa</h1>
 
         <% if (locals.msg) { %>
-            <div class="bg-red-500/20 text-red-200 p-4 rounded-xl mb-6 text-center font-bold border border-red-500/30 text-sm">
+            <div class="bg-emerald-500/10 text-emerald-200 p-4 rounded-2xl mb-6 text-center font-bold border border-emerald-500/30 text-sm">
                 <%= msg %>
             </div>
         <% } %>
 
-        <form action="/auth/login" method="POST" class="space-y-4">
+        <form action="/auth/login-siswa" method="POST" class="space-y-4">
+            
             <div class="space-y-1">
-                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase">Kode Sekolah</label>
-                <input name="kode" placeholder="SCH-XXXXX" class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-blue-500 text-lg font-mono text-blue-400" required>
+                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase tracking-widest">Email Siswa</label>
+                <input name="email" type="email" placeholder="siswa@sekolah.com" 
+                    class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-emerald-500 text-lg transition-all" required>
             </div>
+
             <div class="space-y-1">
-                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase">Email Guru</label>
-                <input name="email" type="email" placeholder="nama@sekolah.com" class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-blue-500 text-lg" required>
+                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase tracking-widest">Password</label>
+                <input name="pass" type="password" placeholder="••••••••" 
+                    class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-emerald-500 text-lg transition-all" required>
             </div>
-            <div class="space-y-1">
-                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase">Password</label>
-                <input name="pass" type="password" placeholder="••••••••" class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-blue-500 text-lg" required>
-            </div>
-            <button class="w-full bg-blue-600 py-5 rounded-2xl font-black text-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/30 mt-4 uppercase">Masuk Sistem</button>
+
+            <button type="submit" class="w-full bg-emerald-600 py-5 rounded-2xl font-black text-xl hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/30 mt-4 uppercase text-white">
+                Masuk Kelas
+            </button>
         </form>
 
         <div class="mt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-bold text-gray-500 tracking-widest uppercase">
-            <a href="/register" class="hover:text-blue-400">Daftar Instansi</a>
-            <a href="/forget" class="hover:text-blue-400">Lupa Kode / Password?</a>
+            <a href="/register-siswa" class="hover:text-emerald-400 transition-colors">Daftar Akun Baru</a>
+            <a href="/forget-siswa" class="hover:text-emerald-400 transition-colors">Lupa Password?</a>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-white/5 text-center">
+            <a href="/" class="text-[9px] font-bold text-gray-600 hover:text-white transition-colors uppercase tracking-[0.2em]">Kembali ke Portal Utama</a>
         </div>
     </div>
+
 </body>
 </html>
