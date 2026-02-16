@@ -1,8 +1,13 @@
-const { Pool } = require('pg'); // C sudah diperbaiki jadi kecil
+const { Pool } = require('pg');
+
+// Deteksi apakah DATABASE_URL ada atau tidak
+if (!process.env.DATABASE_URL) {
+  console.error("❌ ERROR FATAL: Variabel DATABASE_URL tidak ditemukan di .env atau Railway Variables!");
+}
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  // Optimasi: Gunakan SSL hanya jika tidak di localhost
+  // Baris ini krusial untuk Railway (SSL On) tapi Off untuk Localhost
   ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('localhost') 
     ? false 
     : { rejectUnauthorized: false }
@@ -10,9 +15,9 @@ const pool = new Pool({
 
 const initDb = async () => {
   try {
-    // Pastikan koneksi bisa tersambung
+    // Kita tes koneksi manual di sini
     const client = await pool.connect();
-    console.log("🔌 Terhubung ke Database...");
+    console.log("🔌 Sedang mencoba menghubungkan kabel ke database...");
     
     await client.query(`
       CREATE TABLE IF NOT EXISTS global_instansi (
@@ -24,10 +29,14 @@ const initDb = async () => {
       );
     `);
     
-    client.release(); // Lepas koneksi setelah selesai
+    client.release();
     console.log("✅ Database Global Ready!");
   } catch (err) { 
-    console.error("❌ DB Error Detail:", err.message); 
+    // Tampilkan seluruh objek error agar kita tahu penyebab pastinya
+    console.error("❌ DB Error Lengkap:");
+    console.error("- Pesan:", err.message);
+    console.error("- Kode Error:", err.code);
+    console.error("- Detail Tambahan:", err.detail || "Tidak ada detail tambahan.");
   }
 };
 
