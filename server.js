@@ -60,8 +60,12 @@ app.get('/login-siswa', (req, res) => res.render('login_siswa', { msg: null }));
 app.get('/register-siswa', (req, res) => res.render('register_siswa', { msg: null }));
 app.get('/forget-siswa', (req, res) => res.render('forget_siswa', { msg: null }));
 
-// TAMBAHAN: Rute Halaman Verifikasi
+// TAMBAHAN: Rute Halaman Verifikasi Instansi & Guru
 app.get('/verify', (req, res) => res.render('verify', { msg: null }));
+app.get('/verify-guru', (req, res) => {
+    const email = req.query.email || "";
+    res.render('verify-guru', { msg: null, email: email });
+});
 
 // ==========================================
 // 👨‍🏫 2. LOGIKA GURU / INSTANSI / ADMIN
@@ -86,12 +90,10 @@ app.post('/auth/register', async (req, res) => {
       `<h1>Verifikasi Akun</h1><p>Terima kasih telah mendaftar.</p><p>KODE OTP ANDA: <b style="font-size:24px; color:blue;">${otp}</b></p><p>Kode Instansi: <b>${kode}</b></p>`
     );
     
-    // PERBAIKAN: Diarahkan ke halaman VERIFY, bukan LOGIN
     res.render('verify', { msg: `Pendaftaran Berhasil! Silakan masukkan OTP dari email: ${email}` });
   } catch (err) { res.status(500).send("Error Daftar: " + err.message); }
 });
 
-// TAMBAHAN: Logika Proses Verifikasi OTP
 app.post('/auth/verify', async (req, res) => {
     const { kode, otp } = req.body;
     try {
@@ -123,8 +125,34 @@ app.post('/auth/register-guru', async (req, res) => {
       [nama, email, hashed, kode_sekolah, otp]
     );
     await sendMail(email, "OTP Guru", `<p>Kode OTP Guru Anda: <b>${otp}</b></p>`);
-    res.render('login', { msg: "Pendaftaran Guru Berhasil! Cek OTP di email." });
+    
+    // PERBAIKAN: Diarahkan ke aktivasi guru, bukan login
+    res.render('verify-guru', { 
+        msg: `Pendaftaran Guru Berhasil! Masukkan OTP yang dikirim ke ${email}`, 
+        email: email 
+    });
   } catch (err) { res.render('register-guru', { msg: "Email sudah terdaftar!" }); }
+});
+
+// TAMBAHAN: Logika Aktivasi OTP Guru
+app.post('/auth/activate-guru', async (req, res) => {
+    const { email, otp } = req.body;
+    try {
+        const result = await pool.query(
+            'SELECT * FROM global_guru WHERE email = $1 AND otp = $2',
+            [email, otp]
+        );
+
+        if (result.rows.length > 0) {
+            // Kosongkan OTP sebagai tanda akun sudah aktif
+            await pool.query('UPDATE global_guru SET otp = NULL WHERE email = $1', [email]);
+            res.render('login', { msg: "Selamat! Akun Guru Anda telah aktif. Silakan Login." });
+        } else {
+            res.render('verify-guru', { msg: "Kode OTP Salah atau Kadaluarsa!", email: email });
+        }
+    } catch (err) {
+        res.status(500).send("Error Aktivasi: " + err.message);
+    }
 });
 
 app.post('/auth/login', async (req, res) => {
