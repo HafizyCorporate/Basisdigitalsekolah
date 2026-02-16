@@ -6,11 +6,11 @@
     <title>Login Guru - Global School AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-[#050505] text-white flex items-center justify-center min-h-screen">
+<body class="bg-[#050505] text-white flex items-center justify-center min-h-screen p-4">
     
-    <div class="bg-white/5 border border-white/10 p-12 rounded-[40px] w-[450px] shadow-2xl shadow-blue-900/20">
+    <div class="bg-white/5 border border-white/10 p-6 md:p-12 rounded-[30px] md:rounded-[40px] w-full max-w-[450px] shadow-2xl shadow-blue-900/20">
         
-        <h1 class="text-4xl font-black text-blue-500 mb-8 tracking-tighter">LOGIN GURU</h1>
+        <h1 class="text-3xl md:text-4xl font-black text-blue-500 mb-6 md:mb-8 tracking-tighter">LOGIN GURU</h1>
 
         <% if (msg) { %>
             <div class="bg-red-500/20 text-red-200 p-4 rounded-2xl mb-6 text-center font-bold border border-red-500/30 text-sm">
@@ -18,37 +18,37 @@
             </div>
         <% } %>
 
-        <form action="/auth/login" method="POST" class="space-y-6">
+        <form action="/auth/login" method="POST" class="space-y-4 md:space-y-6">
             
             <div class="space-y-2">
-                <label class="text-xs font-bold text-gray-500 ml-2 uppercase tracking-widest">Kode Sekolah</label>
+                <label class="text-[10px] md:text-xs font-bold text-gray-500 ml-2 uppercase tracking-widest">Kode Sekolah</label>
                 <input name="kode" placeholder="CONTOH: SCH-XXXXX" 
-                    class="w-full bg-black/50 border border-white/10 p-6 rounded-2xl outline-none focus:border-blue-500 text-xl font-mono text-blue-400" required>
+                    class="w-full bg-black/50 border border-white/10 p-4 md:p-6 rounded-2xl outline-none focus:border-blue-500 text-lg md:text-xl font-mono text-blue-400" required>
             </div>
 
             <div class="space-y-2">
-                <label class="text-xs font-bold text-gray-500 ml-2 uppercase tracking-widest">Email Admin</label>
+                <label class="text-[10px] md:text-xs font-bold text-gray-500 ml-2 uppercase tracking-widest">Email Admin</label>
                 <input name="email" type="email" placeholder="email@sekolah.com" 
-                    class="w-full bg-black/50 border border-white/10 p-6 rounded-2xl outline-none focus:border-blue-500 text-xl" required>
+                    class="w-full bg-black/50 border border-white/10 p-4 md:p-6 rounded-2xl outline-none focus:border-blue-500 text-lg md:text-xl" required>
             </div>
             
             <div class="space-y-2">
-                <label class="text-xs font-bold text-gray-500 ml-2 uppercase tracking-widest">Password</label>
+                <label class="text-[10px] md:text-xs font-bold text-gray-500 ml-2 uppercase tracking-widest">Password</label>
                 <input name="pass" type="password" placeholder="••••••••" 
-                    class="w-full bg-black/50 border border-white/10 p-6 rounded-2xl outline-none focus:border-blue-500 text-xl" required>
+                    class="w-full bg-black/50 border border-white/10 p-4 md:p-6 rounded-2xl outline-none focus:border-blue-500 text-lg md:text-xl" required>
             </div>
             
-            <button class="w-full bg-blue-600 py-6 rounded-2xl font-black text-2xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/30 uppercase mt-4">
+            <button class="w-full bg-blue-600 py-4 md:py-6 rounded-2xl font-black text-xl md:text-2xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/30 uppercase mt-2">
                 Masuk Sistem
             </button>
         </form>
 
-        <div class="mt-8 flex justify-between items-center text-sm font-bold text-gray-500 tracking-widest uppercase">
+        <div class="mt-6 md:mt-8 flex justify-between items-center text-[10px] md:text-sm font-bold text-gray-500 tracking-widest uppercase">
             <a href="/register" class="hover:text-blue-400 transition-colors">Daftar Sekolah</a>
             <a href="/forget" class="hover:text-blue-400 transition-colors">Lupa Kode?</a>
         </div>
 
-        <a href="/" class="block mt-10 text-center text-xs text-gray-600 hover:text-white font-bold uppercase tracking-[0.2em]">
+        <a href="/" class="block mt-8 md:mt-10 text-center text-[10px] text-gray-600 hover:text-white font-bold uppercase tracking-[0.2em]">
             ⬅ Kembali Ke Menu Utama
         </a>
     </div>
