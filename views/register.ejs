@@ -1,17 +1,33 @@
 <!DOCTYPE html>
-<html>
-<head><script src="https://cdn.tailwindcss.com"></script></head>
-<body class="bg-[#050505] text-white flex items-center justify-center min-h-screen">
-    <div class="bg-white/5 border border-white/10 p-12 rounded-[40px] w-[450px] shadow-2xl">
-        <h1 class="text-4xl font-black text-blue-500 mb-8">DAFTAR INSTANSI</h1>
-        <form action="/auth/register" method="POST" class="space-y-6">
-            <input name="nama" placeholder="NAMA SEKOLAH" class="w-full bg-black/50 border border-white/10 p-6 rounded-2xl outline-none focus:border-blue-500 text-xl" required>
-            <input name="email" type="email" placeholder="EMAIL ADMIN" class="w-full bg-black/50 border border-white/10 p-6 rounded-2xl outline-none text-xl" required>
-            <input name="pass" type="password" placeholder="PASSWORD" class="w-full bg-black/50 border border-white/10 p-6 rounded-2xl outline-none text-xl" required>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Instansi - Global School AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#050505] text-white flex items-center justify-center min-h-screen p-4 py-10">
+    <div class="bg-white/5 border border-white/10 p-8 md:p-12 rounded-[30px] md:rounded-[40px] w-full max-w-[450px] shadow-2xl">
+        <h1 class="text-3xl md:text-4xl font-black text-blue-500 mb-2 uppercase">Daftar Instansi</h1>
+        <p class="text-gray-500 text-xs mb-8 font-bold uppercase tracking-widest">Pendaftaran Admin Utama Sekolah</p>
+
+        <form action="/auth/register" method="POST" class="space-y-4">
+            <div class="space-y-1">
+                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase">Nama Instansi/Sekolah</label>
+                <input name="nama" placeholder="CONTOH: SMA NEGERI 1" class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-blue-500 text-lg" required>
+            </div>
+            <div class="space-y-1">
+                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase">Email Admin</label>
+                <input name="email" type="email" placeholder="admin@sekolah.com" class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none text-lg" required>
+            </div>
+            <div class="space-y-1">
+                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase">Password Admin</label>
+                <input name="pass" type="password" placeholder="••••••••" class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none text-lg" required>
+            </div>
             
-            <button class="w-full bg-blue-600 py-6 rounded-2xl font-black text-2xl hover:bg-blue-500 transition-all">DAFTARKAN</button>
+            <button class="w-full bg-blue-600 py-5 rounded-2xl font-black text-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/30 mt-4">DAFTARKAN SEKOLAH</button>
         </form>
-        <a href="/" class="block mt-8 text-center text-sm text-gray-500 hover:text-white font-bold uppercase tracking-widest">Kembali ke Login</a>
+        <a href="/" class="block mt-8 text-center text-xs text-gray-500 hover:text-white font-bold uppercase tracking-widest transition-colors">⬅ Kembali</a>
     </div>
 </body>
 </html>
