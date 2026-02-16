@@ -6,43 +6,43 @@
     <title>Aktivasi Akun Guru - Global School AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-[#050505] text-white min-h-screen flex items-center justify-center p-6">
-    <div class="max-w-md w-full bg-white/5 border border-white/10 p-10 rounded-[40px] shadow-2xl">
+<body class="bg-[#f1f5f9] text-slate-800 min-h-screen flex items-center justify-center p-6 font-sans">
+    <div class="max-w-md w-full bg-white p-10 rounded-[30px] shadow-2xl shadow-indigo-100 border border-slate-100">
         <div class="text-center mb-8">
-            <div class="inline-block p-4 bg-indigo-600/20 rounded-full mb-4">
+            <div class="inline-block p-4 bg-indigo-50 rounded-full mb-4 text-indigo-600">
                 <span class="text-3xl">📧</span>
             </div>
-            <h2 class="text-2xl font-black uppercase">Aktivasi Guru</h2>
-            <p class="text-gray-500 text-[10px] tracking-widest mt-2">MASUKKAN KODE OTP DARI EMAIL ANDA</p>
+            <h2 class="text-2xl font-bold uppercase text-slate-800">Aktivasi Guru</h2>
+            <p class="text-slate-400 text-[10px] tracking-widest mt-2 font-bold">MASUKKAN KODE OTP DARI EMAIL ANDA</p>
         </div>
 
         <% if (msg) { %>
-            <div class="bg-indigo-600/20 border border-indigo-500/50 text-indigo-200 p-4 rounded-2xl mb-6 text-xs text-center font-bold uppercase">
+            <div class="bg-indigo-50 text-indigo-600 p-4 rounded-xl mb-6 text-xs text-center font-bold border border-indigo-100">
                 <%= msg %>
             </div>
         <% } %>
 
         <form action="/auth/activate-guru" method="POST" class="space-y-6">
             <div class="space-y-1">
-                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase tracking-widest">Email Terdaftar</label>
+                <label class="text-[11px] font-bold text-slate-400 ml-1 uppercase tracking-wider">Email Terdaftar</label>
                 <input name="email" type="email" value="<%= email %>" readonly
-                    class="w-full bg-black/30 border border-white/5 p-4 rounded-xl text-center text-gray-400 font-bold outline-none cursor-not-allowed">
+                    class="w-full bg-slate-100 border border-slate-200 p-4 rounded-xl text-center text-slate-500 font-bold outline-none cursor-not-allowed">
             </div>
 
             <div class="space-y-1">
-                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase tracking-widest">Kode OTP 6-Digit</label>
+                <label class="text-[11px] font-bold text-slate-400 ml-1 uppercase tracking-wider">Kode OTP 6-Digit</label>
                 <input name="otp" type="text" maxlength="6" placeholder="000000" 
-                    class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-indigo-500 text-center text-3xl tracking-[0.3em] font-black" required>
+                    class="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl outline-none focus:border-indigo-500 focus:bg-white text-center text-3xl tracking-[0.5em] font-bold text-slate-800 transition-all placeholder:text-slate-200" required>
             </div>
 
             <button type="submit" 
-                class="w-full bg-indigo-600 py-5 rounded-2xl font-black text-xl hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/30 uppercase active:scale-95">
+                class="w-full bg-indigo-600 py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 uppercase active:scale-95 text-white tracking-wide">
                 Aktifkan Sekarang
             </button>
         </form>
 
-        <p class="text-center mt-8 text-[10px] text-gray-600 font-bold uppercase tracking-widest">
-            Bukan akun Anda? <a href="/register-guru" class="text-indigo-500">Daftar Ulang</a>
+        <p class="text-center mt-8 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+            Bukan akun Anda? <a href="/register-guru" class="text-indigo-600 hover:underline">Daftar Ulang</a>
         </p>
     </div>
 </body>
