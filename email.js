@@ -1,7 +1,25 @@
+// FILE: email.js
 const Brevo = require('@getbrevo/brevo');
 
 const sendMail = async (toEmail, subject, content) => {
-  // Setup API
+  
+  // ========================================================
+  // 🛠️ LOGIKA DUMMY (PENDUKUNG SIMULASI)
+  // Jika API Key tidak ada, sistem tidak akan crash/error.
+  // ========================================================
+  if (!process.env.BREVO_API_KEY || process.env.BREVO_API_KEY === 'dummy') {
+    console.log("--------------------------------------------------");
+    console.log("📩 [DUMMY MODE] SIMULASI EMAIL AKTIF");
+    console.log(`KE      : ${toEmail}`);
+    console.log(`SUBJEK  : ${subject}`);
+    console.log(`ISI     : ${content.replace(/<[^>]*>?/gm, '').substring(0, 50)}...`);
+    console.log("--------------------------------------------------");
+    return true; // Berhenti di sini, jangan lanjut ke Brevo
+  }
+
+  // ========================================================
+  // 🚀 KONEKSI ASLI (TIDAK DIUBAH)
+  // ========================================================
   let defaultClient = Brevo.ApiClient.instance;
   let apiKey = defaultClient.authentications['api-key'];
   apiKey.apiKey = process.env.BREVO_API_KEY;
@@ -21,7 +39,6 @@ const sendMail = async (toEmail, subject, content) => {
         </div>
       </div>
     `,
-    // PENGIRIM: Email Pak Haji
     sender: { name: "Admin Global School", email: "azhardax94@gmail.com" },
     to: [{ email: toEmail }]
   };
