@@ -38,7 +38,7 @@
             position: absolute;
             height: 100%;
             width: 50%;
-            background: #3b82f6; /* Warna Blue */
+            background: #3b82f6; 
             animation: loading 1.5s infinite ease-in-out;
         }
         @keyframes loading {
@@ -74,7 +74,7 @@
             </div>
         <% } %>
 
-        <form action="/auth/login" method="POST" class="space-y-4"> 
+        <form action="/auth/login-guru" method="POST" class="space-y-4"> 
 
             <div class="space-y-1">
                 <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase tracking-widest">Email Terdaftar</label>
@@ -94,8 +94,8 @@
         </form>
 
         <div class="mt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-bold text-gray-500 tracking-widest uppercase">
-            <a href="/register-siswa" class="hover:text-blue-400 transition-colors">Daftar Akun Baru</a>
-            <a href="/forget-siswa" class="hover:text-blue-400 transition-colors">Lupa Password?</a>
+            <a href="/register-guru" class="hover:text-blue-400 transition-colors">Daftar Akun Guru</a>
+            <a href="/forget" class="hover:text-blue-400 transition-colors">Lupa Password?</a>
         </div>
 
         <div class="mt-8 pt-6 border-t border-white/5 text-center">
