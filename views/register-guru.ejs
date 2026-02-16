@@ -68,6 +68,12 @@
             <div class="text-3xl opacity-30">🛡️</div>
         </div>
 
+        <% if (msg) { %>
+            <div class="bg-red-500/10 border border-red-500/50 text-red-400 p-4 rounded-2xl mb-6 text-xs text-center font-bold uppercase tracking-widest">
+                <%= msg %>
+            </div>
+        <% } %>
+
         <form action="/auth/register-guru" method="POST" class="space-y-4">
             <div class="space-y-1">
                 <label class="text-[10px] font-bold text-blue-500/60 ml-2 uppercase tracking-tighter">Kode Unik Sekolah (Minta ke Admin)</label>
@@ -95,7 +101,7 @@
             
             <button type="submit" 
                 class="w-full bg-blue-600 py-5 rounded-2xl font-black text-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/30 mt-4 uppercase text-white active:scale-95">
-                Aktifkan Akun Guru
+                Daftar & Terima OTP
             </button>
         </form>
 
@@ -118,5 +124,4 @@
     </script>
 
 </body>
-</html>
 </html>
