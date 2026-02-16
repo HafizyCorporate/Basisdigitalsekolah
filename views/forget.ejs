@@ -1,9 +1,14 @@
 <!DOCTYPE html>
 <html>
-<head><script src="https://cdn.tailwindcss.com"></script></head>
-<body class="bg-[#050505] text-white flex items-center justify-center min-h-screen">
-    <div class="bg-white/5 border border-white/10 p-12 rounded-[40px] w-[450px] text-center shadow-2xl">
-        <h1 class="text-4xl font-black text-amber-500 mb-6">PULIHKAN KODE</h1>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#050505] text-white flex items-center justify-center min-h-screen p-4">
+    
+    <div class="bg-white/5 border border-white/10 p-8 md:p-12 rounded-[30px] md:rounded-[40px] w-full max-w-[450px] text-center shadow-2xl">
+        
+        <h1 class="text-3xl md:text-4xl font-black text-amber-500 mb-6">PULIHKAN KODE</h1>
         
         <% if (msg) { %>
             <p class="bg-amber-500/20 text-amber-200 p-4 rounded-xl mb-6 border border-amber-500/50 text-sm text-center font-bold">
@@ -11,15 +16,20 @@
             </p>
         <% } %>
 
-        <p class="text-gray-400 text-base mb-8">Kode akan dikirim dari azhardax94@gmail.com ke email bapak.</p>
+        <p class="text-gray-400 text-sm md:text-base mb-8 px-2">Kode akan dikirim dari azhardax94@gmail.com ke email bapak.</p>
         
-        <form action="/auth/forget" method="POST" class="space-y-6">
-            <input name="email" type="email" placeholder="EMAIL ANDA" class="w-full bg-black/50 border border-white/10 p-6 rounded-2xl outline-none focus:border-amber-500 text-xl" required>
+        <form action="/auth/forget" method="POST" class="space-y-4 md:space-y-6">
+            <input name="email" type="email" placeholder="EMAIL ANDA" 
+                class="w-full bg-black/50 border border-white/10 p-4 md:p-6 rounded-2xl outline-none focus:border-amber-500 text-lg md:text-xl text-center" required>
             
-            <button class="w-full bg-amber-600 py-6 rounded-2xl font-black text-2xl hover:bg-amber-500 transition-all">KIRIM KODE</button>
+            <button class="w-full bg-amber-600 py-4 md:py-6 rounded-2xl font-black text-xl md:text-2xl hover:bg-amber-500 transition-all">
+                KIRIM KODE
+            </button>
         </form>
         
-        <a href="/" class="block mt-8 text-sm text-gray-500 font-bold tracking-widest">LOGIN</a>
+        <a href="/" class="block mt-8 text-xs md:text-sm text-gray-500 font-bold tracking-widest uppercase hover:text-white transition-colors">
+            ⬅ LOGIN
+        </a>
     </div>
 </body>
 </html>
