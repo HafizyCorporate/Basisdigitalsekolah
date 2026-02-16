@@ -52,7 +52,7 @@ app.get('/login', (req, res) => res.render('login', { msg: null }));
 app.get('/register', (req, res) => res.render('register', { msg: null }));
 app.get('/forget', (req, res) => res.render('forget', { msg: null }));
 
-// FIX RUTE: REGISTER GURU (Sebelumnya tidak ada)
+// FIX RUTE: REGISTER GURU
 app.get('/register-guru', (req, res) => res.render('register-guru', { msg: null }));
 
 // RUTE SISWA
@@ -67,7 +67,7 @@ app.get('/forget-siswa', (req, res) => res.render('forget_siswa', { msg: null })
 app.post('/auth/register', async (req, res) => {
   const { nama, email, pass } = req.body;
   const kode = "SCH-" + Math.random().toString(36).substring(2, 7).toUpperCase();
-  const otp = generateOTP(); // OTP untuk verifikasi
+  const otp = generateOTP(); 
   try {
     const hashed = await bcrypt.hash(pass, 10);
     await pool.query(
@@ -86,13 +86,11 @@ app.post('/auth/register', async (req, res) => {
   } catch (err) { res.status(500).send("Error Daftar: " + err.message); }
 });
 
-// LOGIKA REGISTER GURU (BARU)
 app.post('/auth/register-guru', async (req, res) => {
   const { nama, email, pass, kode_sekolah } = req.body;
   const otp = generateOTP();
   try {
     const hashed = await bcrypt.hash(pass, 10);
-    // Cek dulu apakah kode sekolah valid
     const checkSekolah = await pool.query('SELECT * FROM global_instansi WHERE kode_instansi = $1', [kode_sekolah]);
     if(checkSekolah.rows.length === 0) return res.render('register-guru', { msg: "Kode Sekolah Tidak Valid!" });
 
@@ -105,6 +103,7 @@ app.post('/auth/register-guru', async (req, res) => {
   } catch (err) { res.render('register-guru', { msg: "Email sudah terdaftar!" }); }
 });
 
+// LOGIN ADMIN/INSTANSI (MENGGUNAKAN KODE)
 app.post('/auth/login', async (req, res) => {
   const { kode, email, pass } = req.body;
   try {
@@ -114,6 +113,23 @@ app.post('/auth/login', async (req, res) => {
     if (!isMatch) return res.render('login', { msg: "Password salah!" });
     res.render('dashboard', { instansi: result.rows[0].nama_instansi, kode: kode });
   } catch (err) { res.send(err.message); }
+});
+
+// --- PERBAIKAN: LOGIN KHUSUS GURU (HANYA EMAIL & PASS) ---
+app.post('/auth/login-guru', async (req, res) => {
+  const { email, pass } = req.body;
+  try {
+    const result = await pool.query('SELECT * FROM global_guru WHERE email = $1', [email]);
+    if (result.rows.length === 0) return res.render('login', { msg: "Akun Guru tidak ditemukan!" });
+    
+    const isMatch = await bcrypt.compare(pass, result.rows[0].password);
+    if (!isMatch) return res.render('login', { msg: "Password Guru salah!" });
+
+    const infoSekolah = await pool.query('SELECT nama_instansi FROM global_instansi WHERE kode_instansi = $1', [result.rows[0].kode_sekolah]);
+    const namaSekolah = infoSekolah.rows.length > 0 ? infoSekolah.rows[0].nama_instansi : "Global School";
+
+    res.render('dashboard', { instansi: namaSekolah, kode: result.rows[0].kode_sekolah });
+  } catch (err) { res.render('login', { msg: "Terjadi kesalahan sistem login guru." }); }
 });
 
 app.post('/auth/forget', async (req, res) => {
