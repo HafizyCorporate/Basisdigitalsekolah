@@ -14,6 +14,12 @@ const { processAI } = require('./ai');
 const { sendMail } = require('./email');
 
 const app = express();
+
+// --- PERBAIKAN PENTING: TRUST PROXY ---
+// Ini untuk mengatasi error 'X-Forwarded-For' di Railway/hosting 
+// agar express-rate-limit bisa membaca IP user dengan benar.
+app.set('trust proxy', 1); 
+
 const server = http.createServer(app);
 const io = new Server(server);
 
@@ -42,26 +48,22 @@ initDb();
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 // ==========================================
-// 🎯 1. ROUTES TAMPILAN (EJS) - SERAGAM & RESPONSIVE
+// 🎯 1. ROUTES TAMPILAN (EJS) - TETAP SAMA
 // ==========================================
 
 app.get('/', (req, res) => res.render('landing'));
 
-// RUTE GURU / INSTANSI
 app.get('/login', (req, res) => res.render('login', { msg: null }));
 app.get('/register', (req, res) => res.render('register', { msg: null }));
 app.get('/forget', (req, res) => res.render('forget', { msg: null }));
-
-// FIX RUTE: REGISTER GURU
 app.get('/register-guru', (req, res) => res.render('register-guru', { msg: null }));
 
-// RUTE SISWA
 app.get('/login-siswa', (req, res) => res.render('login_siswa', { msg: null }));
 app.get('/register-siswa', (req, res) => res.render('register_siswa', { msg: null }));
 app.get('/forget-siswa', (req, res) => res.render('forget_siswa', { msg: null }));
 
 // ==========================================
-// 👨‍🏫 2. LOGIKA GURU / INSTANSI / ADMIN
+// 👨‍🏫 2. LOGIKA GURU / INSTANSI / ADMIN - TETAP SAMA
 // ==========================================
 
 app.post('/auth/register', async (req, res) => {
@@ -103,7 +105,6 @@ app.post('/auth/register-guru', async (req, res) => {
   } catch (err) { res.render('register-guru', { msg: "Email sudah terdaftar!" }); }
 });
 
-// LOGIN ADMIN/INSTANSI (MENGGUNAKAN KODE)
 app.post('/auth/login', async (req, res) => {
   const { kode, email, pass } = req.body;
   try {
@@ -115,7 +116,6 @@ app.post('/auth/login', async (req, res) => {
   } catch (err) { res.send(err.message); }
 });
 
-// --- PERBAIKAN: LOGIN KHUSUS GURU (HANYA EMAIL & PASS) ---
 app.post('/auth/login-guru', async (req, res) => {
   const { email, pass } = req.body;
   try {
@@ -145,7 +145,7 @@ app.post('/auth/forget', async (req, res) => {
 });
 
 // ==========================================
-// 🎓 3. LOGIKA SISWA (TERKONEKSI BREVO & OTP)
+// 🎓 3. LOGIKA SISWA - TETAP SAMA
 // ==========================================
 
 app.post('/auth/register-siswa', async (req, res) => {
@@ -186,7 +186,7 @@ app.post('/auth/forget-siswa', async (req, res) => {
 });
 
 // ==========================================
-// 🤖 4. API UNTUK AI & SERVER RUN
+// 🤖 4. API UNTUK AI & SERVER RUN - TETAP SAMA
 // ==========================================
 
 app.post('/api/generate', async (req, res) => {
@@ -196,6 +196,7 @@ app.post('/api/generate', async (req, res) => {
   } catch (err) { res.status(500).json({ error: "AI sedang sibuk." }); }
 });
 
+// Tetap menggunakan 8080 sebagai default jika env PORT tidak ada
 const PORT = process.env.PORT || 8080; 
 server.listen(PORT, () => {
   console.log(`
@@ -205,6 +206,7 @@ server.listen(PORT, () => {
   📍 Port     : ${PORT}
   📧 Email    : Brevo Connected (OTP Ready)
   📦 DB       : PostgreSQL Connected
+  🛡️ Proxy    : Trusted (Ready for Railway)
   =========================================
   `);
 });
