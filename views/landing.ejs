@@ -5,26 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Global School AI - Portal Utama</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            background-image: radial-gradient(#e0f2fe 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+    </style>
 </head>
-<body class="bg-[#020202] text-white min-h-screen flex items-center justify-center p-6">
+<body class="text-slate-700 min-h-screen flex items-center justify-center p-6">
     <div class="max-w-5xl w-full grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        <a href="/register" class="group bg-white/5 border border-white/10 p-8 rounded-[40px] hover:bg-blue-600/10 hover:border-blue-500/50 transition-all text-center">
-            <div class="text-4xl mb-4">🏫</div>
-            <h3 class="text-xl font-black text-blue-500 group-hover:text-blue-400">ADMIN SEKOLAH</h3>
-            <p class="text-gray-500 text-xs mt-2 uppercase font-bold tracking-widest">Daftar Instansi Baru</p>
+        <a href="/register" class="group bg-white border border-slate-200 p-8 rounded-[30px] shadow-lg hover:shadow-blue-200 hover:-translate-y-1 transition-all duration-300 text-center relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 bg-blue-600"></div>
+            <div class="text-5xl mb-4 bg-blue-50 w-20 h-20 mx-auto flex items-center justify-center rounded-full text-blue-600 group-hover:scale-110 transition-transform">🏛️</div>
+            <h3 class="text-xl font-bold text-slate-800 group-hover:text-blue-600">ADMIN SEKOLAH</h3>
+            <p class="text-slate-400 text-xs mt-2 uppercase font-semibold tracking-widest">Daftar Instansi Baru</p>
         </a>
 
-        <a href="/register-guru" class="group bg-white/5 border border-white/10 p-8 rounded-[40px] hover:bg-indigo-600/10 hover:border-indigo-500/50 transition-all text-center">
-            <div class="text-4xl mb-4">👨‍🏫</div>
-            <h3 class="text-xl font-black text-indigo-500 group-hover:text-indigo-400">GURU / STAF</h3>
-            <p class="text-gray-500 text-xs mt-2 uppercase font-bold tracking-widest">Gabung ke Sekolah</p>
+        <a href="/register-guru" class="group bg-white border border-slate-200 p-8 rounded-[30px] shadow-lg hover:shadow-indigo-200 hover:-translate-y-1 transition-all duration-300 text-center relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 bg-indigo-600"></div>
+            <div class="text-5xl mb-4 bg-indigo-50 w-20 h-20 mx-auto flex items-center justify-center rounded-full text-indigo-600 group-hover:scale-110 transition-transform">👨‍🏫</div>
+            <h3 class="text-xl font-bold text-slate-800 group-hover:text-indigo-600">GURU / STAF</h3>
+            <p class="text-slate-400 text-xs mt-2 uppercase font-semibold tracking-widest">Gabung ke Sekolah</p>
         </a>
 
-        <a href="/register-siswa" class="group bg-white/5 border border-white/10 p-8 rounded-[40px] hover:bg-emerald-600/10 hover:border-emerald-500/50 transition-all text-center">
-            <div class="text-4xl mb-4">🎓</div>
-            <h3 class="text-xl font-black text-emerald-500 group-hover:text-emerald-400">SISWA</h3>
-            <p class="text-gray-500 text-xs mt-2 uppercase font-bold tracking-widest">Gabung Kelas Belajar</p>
+        <a href="/register-siswa" class="group bg-white border border-slate-200 p-8 rounded-[30px] shadow-lg hover:shadow-sky-200 hover:-translate-y-1 transition-all duration-300 text-center relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 bg-sky-500"></div>
+            <div class="text-5xl mb-4 bg-sky-50 w-20 h-20 mx-auto flex items-center justify-center rounded-full text-sky-500 group-hover:scale-110 transition-transform">🎓</div>
+            <h3 class="text-xl font-bold text-slate-800 group-hover:text-sky-500">SISWA</h3>
+            <p class="text-slate-400 text-xs mt-2 uppercase font-semibold tracking-widest">Gabung Kelas Belajar</p>
         </a>
 
     </div>
