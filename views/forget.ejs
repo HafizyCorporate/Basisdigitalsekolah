@@ -6,69 +6,39 @@
     <title>Pulihkan Akses - Global School AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Animasi Masuk */
         @keyframes popIn {
             from { opacity: 0; transform: scale(0.9) translateY(20px); }
             to { opacity: 1; transform: scale(1) translateY(0); }
         }
         .animate-pop { animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-
-        /* Splash Screen Layer */
         #splash {
-            position: fixed;
-            inset: 0;
-            background: #050505;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            position: fixed; inset: 0; background: #ffffff; z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
             transition: opacity 0.8s ease-out, visibility 0.8s;
         }
-        
-        .loader-bar {
-            width: 150px;
-            height: 2px;
-            background: rgba(255,255,255,0.1);
-            position: relative;
-            overflow: hidden;
-            margin-top: 20px;
-        }
-        .loader-progress {
-            position: absolute;
-            height: 100%;
-            width: 50%;
-            background: #f59e0b; /* Warna Amber */
-            animation: loading 1.5s infinite ease-in-out;
-        }
-        @keyframes loading {
-            from { left: -50%; }
-            to { left: 100%; }
-        }
+        .loader-bar { width: 150px; height: 3px; background: #e2e8f0; position: relative; overflow: hidden; margin-top: 20px; border-radius: 10px; }
+        .loader-progress { position: absolute; height: 100%; width: 50%; background: #f59e0b; animation: loading 1.5s infinite ease-in-out; }
+        @keyframes loading { from { left: -50%; } to { left: 100%; } }
+        body { background-color: #fffbeb; }
     </style>
 </head>
-<body class="bg-[#050505] text-white flex items-center justify-center min-h-screen p-4 py-10 overflow-hidden">
+<body class="text-slate-800 flex items-center justify-center min-h-screen p-4 py-10 overflow-hidden font-sans">
 
     <div id="splash">
-        <div class="text-5xl mb-4 animate-bounce">🔑</div>
-        <h2 class="text-sm font-black tracking-[0.4em] uppercase text-amber-500">Security System</h2>
-        <div class="loader-bar">
-            <div class="loader-progress"></div>
-        </div>
-        <p class="text-[9px] text-gray-600 mt-4 italic font-mono uppercase">"Kunci pengetahuan adalah bertanya"</p>
+        <div class="text-6xl mb-4 animate-bounce">🔑</div>
+        <h2 class="text-sm font-bold tracking-[0.3em] uppercase text-amber-500">Security System</h2>
+        <div class="loader-bar"><div class="loader-progress"></div></div>
     </div>
 
-    <div class="animate-pop bg-white/5 border border-white/10 p-8 md:p-12 rounded-[40px] w-full max-w-[450px] text-center shadow-2xl relative z-10">
+    <div class="animate-pop bg-white p-8 md:p-12 rounded-[30px] w-full max-w-[450px] text-center shadow-2xl shadow-amber-100 border border-slate-100 relative z-10">
         
-        <div class="text-4xl mb-4 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]">🔑</div>
+        <div class="text-5xl mb-4 text-amber-400">🔑</div>
         
-        <h1 class="text-2xl md:text-3xl font-black text-amber-500 mb-2 uppercase tracking-tighter">Pulihkan Akses</h1>
-        <p class="text-gray-500 text-[10px] mb-8 font-bold uppercase tracking-widest leading-relaxed">
-            Instruksi pemulihan sistem Global School AI.
-        </p>
+        <h1 class="text-2xl md:text-3xl font-bold text-slate-800 mb-2 uppercase tracking-tight">Pulihkan Akses</h1>
+        <p class="text-slate-400 text-[10px] mb-8 font-bold uppercase tracking-widest leading-relaxed">Instruksi pemulihan password</p>
 
         <% if (locals.msg) { %>
-            <div class="bg-amber-500/10 text-amber-200 p-4 rounded-2xl mb-6 text-center font-bold border border-amber-500/20 text-xs uppercase tracking-wider">
+            <div class="bg-amber-50 text-amber-600 p-4 rounded-xl mb-6 text-center font-bold border border-amber-100 text-xs uppercase tracking-wider">
                 <%= msg %>
             </div>
         <% } %>
@@ -76,45 +46,42 @@
         <% if (typeof step === 'undefined' || step === 1) { %>
             <form action="/auth/forget" method="POST" class="space-y-4">
                 <div class="group relative">
-                    <input name="email" type="email" placeholder="ALAMAT EMAIL ADMIN" 
-                        class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-amber-500 text-lg text-center transition-all placeholder:text-gray-700 font-bold" 
-                        required>
+                    <input name="email" type="email" placeholder="ALAMAT EMAIL TERDAFTAR" 
+                        class="w-full bg-slate-50 border border-slate-200 p-5 rounded-xl outline-none focus:border-amber-400 focus:bg-white text-lg text-center transition-all placeholder:text-slate-300 font-bold text-slate-700" required>
                 </div>
 
                 <button type="submit" 
-                    class="w-full bg-amber-600 py-5 rounded-2xl font-black text-xl hover:bg-amber-500 transition-all shadow-lg shadow-amber-600/20 uppercase mt-2 active:scale-95">
+                    class="w-full bg-amber-500 py-4 rounded-xl font-bold text-xl hover:bg-amber-600 transition-all shadow-lg shadow-amber-200 uppercase mt-2 active:scale-95 text-white tracking-wide">
                     Kirim OTP Bantuan
                 </button>
             </form>
 
         <% } else { %>
-            <form action="/auth/reset-password" method="POST" class="space-y-4">
+            <form action="/auth/reset-password" method="POST" class="space-y-5 text-left">
                 <input type="hidden" name="email" value="<%= email %>">
                 
                 <div class="space-y-2">
-                    <label class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">6-Digit Kode OTP</label>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-1">6-Digit Kode OTP</label>
                     <input name="otp" type="text" placeholder="000000" maxlength="6"
-                        class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-amber-500 text-3xl text-center font-black tracking-[0.3em] transition-all placeholder:text-gray-800" 
-                        required>
+                        class="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl outline-none focus:border-amber-400 focus:bg-white text-3xl text-center font-bold tracking-[0.4em] transition-all placeholder:text-slate-200 text-slate-800" required>
                 </div>
 
                 <div class="space-y-2">
-                    <label class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">Password Baru</label>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-1">Password Baru</label>
                     <input name="newPass" type="password" placeholder="••••••••" 
-                        class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-amber-500 text-lg text-center transition-all placeholder:text-gray-800" 
-                        required>
+                        class="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl outline-none focus:border-amber-400 focus:bg-white text-lg text-center transition-all placeholder:text-slate-300 text-slate-700" required>
                 </div>
 
                 <button type="submit" 
-                    class="w-full bg-green-600 py-5 rounded-2xl font-black text-xl hover:bg-green-500 transition-all shadow-lg shadow-green-600/20 uppercase mt-4 active:scale-95 text-white">
+                    class="w-full bg-emerald-500 py-4 rounded-xl font-bold text-xl hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-200 uppercase mt-4 active:scale-95 text-white tracking-wide">
                     Simpan Password
                 </button>
             </form>
         <% } %>
         
-        <div class="mt-10 pt-6 border-t border-white/5">
-            <a href="/login" class="text-[10px] text-gray-500 hover:text-amber-500 font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
-                <span>⬅</span> Kembali ke Gerbang Login
+        <div class="mt-10 pt-6 border-t border-slate-100">
+            <a href="/login" class="text-[10px] text-slate-400 hover:text-amber-500 font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
+                <span>⬅</span> Kembali ke Login
             </a>
         </div>
     </div>
@@ -126,7 +93,7 @@
                 splash.style.opacity = '0';
                 splash.style.visibility = 'hidden';
                 document.body.style.overflow = 'auto';
-            }, 2000); // Tampil selama 2 detik
+            }, 2000);
         });
     </script>
 </body>
