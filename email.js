@@ -4,8 +4,7 @@ const Brevo = require('@getbrevo/brevo');
 const sendMail = async (toEmail, subject, content) => {
   
   // ========================================================
-  // 🛠️ LOGIKA DUMMY (PENDUKUNG SIMULASI)
-  // Jika API Key tidak ada, sistem tidak akan crash/error.
+  // 🛠️ LOGIKA DUMMY (TETAP DIPERTAHANKAN)
   // ========================================================
   if (!process.env.BREVO_API_KEY || process.env.BREVO_API_KEY === 'dummy') {
     console.log("--------------------------------------------------");
@@ -14,22 +13,23 @@ const sendMail = async (toEmail, subject, content) => {
     console.log(`SUBJEK  : ${subject}`);
     console.log(`ISI     : ${content.replace(/<[^>]*>?/gm, '').substring(0, 50)}...`);
     console.log("--------------------------------------------------");
-    return true; // Berhenti di sini, jangan lanjut ke Brevo
+    return true; 
   }
 
   // ========================================================
-  // 🚀 KONEKSI ASLI (TIDAK DIUBAH)
+  // 🚀 PERBAIKAN KONEKSI (Agar tidak error 'instance' undefined)
   // ========================================================
-  let defaultClient = Brevo.ApiClient.instance;
-  let apiKey = defaultClient.authentications['api-key'];
-  apiKey.apiKey = process.env.BREVO_API_KEY;
+  try {
+    // Inisialisasi API Instance yang benar untuk @getbrevo/brevo
+    const apiInstance = new Brevo.TransactionalEmailsApi();
 
-  const apiInstance = new Brevo.TransactionalEmailsApi();
-  let sendSmtpEmail = new Brevo.SendSmtpEmail();
+    // Cara set API Key yang benar di versi terbaru
+    apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
 
-  sendSmtpEmail = {
-    subject: subject,
-    htmlContent: `
+    let sendSmtpEmail = new Brevo.SendSmtpEmail();
+
+    sendSmtpEmail.subject = subject;
+    sendSmtpEmail.htmlContent = `
       <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
         <div style="background-color: #f4f4f4; padding: 15px; border-radius: 8px;">
           <h2 style="color: #2563eb;">Global School AI System</h2>
@@ -38,16 +38,20 @@ const sendMail = async (toEmail, subject, content) => {
           <p style="font-size: 12px; color: #888;">Email ini dikirim otomatis oleh sistem.</p>
         </div>
       </div>
-    `,
-    sender: { name: "Admin Global School", email: "azhardax94@gmail.com" },
-    to: [{ email: toEmail }]
-  };
+    `;
+    // Sender tetap menggunakan email kamu
+    sendSmtpEmail.sender = { name: "Admin Global School", email: "azhardax94@gmail.com" };
+    sendSmtpEmail.to = [{ email: toEmail }];
 
-  try {
+    // Proses Kirim
     await apiInstance.sendTransacEmail(sendSmtpEmail);
-    console.log(`📧 SUKSES: Email terkirim ke ${toEmail} dari azhardax94@gmail.com`);
+    console.log(`📧 SUKSES: Email terkirim ke ${toEmail}`);
+    return true;
+
   } catch (err) {
-    console.error("❌ GAGAL KIRIM EMAIL:", err);
+    // Menampilkan error lebih detail di log Railway agar mudah dilacak
+    console.error("❌ GAGAL KIRIM EMAIL:", err.response ? err.response.body : err);
+    return false;
   }
 };
 
