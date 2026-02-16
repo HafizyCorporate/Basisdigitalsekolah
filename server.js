@@ -53,12 +53,15 @@ app.get('/', (req, res) => res.render('landing'));
 
 app.get('/login', (req, res) => res.render('login', { msg: null }));
 app.get('/register', (req, res) => res.render('register', { msg: null }));
-app.get('/forget', (req, res) => res.render('forget', { msg: null }));
+
+// Update: Tambahkan default values untuk forget
+app.get('/forget', (req, res) => res.render('forget', { msg: null, step: 1, email: null }));
+
 app.get('/register-guru', (req, res) => res.render('register-guru', { msg: null }));
 
 app.get('/login-siswa', (req, res) => res.render('login_siswa', { msg: null }));
 app.get('/register-siswa', (req, res) => res.render('register_siswa', { msg: null }));
-app.get('/forget-siswa', (req, res) => res.render('forget_siswa', { msg: null }));
+app.get('/forget-siswa', (req, res) => res.render('forget_siswa', { msg: null, step: 1, email: null }));
 
 // TAMBAHAN: Rute Halaman Verifikasi Instansi & Guru
 app.get('/verify', (req, res) => res.render('verify', { msg: null }));
@@ -126,7 +129,6 @@ app.post('/auth/register-guru', async (req, res) => {
     );
     await sendMail(email, "OTP Guru", `<p>Kode OTP Guru Anda: <b>${otp}</b></p>`);
     
-    // PERBAIKAN: Diarahkan ke aktivasi guru, bukan login
     res.render('verify-guru', { 
         msg: `Pendaftaran Guru Berhasil! Masukkan OTP yang dikirim ke ${email}`, 
         email: email 
@@ -134,7 +136,6 @@ app.post('/auth/register-guru', async (req, res) => {
   } catch (err) { res.render('register-guru', { msg: "Email sudah terdaftar!" }); }
 });
 
-// TAMBAHAN: Logika Aktivasi OTP Guru
 app.post('/auth/activate-guru', async (req, res) => {
     const { email, otp } = req.body;
     try {
@@ -144,7 +145,6 @@ app.post('/auth/activate-guru', async (req, res) => {
         );
 
         if (result.rows.length > 0) {
-            // Kosongkan OTP sebagai tanda akun sudah aktif
             await pool.query('UPDATE global_guru SET otp = NULL WHERE email = $1', [email]);
             res.render('login', { msg: "Selamat! Akun Guru Anda telah aktif. Silakan Login." });
         } else {
@@ -182,15 +182,31 @@ app.post('/auth/login-guru', async (req, res) => {
   } catch (err) { res.render('login', { msg: "Terjadi kesalahan sistem login guru." }); }
 });
 
+// LOGIKA FORGET ADMIN (Update: Menambahkan Step 2)
 app.post('/auth/forget', async (req, res) => {
   const { email } = req.body;
   const otp = generateOTP();
   try {
-    const result = await pool.query('UPDATE global_instansi SET otp = $1 WHERE admin_email = $2 RETURNING nama_instansi', [otp, email]);
+    const result = await pool.query('UPDATE global_instansi SET otp = $1 WHERE admin_email = $2 RETURNING admin_email', [otp, email]);
     if (result.rows.length > 0) {
       await sendMail(email, "Reset Akses Admin", `<p>Kode OTP Pemulihan: <b>${otp}</b></p>`);
-      res.render('forget', { msg: "OTP Pemulihan sudah dikirim ke email bapak. Silakan cek." });
-    } else { res.render('forget', { msg: "Email tidak ditemukan!" }); }
+      res.render('forget', { msg: "OTP Pemulihan sudah dikirim ke email bapak.", step: 2, email: email });
+    } else { res.render('forget', { msg: "Email tidak ditemukan!", step: 1, email: null }); }
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+// TAMBAHAN: Logika Ganti Password Admin
+app.post('/auth/reset-password', async (req, res) => {
+  const { email, otp, newPass } = req.body;
+  try {
+    const result = await pool.query('SELECT * FROM global_instansi WHERE admin_email = $1 AND otp = $2', [email, otp]);
+    if (result.rows.length > 0) {
+      const hashed = await bcrypt.hash(newPass, 10);
+      await pool.query('UPDATE global_instansi SET password = $1, otp = NULL WHERE admin_email = $2', [hashed, email]);
+      res.render('login', { msg: "Password berhasil diganti! Silakan login." });
+    } else {
+      res.render('forget', { msg: "OTP Salah!", step: 2, email: email });
+    }
   } catch (err) { res.status(500).send(err.message); }
 });
 
@@ -223,15 +239,31 @@ app.post('/auth/login-siswa', async (req, res) => {
   } catch (err) { res.send(err.message); }
 });
 
+// LOGIKA FORGET SISWA (Update: Menambahkan Step 2)
 app.post('/auth/forget-siswa', async (req, res) => {
   const { email } = req.body;
   const otp = generateOTP();
   try {
-    const result = await pool.query('UPDATE global_siswa SET otp = $1 WHERE email = $2 RETURNING nama_siswa', [otp, email]);
+    const result = await pool.query('UPDATE global_siswa SET otp = $1 WHERE email = $2 RETURNING email', [otp, email]);
     if (result.rows.length > 0) {
       await sendMail(email, "OTP Reset Password Siswa", `<p>Halo, Kode OTP Reset Anda: <b>${otp}</b></p>`);
-      res.render('forget_siswa', { msg: "Kode OTP sudah dikirim ke email kamu." });
-    } else { res.render('forget_siswa', { msg: "Email siswa tidak ditemukan!" }); }
+      res.render('forget_siswa', { msg: "Kode OTP sudah dikirim ke email kamu.", step: 2, email: email });
+    } else { res.render('forget_siswa', { msg: "Email siswa tidak ditemukan!", step: 1, email: null }); }
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+// TAMBAHAN: Logika Ganti Password Siswa
+app.post('/auth/reset-password-siswa', async (req, res) => {
+  const { email, otp, newPass } = req.body;
+  try {
+    const result = await pool.query('SELECT * FROM global_siswa WHERE email = $1 AND otp = $2', [email, otp]);
+    if (result.rows.length > 0) {
+      const hashed = await bcrypt.hash(newPass, 10);
+      await pool.query('UPDATE global_siswa SET password = $1, otp = NULL WHERE email = $2', [hashed, email]);
+      res.render('login_siswa', { msg: "Password siswa berhasil diganti!" });
+    } else {
+      res.render('forget_siswa', { msg: "OTP Salah!", step: 2, email: email });
+    }
   } catch (err) { res.status(500).send(err.message); }
 });
 
