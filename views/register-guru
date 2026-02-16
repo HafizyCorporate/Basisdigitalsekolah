@@ -5,33 +5,118 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daftar Guru - Global School AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Animasi Pop In untuk Jendela Form */
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-pop { animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+        /* Splash Screen Layer */
+        #splash {
+            position: fixed;
+            inset: 0;
+            background: #050505;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease-out, visibility 0.8s;
+        }
+        
+        .loader-bar {
+            width: 150px;
+            height: 2px;
+            background: rgba(255,255,255,0.1);
+            position: relative;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        .loader-progress {
+            position: absolute;
+            height: 100%;
+            width: 50%;
+            background: #3b82f6; /* Warna Blue khas Guru */
+            animation: loading 1.5s infinite ease-in-out;
+        }
+        @keyframes loading {
+            from { left: -50%; }
+            to { left: 100%; }
+        }
+    </style>
 </head>
-<body class="bg-[#050505] text-white flex items-center justify-center min-h-screen p-4 py-10">
-    <div class="bg-white/5 border border-white/10 p-8 md:p-12 rounded-[30px] md:rounded-[40px] w-full max-w-[450px] shadow-2xl border-t-4 border-t-blue-500">
-        <h1 class="text-3xl font-black text-blue-500 mb-2 uppercase">Gabung Guru</h1>
-        <p class="text-gray-500 text-xs mb-8 font-bold uppercase tracking-widest">Mendaftar ke Instansi yang ada</p>
+<body class="bg-[#050505] text-white flex items-center justify-center min-h-screen p-4 py-10 overflow-hidden">
+
+    <div id="splash">
+        <div class="text-5xl mb-4 animate-bounce">👨‍🏫</div>
+        <h2 class="text-sm font-black tracking-[0.4em] uppercase text-blue-500">Teacher Registration</h2>
+        <div class="loader-bar">
+            <div class="loader-progress"></div>
+        </div>
+        <p class="text-[9px] text-gray-600 mt-4 italic font-mono uppercase tracking-[0.2em]">Global School AI System</p>
+    </div>
+
+    <div class="animate-pop bg-white/5 border border-white/10 p-8 md:p-12 rounded-[30px] md:rounded-[40px] w-full max-w-[450px] shadow-2xl shadow-blue-900/10 border-t-4 border-t-blue-500 relative z-10">
+        
+        <div class="flex justify-between items-start mb-8">
+            <div>
+                <h1 class="text-3xl font-black text-blue-500 tracking-tighter uppercase leading-none">Gabung Guru</h1>
+                <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-2">Mendaftar ke Instansi</p>
+            </div>
+            <div class="text-3xl opacity-30">🛡️</div>
+        </div>
 
         <form action="/auth/register-guru" method="POST" class="space-y-4">
             <div class="space-y-1">
                 <label class="text-[10px] font-bold text-blue-500/60 ml-2 uppercase tracking-tighter">Kode Unik Sekolah (Minta ke Admin)</label>
-                <input name="kode_sekolah" placeholder="CONTOH: SCH-XXXXX" class="w-full bg-blue-500/5 border border-blue-500/20 p-5 rounded-2xl outline-none focus:border-blue-500 text-lg font-mono text-blue-400" required>
-            </div>
-            <div class="space-y-1">
-                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase">Nama Lengkap Guru</label>
-                <input name="nama" placeholder="Nama & Gelar" class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none text-lg" required>
-            </div>
-            <div class="space-y-1">
-                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase">Email Guru</label>
-                <input name="email" type="email" placeholder="guru@sekolah.com" class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none text-lg" required>
-            </div>
-            <div class="space-y-1">
-                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase">Password</label>
-                <input name="pass" type="password" placeholder="••••••••" class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none text-lg" required>
+                <input name="kode_sekolah" placeholder="CONTOH: SCH-XXXXX" 
+                    class="w-full bg-blue-500/5 border border-blue-500/20 p-5 rounded-2xl outline-none focus:border-blue-500 text-lg font-mono text-blue-400 placeholder:text-blue-900/50" required>
             </div>
             
-            <button class="w-full bg-blue-600 py-5 rounded-2xl font-black text-xl hover:bg-blue-500 transition-all mt-4 uppercase">Aktifkan Akun Guru</button>
+            <div class="space-y-1">
+                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase tracking-widest">Nama Lengkap Guru</label>
+                <input name="nama" placeholder="Nama & Gelar" 
+                    class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-blue-500 text-lg transition-all placeholder:text-gray-800" required>
+            </div>
+            
+            <div class="space-y-1">
+                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase tracking-widest">Email Guru</label>
+                <input name="email" type="email" placeholder="guru@sekolah.com" 
+                    class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-blue-500 text-lg transition-all placeholder:text-gray-800" required>
+            </div>
+            
+            <div class="space-y-1">
+                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase tracking-widest">Password</label>
+                <input name="pass" type="password" placeholder="••••••••" 
+                    class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-blue-500 text-lg transition-all placeholder:text-gray-800" required>
+            </div>
+            
+            <button type="submit" 
+                class="w-full bg-blue-600 py-5 rounded-2xl font-black text-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/30 mt-4 uppercase text-white active:scale-95">
+                Aktifkan Akun Guru
+            </button>
         </form>
-        <a href="/login" class="block mt-8 text-center text-xs text-gray-500 font-bold uppercase tracking-widest hover:text-white transition-colors">Sudah punya akun? Login</a>
+
+        <div class="mt-8 pt-6 border-t border-white/5 text-center">
+            <a href="/login" class="text-[10px] text-gray-500 hover:text-white font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
+                Sudah punya akun? <span class="text-blue-500">Login</span>
+            </a>
+        </div>
     </div>
+
+    <script>
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const splash = document.getElementById('splash');
+                splash.style.opacity = '0';
+                splash.style.visibility = 'hidden';
+                document.body.style.overflow = 'auto';
+            }, 1500); // Tampil selama 1.5 detik
+        });
+    </script>
+
 </body>
+</html>
 </html>
