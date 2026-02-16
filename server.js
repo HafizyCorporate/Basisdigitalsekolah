@@ -4,6 +4,11 @@ const http = require('http');
 const { Server } = require('socket.io');
 const bcrypt = require('bcryptjs');
 
+// --- SECURITY ADD-ON (IMPORT) ---
+const helmet = require('helmet'); // Untuk header keamanan
+const rateLimit = require('express-rate-limit'); // Untuk batasi spam request
+// --------------------------------
+
 // Import file yang dipisah (Gudang, Otak, Kurir)
 const { pool, initDb } = require('./db');
 const { processAI } = require('./ai');
@@ -12,6 +17,22 @@ const { sendMail } = require('./email');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+
+// --- SECURITY ADD-ON (MIDDLEWARE) ---
+// 1. HELMET: Melindungi header HTTP
+// contentSecurityPolicy: false -> Agar Tailwind CDN di EJS tidak terblokir
+app.use(helmet({
+  contentSecurityPolicy: false, 
+}));
+
+// 2. RATE LIMIT: Batasi 100 request per 15 menit per IP
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 100, 
+  message: "Terlalu banyak permintaan dari IP ini, coba lagi nanti."
+});
+app.use(limiter);
+// ------------------------------------
 
 // Setup Engine Tampilan
 app.set('view engine', 'ejs');
