@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifikasi OTP - Global School AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Animasi Pop In agar tampilan halus */
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-pop { animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+        /* Background Gelap Khas Global School */
+        body {
+            background-color: #050505;
+            background-image: 
+                radial-gradient(circle at 20% 35%, rgba(37, 99, 235, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 80% 65%, rgba(29, 78, 216, 0.05) 0%, transparent 40%);
+        }
+    </style>
+</head>
+<body class="text-white min-h-screen flex items-center justify-center p-6">
+
+    <div class="max-w-md w-full bg-white/5 border border-white/10 p-10 rounded-[40px] shadow-2xl backdrop-blur-md animate-pop">
+        
+        <div class="flex justify-center mb-6">
+            <div class="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center shadow-lg shadow-blue-600/40 rotate-3 group-hover:rotate-0 transition-transform">
+                <span class="text-4xl">🔐</span>
+            </div>
+        </div>
+
+        <h2 class="text-3xl font-black text-center mb-2 tracking-tighter">VERIFIKASI OTP</h2>
+        <p class="text-gray-500 text-center text-xs uppercase tracking-widest mb-8 font-bold">Cek Inbox Email Kamu</p>
+
+        <% if (msg) { %>
+            <div class="bg-blue-600/10 border border-blue-500/50 text-blue-300 p-4 rounded-2xl mb-6 text-xs text-center font-bold uppercase tracking-wider">
+                <%= msg %>
+            </div>
+        <% } %>
+
+        <form action="/auth/verify" method="POST" class="space-y-4">
+            
+            <div class="space-y-1">
+                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase tracking-widest">Kode Instansi</label>
+                <input name="kode" type="text" placeholder="SCH-XXXXX" 
+                    class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-blue-500 text-center font-black text-xl transition-all placeholder:text-gray-800" 
+                    required>
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase tracking-widest">6-Digit OTP</label>
+                <input name="otp" type="text" maxlength="6" placeholder="000000" 
+                    class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-blue-500 text-center text-3xl tracking-[0.3em] font-black transition-all placeholder:text-gray-800" 
+                    required>
+            </div>
+
+            <button type="submit" 
+                class="w-full bg-blue-600 py-5 rounded-2xl font-black text-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/30 uppercase mt-4 active:scale-95">
+                Konfirmasi Akun
+            </button>
+        </form>
+
+        <div class="mt-10 pt-6 border-t border-white/5 text-center">
+            <p class="text-[10px] text-gray-600 uppercase font-bold tracking-widest mb-4">Tidak menerima kode?</p>
+            <a href="/register" class="text-blue-500 hover:text-white transition-colors text-[10px] font-black uppercase tracking-widest">
+                Daftar Ulang Kembali
+            </a>
+        </div>
+    </div>
+
+</body>
+</html>
