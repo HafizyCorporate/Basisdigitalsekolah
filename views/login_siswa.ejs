@@ -6,14 +6,14 @@
     <title>Login Siswa - Global School AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-[#050505] text-white flex items-center justify-center min-h-screen p-4">
+<body class="bg-[#050505] text-white flex items-center justify-center min-h-screen p-4 py-10">
     
-    <div class="bg-white/5 border border-white/10 p-6 md:p-12 rounded-[30px] md:rounded-[40px] w-full max-w-[450px] shadow-2xl shadow-emerald-900/20">
+    <div class="bg-white/5 border border-white/10 p-6 md:p-12 rounded-[30px] md:rounded-[40px] w-full max-w-[450px] shadow-2xl shadow-emerald-900/20 my-auto">
         
-        <h1 class="text-3xl md:text-4xl font-black text-emerald-500 mb-6 md:mb-8 tracking-tighter">LOGIN SISWA</h1>
+        <h1 class="text-3xl md:text-4xl font-black text-emerald-500 mb-6 md:mb-8 tracking-tighter text-center md:text-left">LOGIN SISWA</h1>
 
         <% if (msg) { %>
-            <div class="bg-red-500/20 text-red-200 p-4 rounded-2xl mb-6 text-center font-bold border border-red-500/30 text-sm">
+            <div class="bg-red-500/20 text-red-200 p-4 rounded-xl mb-6 text-center font-bold border border-red-500/30 text-sm">
                 <%= msg %>
             </div>
         <% } %>
@@ -32,17 +32,17 @@
                     class="w-full bg-black/50 border border-white/10 p-4 md:p-6 rounded-2xl outline-none focus:border-emerald-500 text-lg md:text-xl" required>
             </div>
             
-            <button class="w-full bg-emerald-600 py-4 md:py-6 rounded-2xl font-black text-xl md:text-2xl hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/30 uppercase mt-2">
+            <button class="w-full bg-emerald-600 py-4 md:py-6 rounded-2xl font-black text-xl md:text-2xl hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/30 uppercase mt-4">
                 Masuk Belajar
             </button>
         </form>
 
-        <div class="mt-6 md:mt-8 flex justify-between items-center text-[10px] md:text-sm font-bold text-gray-500 tracking-widest uppercase">
-            <a href="/register-siswa" class="hover:text-emerald-400 transition-colors">Daftar Akun</a>
-            <a href="/forget-siswa" class="hover:text-emerald-400 transition-colors">Lupa Password?</a>
+        <div class="mt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs md:text-sm font-bold text-gray-500 tracking-widest uppercase text-center">
+            <a href="/register-siswa" class="hover:text-emerald-400 transition-colors p-2">Daftar Akun</a>
+            <a href="/forget-siswa" class="hover:text-emerald-400 transition-colors p-2">Lupa Password?</a>
         </div>
 
-        <a href="/" class="block mt-8 md:mt-10 text-center text-[10px] text-gray-600 hover:text-white font-bold uppercase tracking-[0.2em]">
+        <a href="/" class="block mt-8 md:mt-10 text-center text-[10px] md:text-xs text-gray-600 hover:text-white font-bold uppercase tracking-[0.2em] pb-2">
             ⬅ Kembali Ke Menu Utama
         </a>
     </div>
