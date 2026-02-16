@@ -6,109 +6,82 @@
     <title>Daftar Siswa - Global School AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Animasi Jendela Masuk */
         @keyframes popIn {
             from { opacity: 0; transform: scale(0.95) translateY(20px); }
             to { opacity: 1; transform: scale(1) translateY(0); }
         }
         .animate-pop { animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
-        /* Splash Screen Layer */
         #splash {
-            position: fixed;
-            inset: 0;
-            background: #050505;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            position: fixed; inset: 0; background: #ffffff; z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
             transition: opacity 0.8s ease-out, visibility 0.8s;
         }
+        .loader-bar { width: 150px; height: 3px; background: #e2e8f0; position: relative; overflow: hidden; margin-top: 20px; border-radius: 10px; }
+        .loader-progress { position: absolute; height: 100%; width: 50%; background: #0ea5e9; animation: loading 1.5s infinite ease-in-out; }
+        @keyframes loading { from { left: -50%; } to { left: 100%; } }
         
-        .loader-bar {
-            width: 150px;
-            height: 2px;
-            background: rgba(255,255,255,0.1);
-            position: relative;
-            overflow: hidden;
-            margin-top: 20px;
-        }
-        .loader-progress {
-            position: absolute;
-            height: 100%;
-            width: 50%;
-            background: #10b981; /* Emerald */
-            animation: loading 1.5s infinite ease-in-out;
-        }
-        @keyframes loading {
-            from { left: -50%; }
-            to { left: 100%; }
-        }
+        body { background-color: #f0f9ff; }
     </style>
 </head>
-<body class="bg-[#050505] text-white flex items-center justify-center min-h-screen p-4 py-10 overflow-hidden">
+<body class="text-slate-800 flex items-center justify-center min-h-screen p-4 py-10 overflow-hidden font-sans">
 
     <div id="splash">
-        <div class="text-5xl mb-4 animate-bounce">🎒</div>
-        <h2 class="text-sm font-black tracking-[0.4em] uppercase text-emerald-500">Student Enrollment</h2>
-        <div class="loader-bar">
-            <div class="loader-progress"></div>
-        </div>
-        <p class="text-[9px] text-gray-600 mt-4 italic font-mono uppercase tracking-widest">Global School AI System</p>
+        <div class="text-6xl mb-4 animate-bounce">🎒</div>
+        <h2 class="text-sm font-bold tracking-[0.3em] uppercase text-sky-500">Student Enrollment</h2>
+        <div class="loader-bar"><div class="loader-progress"></div></div>
     </div>
 
-    <div class="animate-pop bg-white/5 border border-white/10 p-8 md:p-12 rounded-[30px] md:rounded-[40px] w-full max-w-[450px] shadow-2xl shadow-emerald-900/20 border-t-4 border-t-emerald-500 relative z-10">
+    <div class="animate-pop bg-white p-8 md:p-12 rounded-[30px] w-full max-w-[450px] shadow-2xl shadow-sky-100 border border-slate-100 border-t-4 border-t-sky-500 relative z-10">
         
         <div class="flex justify-between items-start mb-8">
             <div>
-                <h1 class="text-3xl font-black text-emerald-500 tracking-tighter uppercase leading-none">Daftar Siswa</h1>
-                <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-2">Masuk ke Ruang Belajar Digital</p>
+                <h1 class="text-3xl font-bold text-slate-800 tracking-tight">Daftar Siswa</h1>
+                <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-2">Gabung Ruang Belajar</p>
             </div>
-            <div class="text-3xl opacity-30">✨</div>
+            <div class="p-3 bg-sky-50 rounded-xl text-2xl">✨</div>
         </div>
 
         <% if (locals.msg) { %>
-            <div class="mb-6 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/50 text-emerald-200 text-center font-bold text-sm tracking-wide">
+            <div class="mb-6 p-4 rounded-xl bg-sky-50 text-sky-600 border border-sky-100 text-center font-bold text-xs tracking-wide">
                 <%= msg %>
             </div>
         <% } %>
 
         <form action="/auth/register-siswa" method="POST" class="space-y-4">
-            
             <div class="space-y-1">
-                <label class="text-[10px] font-bold text-emerald-500/60 ml-2 uppercase tracking-tighter">Masukkan Kode Sekolah</label>
+                <label class="text-[11px] font-bold text-sky-500 ml-1 uppercase tracking-wider">Kode Sekolah</label>
                 <input type="text" name="kode_sekolah" placeholder="SCH-XXXXX" 
-                    class="w-full bg-emerald-500/5 border border-emerald-500/20 p-5 rounded-2xl outline-none focus:border-emerald-500 text-lg font-mono text-emerald-400 placeholder:text-emerald-900/30 transition-colors">
+                    class="w-full bg-sky-50 border border-sky-100 p-4 rounded-xl outline-none focus:border-sky-500 text-lg font-mono text-sky-700 placeholder:text-sky-300 transition-colors font-bold">
             </div>
 
             <div class="space-y-1">
-                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase tracking-widest">Nama Lengkap Siswa</label>
+                <label class="text-[11px] font-bold text-slate-400 ml-1 uppercase tracking-wider">Nama Lengkap</label>
                 <input type="text" name="nama" placeholder="Nama Sesuai Absen" 
-                    class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none text-lg focus:border-emerald-500/50 transition-colors placeholder:text-gray-800" required>
+                    class="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl outline-none focus:border-sky-400 focus:bg-white text-lg transition-colors placeholder:text-slate-300 text-slate-700 font-medium" required>
             </div>
 
             <div class="space-y-1">
-                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase tracking-widest">Email Siswa</label>
+                <label class="text-[11px] font-bold text-slate-400 ml-1 uppercase tracking-wider">Email</label>
                 <input type="email" name="email" placeholder="siswa@sekolah.com" 
-                    class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none text-lg focus:border-emerald-500/50 transition-colors placeholder:text-gray-800" required>
+                    class="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl outline-none focus:border-sky-400 focus:bg-white text-lg transition-colors placeholder:text-slate-300 text-slate-700 font-medium" required>
             </div>
 
             <div class="space-y-1">
-                <label class="text-[10px] font-bold text-gray-500 ml-2 uppercase tracking-widest">Buat Password</label>
+                <label class="text-[11px] font-bold text-slate-400 ml-1 uppercase tracking-wider">Password</label>
                 <input type="password" name="pass" placeholder="••••••••" 
-                    class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none text-lg focus:border-emerald-500/50 transition-colors placeholder:text-gray-800" required>
+                    class="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl outline-none focus:border-sky-400 focus:bg-white text-lg transition-colors placeholder:text-slate-300 text-slate-700 font-medium" required>
             </div>
             
             <button type="submit" 
-                class="w-full bg-emerald-600 py-5 rounded-2xl font-black text-xl hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/30 mt-4 uppercase text-white active:scale-95">
+                class="w-full bg-sky-500 py-4 rounded-xl font-bold text-lg hover:bg-sky-600 transition-all shadow-lg shadow-sky-200 mt-4 text-white active:scale-95 uppercase tracking-wide">
                 Gabung Kelas
             </button>
         </form>
 
-        <div class="mt-8 pt-6 border-t border-white/5 text-center">
-            <a href="/login-siswa" class="text-[10px] text-gray-500 hover:text-white font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
-                Sudah punya akun? <span class="text-emerald-500">Login</span>
+        <div class="mt-8 pt-6 border-t border-slate-100 text-center">
+            <a href="/login-siswa" class="text-[10px] font-bold text-slate-400 hover:text-sky-500 uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
+                Sudah punya akun? <span class="text-sky-500 underline decoration-sky-300 underline-offset-4">Login</span>
             </a>
         </div>
     </div>
@@ -120,7 +93,7 @@
                 splash.style.opacity = '0';
                 splash.style.visibility = 'hidden';
                 document.body.style.overflow = 'auto';
-            }, 1500); // Muncul selama 1.5 detik
+            }, 1500);
         });
     </script>
 </body>
