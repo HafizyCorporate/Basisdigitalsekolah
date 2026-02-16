@@ -19,6 +19,7 @@ const initDb = async () => {
     const client = await pool.connect();
     console.log("🔌 Sedang mencoba menghubungkan kabel ke database...");
     
+    // Tabel untuk Guru/Instansi
     await client.query(`
       CREATE TABLE IF NOT EXISTS global_instansi (
         id SERIAL PRIMARY KEY,
@@ -28,9 +29,19 @@ const initDb = async () => {
         password TEXT NOT NULL
       );
     `);
+
+    // TABEL BARU: Untuk Data Siswa
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS global_siswa (
+        id SERIAL PRIMARY KEY,
+        nama_siswa TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL
+      );
+    `);
     
     client.release();
-    console.log("✅ Database Global Ready!");
+    console.log("✅ Database Global (Instansi & Siswa) Ready!");
   } catch (err) { 
     // Tampilkan seluruh objek error agar kita tahu penyebab pastinya
     console.error("❌ DB Error Lengkap:");
