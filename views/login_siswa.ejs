@@ -6,45 +6,26 @@
     <title>Login Siswa - Global School AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-[#050505] text-white flex items-center justify-center min-h-screen p-4 py-10">
-    
-    <div class="bg-white/5 border border-white/10 p-6 md:p-12 rounded-[30px] md:rounded-[40px] w-full max-w-[450px] shadow-2xl shadow-emerald-900/20 my-auto">
-        
-        <h1 class="text-3xl md:text-4xl font-black text-emerald-500 mb-6 md:mb-8 tracking-tighter text-center md:text-left">LOGIN SISWA</h1>
+<body class="bg-[#050505] text-white flex items-center justify-center min-h-screen p-4 py-10 overflow-y-auto">
+    <div class="bg-white/5 border border-white/10 p-8 md:p-12 rounded-[40px] w-full max-w-[450px] shadow-2xl shadow-emerald-900/20">
+        <h1 class="text-3xl font-black text-emerald-500 mb-8 tracking-tighter uppercase">Login Siswa</h1>
 
-        <% if (msg) { %>
+        <% if (locals.msg) { %>
             <div class="bg-red-500/20 text-red-200 p-4 rounded-xl mb-6 text-center font-bold border border-red-500/30 text-sm">
                 <%= msg %>
             </div>
         <% } %>
 
-        <form action="/auth/login-siswa" method="POST" class="space-y-4 md:space-y-6">
-            
-            <div class="space-y-2">
-                <label class="text-[10px] md:text-xs font-bold text-gray-500 ml-2 uppercase tracking-widest">Email Siswa</label>
-                <input name="email" type="email" placeholder="nama@siswa.com" 
-                    class="w-full bg-black/50 border border-white/10 p-4 md:p-6 rounded-2xl outline-none focus:border-emerald-500 text-lg md:text-xl" required>
-            </div>
-            
-            <div class="space-y-2">
-                <label class="text-[10px] md:text-xs font-bold text-gray-500 ml-2 uppercase tracking-widest">Password</label>
-                <input name="pass" type="password" placeholder="••••••••" 
-                    class="w-full bg-black/50 border border-white/10 p-4 md:p-6 rounded-2xl outline-none focus:border-emerald-500 text-lg md:text-xl" required>
-            </div>
-            
-            <button class="w-full bg-emerald-600 py-4 md:py-6 rounded-2xl font-black text-xl md:text-2xl hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/30 uppercase mt-4">
-                Masuk Belajar
-            </button>
+        <form action="/auth/login-siswa" method="POST" class="space-y-4">
+            <input name="email" type="email" placeholder="EMAIL SISWA" class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-emerald-500 text-lg" required>
+            <input name="pass" type="password" placeholder="PASSWORD" class="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-emerald-500 text-lg" required>
+            <button class="w-full bg-emerald-600 py-5 rounded-2xl font-black text-xl hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/30 mt-4 uppercase">Mulai Belajar</button>
         </form>
 
-        <div class="mt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs md:text-sm font-bold text-gray-500 tracking-widest uppercase text-center">
-            <a href="/register-siswa" class="hover:text-emerald-400 transition-colors p-2">Daftar Akun</a>
-            <a href="/forget-siswa" class="hover:text-emerald-400 transition-colors p-2">Lupa Password?</a>
+        <div class="mt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-bold text-gray-500 tracking-widest uppercase">
+            <a href="/register-siswa" class="hover:text-emerald-400">Belum Punya Akun?</a>
+            <a href="/forget-siswa" class="hover:text-emerald-400">Lupa Password?</a>
         </div>
-
-        <a href="/" class="block mt-8 md:mt-10 text-center text-[10px] md:text-xs text-gray-600 hover:text-white font-bold uppercase tracking-[0.2em] pb-2">
-            ⬅ Kembali Ke Menu Utama
-        </a>
     </div>
 </body>
 </html>
