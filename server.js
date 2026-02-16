@@ -268,7 +268,7 @@ app.post('/auth/reset-password-siswa', async (req, res) => {
 });
 
 // ==========================================
-// 🤖 4. API UNTUK AI & SERVER RUN
+// 🤖 4. API UNTUK AI
 // ==========================================
 
 app.post('/api/generate', async (req, res) => {
@@ -277,6 +277,55 @@ app.post('/api/generate', async (req, res) => {
     res.json(data);
   } catch (err) { res.status(500).json({ error: "AI sedang sibuk." }); }
 });
+
+// ==========================================
+// 🚀 5. SOCKET.IO REAL-TIME LOGIC (NEW)
+// ==========================================
+
+io.on('connection', (socket) => {
+  console.log('User Terkoneksi:', socket.id);
+
+  // Masuk ke Room berdasarkan Kode Sekolah
+  socket.on('join-room', (kodeSekolah) => {
+    socket.join(kodeSekolah);
+    console.log(`User masuk ke kelas: ${kodeSekolah}`);
+  });
+
+  // Fitur 1: Live Chat (Tersimpan ke PostgreSQL)
+  socket.on('send-chat', async (data) => {
+    try {
+      // Simpan ke Tabel global_chat
+      await pool.query(
+        'INSERT INTO global_chat (kode_sekolah, pengirim_nama, role, pesan) VALUES ($1, $2, $3, $4)', 
+        [data.kode, data.nama, data.role, data.msg]
+      );
+      // Kirim balik ke semua orang di sekolah yang sama
+      io.to(data.kode).emit('receive-chat', data);
+    } catch (err) {
+      console.error("Gagal simpan chat:", err.message);
+    }
+  });
+
+  // Fitur 2: Live Camera Signaling (Relay data WebRTC)
+  socket.on('camera-signal', (data) => {
+    // data mengandung: room, signalData, from
+    socket.to(data.room).emit('camera-signal', data);
+  });
+
+  // Fitur 3: Broadcast Materi AI (Push konten ke layar siswa)
+  socket.on('broadcast-materi', (data) => {
+    // data mengandung: room, materi (judul, html, soal)
+    socket.to(data.room).emit('new-materi', data.materi);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User Terputus');
+  });
+});
+
+// ==========================================
+// 🏁 6. SERVER RUN
+// ==========================================
 
 const PORT = process.env.PORT || 8080; 
 server.listen(PORT, () => {
@@ -288,6 +337,7 @@ server.listen(PORT, () => {
   📧 Email    : Brevo Connected (OTP Ready)
   📦 DB       : PostgreSQL Connected
   🛡️ Proxy    : Trusted (Ready for Railway)
+  🎥 Realtime : Socket.io Ready
   =========================================
   `);
 });
