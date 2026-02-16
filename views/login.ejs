@@ -1,17 +1,56 @@
 <!DOCTYPE html>
-<html>
-<head><script src="https://cdn.tailwindcss.com"></script></head>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Guru - Global School AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
 <body class="bg-[#050505] text-white flex items-center justify-center min-h-screen">
-    <div class="bg-white/5 border border-white/10 p-12 rounded-[40px] w-[450px] shadow-2xl">
-        <h1 class="text-4xl font-black text-blue-500 mb-8">DAFTAR INSTANSI</h1>
-        <form action="/auth/register" method="POST" class="space-y-6">
-            <input name="nama" placeholder="NAMA SEKOLAH" class="w-full bg-black/50 border border-white/10 p-6 rounded-2xl outline-none focus:border-blue-500 text-xl" required>
-            <input name="email" type="email" placeholder="EMAIL ADMIN" class="w-full bg-black/50 border border-white/10 p-6 rounded-2xl outline-none text-xl" required>
-            <input name="pass" type="password" placeholder="PASSWORD" class="w-full bg-black/50 border border-white/10 p-6 rounded-2xl outline-none text-xl" required>
+    
+    <div class="bg-white/5 border border-white/10 p-12 rounded-[40px] w-[450px] shadow-2xl shadow-blue-900/20">
+        
+        <h1 class="text-4xl font-black text-blue-500 mb-8 tracking-tighter">LOGIN GURU</h1>
+
+        <% if (msg) { %>
+            <div class="bg-red-500/20 text-red-200 p-4 rounded-2xl mb-6 text-center font-bold border border-red-500/30 text-sm">
+                <%= msg %>
+            </div>
+        <% } %>
+
+        <form action="/auth/login" method="POST" class="space-y-6">
             
-            <button class="w-full bg-blue-600 py-6 rounded-2xl font-black text-2xl hover:bg-blue-500 transition-all">DAFTARKAN</button>
+            <div class="space-y-2">
+                <label class="text-xs font-bold text-gray-500 ml-2 uppercase tracking-widest">Kode Sekolah</label>
+                <input name="kode" placeholder="CONTOH: SCH-XXXXX" 
+                    class="w-full bg-black/50 border border-white/10 p-6 rounded-2xl outline-none focus:border-blue-500 text-xl font-mono text-blue-400" required>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs font-bold text-gray-500 ml-2 uppercase tracking-widest">Email Admin</label>
+                <input name="email" type="email" placeholder="email@sekolah.com" 
+                    class="w-full bg-black/50 border border-white/10 p-6 rounded-2xl outline-none focus:border-blue-500 text-xl" required>
+            </div>
+            
+            <div class="space-y-2">
+                <label class="text-xs font-bold text-gray-500 ml-2 uppercase tracking-widest">Password</label>
+                <input name="pass" type="password" placeholder="••••••••" 
+                    class="w-full bg-black/50 border border-white/10 p-6 rounded-2xl outline-none focus:border-blue-500 text-xl" required>
+            </div>
+            
+            <button class="w-full bg-blue-600 py-6 rounded-2xl font-black text-2xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/30 uppercase mt-4">
+                Masuk Sistem
+            </button>
         </form>
-        <a href="/" class="block mt-8 text-center text-sm text-gray-500 hover:text-white font-bold uppercase tracking-widest">Kembali ke Login</a>
+
+        <div class="mt-8 flex justify-between items-center text-sm font-bold text-gray-500 tracking-widest uppercase">
+            <a href="/register" class="hover:text-blue-400 transition-colors">Daftar Sekolah</a>
+            <a href="/forget" class="hover:text-blue-400 transition-colors">Lupa Kode?</a>
+        </div>
+
+        <a href="/" class="block mt-10 text-center text-xs text-gray-600 hover:text-white font-bold uppercase tracking-[0.2em]">
+            ⬅ Kembali Ke Menu Utama
+        </a>
     </div>
 </body>
 </html>
