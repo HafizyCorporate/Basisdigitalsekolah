@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global School AI - Portal Utama</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* --- 1. ANIMASI INTRO (SPLASH SCREEN) --- */
+        #splash-screen {
+            animation: fadeOut 1s ease-in-out 2.5s forwards;
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; visibility: visible; }
+            100% { opacity: 0; visibility: hidden; }
+        }
+
+        /* Efek Ketikan Cepat */
+        .typing-effect {
+            border-right: 2px solid white;
+            white-space: nowrap;
+            overflow: hidden;
+            animation: typing 2s steps(30, end), blink .75s step-end infinite;
+        }
+
+        @keyframes typing { from { width: 0 } to { width: 100% } }
+        @keyframes blink { from, to { border-color: transparent } 50% { border-color: white; } }
+
+        /* --- 2. ANIMASI KONTEN --- */
+        .card-hover:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px -5px rgba(59, 130, 246, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-[#050505] text-white font-sans overflow-hidden">
+
+    <div id="splash-screen">
+        <div class="text-center">
+            <h1 class="text-5xl font-black text-blue-600 mb-2 tracking-tighter">GLOBAL SCHOOL AI</h1>
+            <p class="text-xl text-gray-400 font-mono typing-effect max-w-fit mx-auto px-2">
+                Memuat Sistem Pendidikan Masa Depan...
+            </p>
+        </div>
+    </div>
+
+    <div class="min-h-screen flex flex-col items-center justify-center p-6 relative">
+        
+        <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
+            <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-600/20 rounded-full blur-[100px]"></div>
+            <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-amber-600/10 rounded-full blur-[100px]"></div>
+        </div>
+
+        <div class="text-center mb-12 animate-[slideDown_1s_ease-out_3s_both]">
+            <h2 class="text-4xl font-black mb-2">SELAMAT DATANG</h2>
+            <p class="text-gray-400">Silakan pilih akses masuk anda</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl w-full z-10">
+            
+            <a href="/login-guru" class="group bg-white/5 border border-white/10 p-10 rounded-[40px] cursor-pointer transition-all duration-300 card-hover hover:border-blue-500/50 relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="relative z-10 text-center">
+                    <div class="w-20 h-20 bg-blue-600 rounded-2xl mx-auto mb-6 flex items-center justify-center text-3xl shadow-lg shadow-blue-600/30">
+                        👨‍🏫
+                    </div>
+                    <h3 class="text-3xl font-black text-white mb-2 group-hover:text-blue-400 transition-colors">GURU / STAFF</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Login untuk mengelola materi, memantau siswa, dan manajemen sekolah.
+                    </p>
+                    <div class="mt-8 py-3 px-6 rounded-xl bg-white/5 border border-white/10 text-sm font-bold tracking-widest uppercase group-hover:bg-blue-600 group-hover:border-transparent transition-all">
+                        Masuk Sistem
+                    </div>
+                </div>
+            </a>
+
+            <a href="/login-siswa" class="group bg-white/5 border border-white/10 p-10 rounded-[40px] cursor-pointer transition-all duration-300 card-hover hover:border-amber-500/50 relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-amber-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="relative z-10 text-center">
+                    <div class="w-20 h-20 bg-amber-600 rounded-2xl mx-auto mb-6 flex items-center justify-center text-3xl shadow-lg shadow-amber-600/30">
+                        🎓
+                    </div>
+                    <h3 class="text-3xl font-black text-white mb-2 group-hover:text-amber-400 transition-colors">SISWA</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Login untuk mengakses materi pelajaran, ujian, dan melihat nilai.
+                    </p>
+                    <div class="mt-8 py-3 px-6 rounded-xl bg-white/5 border border-white/10 text-sm font-bold tracking-widest uppercase group-hover:bg-amber-600 group-hover:border-transparent transition-all">
+                        Mulai Belajar
+                    </div>
+                </div>
+            </a>
+
+        </div>
+
+        <p class="mt-12 text-gray-600 text-xs font-mono animate-[fadeIn_1s_ease-out_3.5s_both]">
+            SYSTEM V1.0 &bull; GLOBAL SCHOOL AI
+        </p>
+    </div>
+
+    <style>
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</body>
+</html>
