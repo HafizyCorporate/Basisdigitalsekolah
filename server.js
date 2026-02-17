@@ -53,17 +53,11 @@ app.get('/', (req, res) => res.render('landing'));
 
 app.get('/login', (req, res) => res.render('login', { msg: null }));
 app.get('/register', (req, res) => res.render('register', { msg: null }));
-
-// Update: Tambahkan default values untuk forget
 app.get('/forget', (req, res) => res.render('forget', { msg: null, step: 1, email: null }));
-
 app.get('/register-guru', (req, res) => res.render('register-guru', { msg: null }));
-
 app.get('/login-siswa', (req, res) => res.render('login_siswa', { msg: null }));
 app.get('/register-siswa', (req, res) => res.render('register_siswa', { msg: null }));
 app.get('/forget-siswa', (req, res) => res.render('forget_siswa', { msg: null, step: 1, email: null }));
-
-// TAMBAHAN: Rute Halaman Verifikasi Instansi & Guru
 app.get('/verify', (req, res) => res.render('verify', { msg: null }));
 app.get('/verify-guru', (req, res) => {
     const email = req.query.email || "";
@@ -182,7 +176,6 @@ app.post('/auth/login-guru', async (req, res) => {
   } catch (err) { res.render('login', { msg: "Terjadi kesalahan sistem login guru." }); }
 });
 
-// LOGIKA FORGET ADMIN (Update: Menambahkan Step 2)
 app.post('/auth/forget', async (req, res) => {
   const { email } = req.body;
   const otp = generateOTP();
@@ -195,7 +188,6 @@ app.post('/auth/forget', async (req, res) => {
   } catch (err) { res.status(500).send(err.message); }
 });
 
-// TAMBAHAN: Logika Ganti Password Admin
 app.post('/auth/reset-password', async (req, res) => {
   const { email, otp, newPass } = req.body;
   try {
@@ -235,11 +227,12 @@ app.post('/auth/login-siswa', async (req, res) => {
     if (result.rows.length === 0) return res.render('login_siswa', { msg: "Email tidak ditemukan!" });
     const isMatch = await bcrypt.compare(pass, result.rows[0].password);
     if (!isMatch) return res.render('login_siswa', { msg: "Password salah!" });
-    res.send(`<h1 style="text-align:center; color:green; margin-top:50px;">Selamat Belajar, ${result.rows[0].nama_siswa}!</h1>`);
+    
+    // RENDER DASHBOARD MURID (Penting agar sinkron)
+    res.render('dashboard-murid', { nama_siswa: result.rows[0].nama_siswa, kode_sekolah: result.rows[0].kode_sekolah });
   } catch (err) { res.send(err.message); }
 });
 
-// LOGIKA FORGET SISWA (Update: Menambahkan Step 2)
 app.post('/auth/forget-siswa', async (req, res) => {
   const { email } = req.body;
   const otp = generateOTP();
@@ -252,7 +245,6 @@ app.post('/auth/forget-siswa', async (req, res) => {
   } catch (err) { res.status(500).send(err.message); }
 });
 
-// TAMBAHAN: Logika Ganti Password Siswa
 app.post('/auth/reset-password-siswa', async (req, res) => {
   const { email, otp, newPass } = req.body;
   try {
@@ -279,43 +271,41 @@ app.post('/api/generate', async (req, res) => {
 });
 
 // ==========================================
-// 🚀 5. SOCKET.IO REAL-TIME LOGIC (NEW)
+// 🚀 5. SOCKET.IO REAL-TIME LOGIC (SYNCED)
 // ==========================================
+
+
 
 io.on('connection', (socket) => {
   console.log('User Terkoneksi:', socket.id);
 
-  // Masuk ke Room berdasarkan Kode Sekolah
+  // Join Room berdasarkan kode sekolah (agar antar sekolah tidak campur)
   socket.on('join-room', (kodeSekolah) => {
     socket.join(kodeSekolah);
-    console.log(`User masuk ke kelas: ${kodeSekolah}`);
   });
 
-  // Fitur 1: Live Chat (Tersimpan ke PostgreSQL)
-  socket.on('send-chat', async (data) => {
-    try {
-      // Simpan ke Tabel global_chat
-      await pool.query(
-        'INSERT INTO global_chat (kode_sekolah, pengirim_nama, role, pesan) VALUES ($1, $2, $3, $4)', 
-        [data.kode, data.nama, data.role, data.msg]
-      );
-      // Kirim balik ke semua orang di sekolah yang sama
-      io.to(data.kode).emit('receive-chat', data);
-    } catch (err) {
-      console.error("Gagal simpan chat:", err.message);
-    }
+  // Fitur 1: Live Chat (Sinkron Guru & Murid)
+  socket.on('chat-message', (data) => {
+    // Memastikan pesan sampai ke semua (io.emit) atau room tertentu
+    io.emit('chat-message', data); 
   });
 
-  // Fitur 2: Live Camera Signaling (Relay data WebRTC)
+  // Fitur 2: Sinkronisasi Materi Baru (Push ke Siswa)
+  socket.on('new-materi', (data) => {
+    // Data berisi {judul, html, soal}
+    socket.broadcast.emit('new-materi', data);
+  });
+
+  // Fitur 3: KUIS LIVE (Mulai Kuis dari Guru)
+  socket.on('start-quiz', (quizData) => {
+    // Broadcast data kuis ke semua siswa
+    socket.broadcast.emit('start-quiz', quizData);
+    console.log(`🎯 Kuis Live "${quizData.judul}" Terkirim!`);
+  });
+
+  // Fitur 4: Camera Signaling (Status Kamera)
   socket.on('camera-signal', (data) => {
-    // data mengandung: room, signalData, from
-    socket.to(data.room).emit('camera-signal', data);
-  });
-
-  // Fitur 3: Broadcast Materi AI (Push konten ke layar siswa)
-  socket.on('broadcast-materi', (data) => {
-    // data mengandung: room, materi (judul, html, soal)
-    socket.to(data.room).emit('new-materi', data.materi);
+    socket.broadcast.emit('camera-signal', data);
   });
 
   socket.on('disconnect', () => {
@@ -336,8 +326,7 @@ server.listen(PORT, () => {
   📍 Port     : ${PORT}
   📧 Email    : Brevo Connected (OTP Ready)
   📦 DB       : PostgreSQL Connected
-  🛡️ Proxy    : Trusted (Ready for Railway)
-  🎥 Realtime : Socket.io Ready
+  🎥 Realtime : Quiz & Chat Synced
   =========================================
   `);
 });
