@@ -10,7 +10,8 @@ const rateLimit = require('express-rate-limit');
 
 // Import file yang dipisah (Gudang, Otak, Kurir)
 const { pool, initDb } = require('./db');
-const { processAI } = require('./ai');
+// UPDATE: Menambahkan checkEssayAI untuk penilaian otomatis
+const { processAI, checkEssayAI } = require('./ai'); 
 const { sendMail } = require('./email');
 
 const app = express();
@@ -282,6 +283,39 @@ app.post('/api/generate', async (req, res) => {
     const data = await processAI(req.body.instruksi);
     res.json(data);
   } catch (err) { res.status(500).json({ error: "AI sedang sibuk." }); }
+});
+
+// ✨ TAMBAHAN: API PEMERIKSA ESSAY AI
+app.post('/api/check-essay', async (req, res) => {
+    const { pertanyaan, jawabanSiswa, kriteria } = req.body;
+    try {
+        const hasil = await checkEssayAI(pertanyaan, jawabanSiswa, kriteria);
+        res.json(hasil);
+    } catch (err) {
+        res.status(500).json({ error: "Gagal menilai essay." });
+    }
+});
+
+// ✨ TAMBAHAN: API KOREKSI NILAI MANUAL OLEH GURU
+app.post('/api/koreksi-nilai', async (req, res) => {
+    const { email_siswa, materi, skor_baru, kode_sekolah } = req.body;
+    try {
+        await pool.query(
+            `UPDATE "${kode_sekolah}".penilaian SET skor = $1 WHERE email = $2 AND materi = $3`,
+            [skor_baru, email_siswa, materi]
+        );
+        
+        // Beritahu murid & dashboard guru lain secara real-time
+        io.to(kode_sekolah).emit('score-updated-live', {
+            email: email_siswa,
+            skor: skor_baru,
+            info: "Dikoreksi Guru"
+        });
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Gagal koreksi: " + err.message });
+    }
 });
 
 app.get('/api/kelas/:kode', async (req, res) => {
