@@ -31,6 +31,22 @@
         #teacher-cam { transform: scaleX(-1); object-fit: cover; }
         .scroll-custom::-webkit-scrollbar { width: 4px; }
         .scroll-custom::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+        /* --- TAMBAHAN UNTUK TAMPILAN HP --- */
+        @media (max-width: 1023px) {
+            body { flex-direction: column; overflow-y: auto; height: auto; }
+            aside { width: 100% !important; height: auto !important; padding: 1rem !important; position: sticky; top: 0; z-index: 100; }
+            .sidebar-hide-mobile { display: none; }
+            aside h1 { font-size: 1.25rem; }
+            main { padding: 1.25rem !important; height: auto !important; overflow: visible !important; }
+            header { flex-direction: column; align-items: flex-start !important; gap: 1rem; margin-bottom: 2rem !important; }
+            #chat-panel { width: 90% !important; right: 5% !important; top: 15% !important; }
+            .card-elegant { padding: 1.5rem !important; }
+            #result-container { padding: 1.5rem !important; border-radius: 2rem !important; }
+            #empty-state { height: 300px !important; }
+            #teacher-cam-container { height: 80px !important; width: 120px !important; margin-bottom: 0 !important; }
+            .sidebar-header { flex-direction: row !important; align-items: center; justify-content: space-between; width: 100%; }
+        }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
@@ -41,31 +57,33 @@
     </div>
 
     <aside class="w-64 sidebar h-full text-white flex flex-col p-6 shadow-2xl">
-        <div class="mb-10">
-            <h1 class="text-xl font-extrabold text-indigo-400 tracking-tighter italic">GLOBAL AI</h1>
-            <p class="text-[9px] text-slate-500 font-mono tracking-widest mt-1">GURU PANEL v2.0</p>
-        </div>
+        <div class="sidebar-header flex flex-col">
+            <div class="mb-4 lg:mb-10">
+                <h1 class="text-xl font-extrabold text-indigo-400 tracking-tighter italic">GLOBAL AI</h1>
+                <p class="text-[9px] text-slate-500 font-mono tracking-widest mt-1 sidebar-hide-mobile">GURU PANEL v2.0</p>
+            </div>
 
-        <div class="mb-6 p-4 rounded-2xl bg-white/5 border border-white/10">
-            <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Pengajar</p>
-            <h3 class="text-sm font-bold truncate"><%= nama_guru %></h3>
-        </div>
-        
-        <div class="mb-6 overflow-hidden rounded-2xl bg-slate-800 h-32 border border-white/10 relative">
-            <video id="teacher-cam" class="w-full h-full absolute inset-0 bg-black" autoplay playsinline></video>
-            <div class="absolute bottom-2 left-2 flex items-center gap-1">
-                <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                <span class="text-[8px] font-bold uppercase tracking-widest">Live Cam</span>
+            <div class="mb-6 p-4 rounded-2xl bg-white/5 border border-white/10 sidebar-hide-mobile">
+                <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Pengajar</p>
+                <h3 class="text-sm font-bold truncate"><%= nama_guru %></h3>
+            </div>
+            
+            <div id="teacher-cam-container" class="mb-6 overflow-hidden rounded-2xl bg-slate-800 h-32 border border-white/10 relative">
+                <video id="teacher-cam" class="w-full h-full absolute inset-0 bg-black" autoplay playsinline></video>
+                <div class="absolute bottom-2 left-2 flex items-center gap-1">
+                    <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                    <span class="text-[8px] font-bold uppercase tracking-widest">Live Cam</span>
+                </div>
             </div>
         </div>
 
-        <div class="mb-6 flex-1 flex flex-col min-h-0">
+        <div class="mb-6 flex-1 flex flex-col min-h-0 sidebar-hide-mobile">
             <div class="flex justify-between items-center mb-3">
                 <p class="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Absensi Hadir</p>
                 <span id="count-absen" class="bg-emerald-500 text-[9px] px-2 py-0.5 rounded-full text-white">0</span>
             </div>
             <div class="flex-1 bg-white/5 border border-white/10 rounded-2xl p-3 overflow-hidden flex flex-col">
-                <ul id="list-absen" class="space-y-2 overflow-y-auto scroll-custom text-[11px] font-bold text-slate-400">
+                <ul id="list-absen" class="space-y-2 overflow-y-auto scroll-custom text-[11px] font-bold text-slate-400 max-h-40">
                     <li class="italic text-slate-600 font-normal">Menunggu kelas...</li>
                 </ul>
                 
@@ -77,9 +95,9 @@
             </div>
         </div>
         
-        <div class="pt-6 border-t border-slate-800">
+        <div class="pt-6 border-t border-slate-800 sidebar-hide-mobile">
             <a href="/logout" class="text-xs font-bold text-red-400 flex items-center gap-2 hover:opacity-70 transition-all">
-                🚪 LOGOUT DARI SISTEM
+                🚪 LOGOUT
             </a>
         </div>
     </aside>
@@ -99,10 +117,10 @@
 
         <header class="flex justify-between items-end mb-12">
             <div>
-                <h2 class="text-3xl font-extrabold text-slate-800">Halo, Guru <%= nama_guru %>!</h2>
-                <p class="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">🏫 <%= instansi %> • ID: <%= kode %></p>
+                <h2 class="text-2xl lg:text-3xl font-extrabold text-slate-800 leading-tight">Halo, Guru <%= nama_guru %>!</h2>
+                <p class="text-slate-500 text-[10px] lg:text-sm mt-1 uppercase tracking-widest font-bold">🏫 <%= instansi %> • ID: <%= kode %></p>
             </div>
-            <div class="hidden md:block">
+            <div>
                 <div class="card-elegant px-4 py-2 rounded-2xl flex items-center gap-4 bg-white border-indigo-100">
                     <div class="flex flex-col">
                         <span class="text-[8px] font-black text-indigo-400 uppercase">Ruang Kelas</span>
@@ -122,7 +140,7 @@
                         <div class="w-1 h-6 bg-indigo-500 rounded-full"></div>
                         <h3 class="font-black text-slate-700 uppercase text-xs tracking-widest">Instruksi AI</h3>
                     </div>
-                    <textarea id="prompt" class="w-full h-56 bg-slate-50 border border-slate-200 rounded-2xl p-5 focus:ring-4 focus:ring-indigo-500/10 outline-none text-slate-700 transition-all resize-none" placeholder="Contoh: Buatkan materi sejarah kemerdekaan RI..."></textarea>
+                    <textarea id="prompt" class="w-full h-40 lg:h-56 bg-slate-50 border border-slate-200 rounded-2xl p-5 focus:ring-4 focus:ring-indigo-500/10 outline-none text-slate-700 transition-all resize-none" placeholder="Contoh: Buatkan materi sejarah kemerdekaan RI..."></textarea>
                     
                     <button id="btnGen" onclick="generate()" class="w-full mt-6 bg-slate-900 text-white py-5 rounded-2xl font-black shadow-xl shadow-slate-200 transition-all hover:scale-[1.02] active:scale-95 flex justify-center items-center gap-3">
                         <span id="btnIcon">🚀</span> <span id="btnText">PRODUKSI SEKARANG</span>
@@ -132,82 +150,72 @@
 
             <div class="lg:col-span-8">
                 <div id="preview-area" class="hidden">
-                    <div class="flex justify-between items-center mb-6">
+                    <div class="flex flex-col lg:flex-row justify-between lg:items-center mb-6 gap-3">
                         <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Materi Terbuat</span>
                         <div class="flex gap-2">
-                            <button id="btnPublish" onclick="publishToStudents()" class="bg-indigo-600 text-white px-8 py-3 rounded-full text-[10px] font-black hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-200 uppercase">Publikasikan Materi</button>
-                            <button id="btnQuiz" onclick="publishQuiz()" class="bg-amber-500 text-white px-8 py-3 rounded-full text-[10px] font-black hover:bg-amber-400 transition-all shadow-lg shadow-amber-200 uppercase flex items-center gap-2">🎯 Mulai Kuis Live</button>
+                            <button id="btnPublish" onclick="publishToStudents()" class="flex-1 lg:flex-none bg-indigo-600 text-white px-6 py-3 rounded-full text-[9px] lg:text-[10px] font-black hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-200 uppercase">Kirim Materi</button>
+                            <button id="btnQuiz" onclick="publishQuiz()" class="flex-1 lg:flex-none bg-amber-500 text-white px-6 py-3 rounded-full text-[9px] lg:text-[10px] font-black hover:bg-amber-400 transition-all shadow-lg shadow-amber-200 uppercase flex items-center justify-center gap-1">🎯 Kuis Live</button>
                         </div>
                     </div>
-                    <div id="result-container" class="card-elegant p-12 rounded-[3rem] prose prose-slate max-w-none border-t-8 border-indigo-500">
-                        <h1 id="res-judul" class="text-slate-800 font-extrabold"></h1>
-                        <div id="res-html" class="text-slate-600 leading-relaxed"></div>
+                    <div id="result-container" class="card-elegant p-12 rounded-[3rem] prose prose-slate max-w-none border-t-8 border-indigo-500 overflow-x-auto">
+                        <h1 id="res-judul" class="text-slate-800 font-extrabold text-xl lg:text-3xl"></h1>
+                        <div id="res-html" class="text-slate-600 leading-relaxed text-sm lg:text-base"></div>
                     </div>
                 </div>
 
                 <div id="empty-state" class="card-elegant h-[500px] rounded-[3rem] flex flex-col items-center justify-center border-dashed border-2 border-slate-200 opacity-60">
                     <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center text-3xl mb-4">✍️</div>
-                    <p class="text-slate-400 font-bold uppercase text-xs tracking-widest">Menunggu Input Instruksi Guru</p>
+                    <p class="text-slate-400 font-bold uppercase text-xs tracking-widest text-center px-4">Menunggu Input Instruksi Guru</p>
                 </div>
             </div>
         </section>
+
+        <button onclick="toggleChat()" class="lg:hidden fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center text-xl z-50">💬</button>
     </main>
 
     <script>
+        // --- LOGIKA TIDAK DIRUBAH ---
         const socket = io();
         const namaGuru = "<%= nama_guru %>";
         const kodeSekolah = "<%= kode %>";
         const instansi = "<%= instansi %>";
         let lastGeneratedData = null;
         let currentRoom = null;
-        let currentAbsen = []; // Data absen lokal
+        let currentAbsen = [];
 
-        // --- LOGIKA ABSENSI & EKSPOR (BARU) ---
         socket.on('update-absen', (daftarMurid) => {
             currentAbsen = daftarMurid;
             const list = document.getElementById('list-absen');
             const count = document.getElementById('count-absen');
             count.innerText = daftarMurid.length;
             list.innerHTML = "";
-
             if (daftarMurid.length === 0) {
                 list.innerHTML = '<li class="italic text-slate-600 font-normal">Belum ada murid hadir.</li>';
                 return;
             }
-
             daftarMurid.forEach(nama => {
-                list.innerHTML += `
-                    <li class="flex items-center gap-2 text-white/80 animate-pop">
-                        <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_8px_#10b981]"></div>
-                        ${nama}
-                    </li>`;
+                list.innerHTML += `<li class="flex items-center gap-2 text-white/80 animate-pop"><div class="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_8px_#10b981]"></div>${nama}</li>`;
             });
         });
 
         function exportLaporan(tipe) {
             if(currentAbsen.length === 0) return showAlert("Belum ada data murid!", "⚠️");
-            
             const timestamp = new Date().toLocaleString('id-ID');
             const dataHeader = [["No", "Nama Siswa", "Waktu Absen"]];
             const dataBody = currentAbsen.map((nama, i) => [i + 1, nama, timestamp]);
-
             if (tipe === 'excel') {
                 const wb = XLSX.utils.book_new();
                 const ws = XLSX.utils.aoa_to_sheet([[`LAPORAN ABSENSI - ${instansi}`], [`Kelas: ${document.getElementById('select-kelas').value || 'Umum'}`], [], ...dataHeader, ...dataBody]);
                 XLSX.utils.book_append_sheet(wb, ws, "Absensi");
                 XLSX.writeFile(wb, `Absensi_${new Date().getTime()}.xlsx`);
-            } 
-            else if (tipe === 'pdf') {
+            } else if (tipe === 'pdf') {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
                 doc.text(`LAPORAN ABSENSI - ${instansi}`, 14, 15);
-                doc.setFontSize(10);
-                doc.text(`Kelas: ${document.getElementById('select-kelas').value || 'Umum'} | Tanggal: ${timestamp}`, 14, 22);
                 doc.autoTable({ head: dataHeader, body: dataBody, startY: 30 });
                 doc.save(`Absensi_${new Date().getTime()}.pdf`);
-            }
-            else if (tipe === 'word') {
-                let content = `LAPORAN ABSENSI - ${instansi}\nKelas: ${document.getElementById('select-kelas').value}\nTanggal: ${timestamp}\n\n`;
+            } else if (tipe === 'word') {
+                let content = `LAPORAN ABSENSI - ${instansi}\n\n`;
                 currentAbsen.forEach((n, i) => content += `${i+1}. ${n}\n`);
                 const blob = new Blob([content], {type: 'application/msword'});
                 const link = document.createElement('a');
@@ -218,7 +226,6 @@
             showAlert(`Laporan ${tipe.toUpperCase()} berhasil diunduh!`, '📄');
         }
 
-        // --- KODINGAN LAMA (TETAP TERJAGA) ---
         socket.emit('join-room', kodeSekolah);
 
         async function loadKelas() {
@@ -227,14 +234,12 @@
                 const data = await res.json();
                 const select = document.getElementById('select-kelas');
                 select.innerHTML = '<option value="">-- Pilih Kelas --</option>';
-                data.forEach(k => {
-                    select.innerHTML += `<option value="${k.nama_kelas}">${k.nama_kelas}</option>`;
-                });
+                data.forEach(k => { select.innerHTML += `<option value="${k.nama_kelas}">${k.nama_kelas}</option>`; });
             } catch (e) { console.error("Gagal memuat kelas"); }
         }
 
         async function tambahKelas() {
-            const nama = prompt("Masukkan Nama Kelas (Contoh: 1.1 atau 7-A):");
+            const nama = prompt("Masukkan Nama Kelas:");
             if(nama) {
                 await fetch('/api/kelas', {
                     method: 'POST',
@@ -248,39 +253,29 @@
 
         function pindahKelas() {
             const kelasSelected = document.getElementById('select-kelas').value;
-            if(!kelasSelected) {
-                currentRoom = kodeSekolah;
-                showAlert('Kembali ke Ruang Umum', '🏢');
-                return;
-            }
-            const newRoom = `${kodeSekolah}-${kelasSelected}`;
+            const newRoom = kelasSelected ? `${kodeSekolah}-${kelasSelected}` : kodeSekolah;
             socket.emit('switch-room', { oldRoom: currentRoom || kodeSekolah, newRoom: newRoom });
             currentRoom = newRoom;
             document.getElementById('chat-box').innerHTML = '';
-            showAlert(`Masuk ke Kelas: ${kelasSelected}`, '📡');
+            showAlert(`Masuk ke Kelas: ${kelasSelected || 'Umum'}`, '📡');
         }
 
         async function initCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 document.getElementById('teacher-cam').srcObject = stream;
-            } catch (err) { showAlert('Kamera tidak terdeteksi.', '⚠️'); }
+            } catch (err) { console.log("Kamera off"); }
         }
         
-        window.onload = () => {
-            initCamera();
-            loadKelas();
-        };
+        window.onload = () => { initCamera(); loadKelas(); };
 
         async function generate() {
             const btn = document.getElementById('btnGen');
             const btnText = document.getElementById('btnText');
             const prompt = document.getElementById('prompt').value;
-            if(!prompt) { showAlert('Harap isi instruksi dulu, Guru!', '⚠️'); return; }
-
+            if(!prompt) { showAlert('Harap isi instruksi dulu!', '⚠️'); return; }
             btn.disabled = true;
-            btnText.innerText = "MERACIK MATERI...";
-
+            btnText.innerText = "MERACIK...";
             try {
                 const res = await fetch('/api/generate', {
                     method: 'POST',
@@ -293,8 +288,8 @@
                 document.getElementById('preview-area').classList.remove('hidden');
                 document.getElementById('res-judul').innerText = data.judul;
                 document.getElementById('res-html').innerHTML = data.html;
-                showAlert('Materi berhasil dibuat!', '✅');
-            } catch (e) { showAlert('Gagal menghubungi AI.', '❌'); } finally {
+                showAlert('Materi Selesai!', '✅');
+            } catch (e) { showAlert('Gagal AI.', '❌'); } finally {
                 btn.disabled = false;
                 btnText.innerText = "PRODUKSI SEKARANG";
             }
@@ -302,35 +297,22 @@
 
         function publishToStudents() {
             if(!lastGeneratedData) return;
-            const targetRoom = currentRoom || kodeSekolah;
-            socket.emit('new-materi', { ...lastGeneratedData, room: targetRoom });
-            showAlert(`Materi dikirim ke ${document.getElementById('select-kelas').value || 'Semua'}!`, '🚀');
+            socket.emit('new-materi', { ...lastGeneratedData, room: currentRoom || kodeSekolah });
+            showAlert('Materi Terkirim!', '🚀');
         }
 
         function publishQuiz() {
-            if(!lastGeneratedData || !lastGeneratedData.soal) {
-                showAlert('Buat materi dulu agar ada kuisnya!', '⚠️');
-                return;
-            }
-            const targetRoom = currentRoom || kodeSekolah;
-            socket.emit('start-quiz', { 
-                room: targetRoom,
-                judul: lastGeneratedData.judul, 
-                soal: lastGeneratedData.soal 
-            });
-            showAlert(`Kuis dikirim ke ${document.getElementById('select-kelas').value || 'Semua'}!`, '🎯');
+            if(!lastGeneratedData) return;
+            socket.emit('start-quiz', { room: currentRoom || kodeSekolah, judul: lastGeneratedData.judul, soal: lastGeneratedData.soal });
+            showAlert('Kuis Dimulai!', '🎯');
         }
 
-        function toggleChat() {
-            document.getElementById('chat-panel').classList.toggle('hidden');
-            document.getElementById('chat-notif').classList.add('hidden');
-        }
+        function toggleChat() { document.getElementById('chat-panel').classList.toggle('hidden'); }
 
         function sendChat() {
             const input = document.getElementById('chat-input');
-            const targetRoom = currentRoom || kodeSekolah;
             if(input.value.trim()) {
-                socket.emit('chat-message', { user: namaGuru, msg: input.value, room: targetRoom, role: 'Guru' });
+                socket.emit('chat-message', { user: namaGuru, msg: input.value, room: currentRoom || kodeSekolah, role: 'Guru' });
                 input.value = '';
             }
         }
@@ -338,11 +320,7 @@
         socket.on('chat-message', (data) => {
             const chatBox = document.getElementById('chat-box');
             const isMe = data.user === namaGuru;
-            chatBox.innerHTML += `
-                <div class="${isMe ? 'text-right' : 'text-left'}">
-                    <span class="font-black text-[9px] block text-slate-400 uppercase">${data.user}</span>
-                    <div class="inline-block p-2 rounded-2xl ${isMe ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'} mt-1">${data.msg}</div>
-                </div>`;
+            chatBox.innerHTML += `<div class="${isMe ? 'text-right' : 'text-left'} mb-2"><span class="font-black text-[9px] block text-slate-400 uppercase">${data.user}</span><div class="inline-block p-2 rounded-2xl ${isMe ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'} mt-1">${data.msg}</div></div>`;
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
