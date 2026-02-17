@@ -420,34 +420,67 @@
             });
         }
 
-        // 5. EXPORT SYSTEM
+        // 5. EXPORT SYSTEM (REFINED)
         function exportLaporan(tipe) {
-            const table = document.getElementById('history-body');
-            const rows = Array.from(table.querySelectorAll('tr'));
-            if(rows.length < 1 || rows[0].innerText.includes("Belum ada")) return showAlert("Data kosong!", "⚠️");
+            const tableBody = document.getElementById('history-body');
+            const rows = Array.from(tableBody.querySelectorAll('tr'));
+            
+            // Validasi data
+            if (rows.length === 0 || rows[0].innerText.includes("Belum ada")) {
+                return showAlert("Tidak ada data untuk di-export!", "⚠️");
+            }
 
+            // Mapping data tabel
             const data = rows.map(r => {
                 const c = r.querySelectorAll('td');
-                return { Murid: c[0].innerText, Materi: c[1].innerText, Skor: c[2].innerText, Catatan: c[3].innerText, Tgl: c[4].innerText };
+                return { 
+                    Murid: c[0]?.innerText || '', 
+                    Materi: c[1]?.innerText || '', 
+                    Skor: c[2]?.innerText || '', 
+                    Catatan: c[3]?.innerText || '', 
+                    Tanggal: c[4]?.innerText || '' 
+                };
             });
 
-            if(tipe === 'excel') {
-                const ws = XLSX.utils.json_to_sheet(data);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Laporan");
-                XLSX.writeFile(wb, `Laporan_${currentRoom}.xlsx`);
-            } else if(tipe === 'pdf') {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-                doc.text(`LAPORAN KELAS: ${currentRoom}`, 14, 15);
-                doc.autoTable({
-                    startY: 20,
-                    head: [['Murid', 'Materi', 'Skor', 'Catatan', 'Tanggal']],
-                    body: data.map(d => [d.Murid, d.Materi, d.Skor, d.Catatan, d.Tgl]),
-                });
-                doc.save(`Laporan_${currentRoom}.pdf`);
+            const fileName = `Laporan_Nilai_${currentRoom}_${new Date().toLocaleDateString()}`;
+
+            if (tipe === 'excel') {
+                try {
+                    const ws = XLSX.utils.json_to_sheet(data);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "Riwayat Nilai");
+                    XLSX.writeFile(wb, `${fileName}.xlsx`);
+                    showAlert("Excel berhasil diunduh", "📊");
+                } catch (e) {
+                    showAlert("Gagal export Excel", "❌");
+                }
+            } else if (tipe === 'pdf') {
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+
+                    doc.setFontSize(18);
+                    doc.text("LAPORAN HASIL PENILAIAN SISWA", 14, 20);
+                    doc.setFontSize(10);
+                    doc.text(`Instansi: ${instansi} | Ruang: ${currentRoom}`, 14, 28);
+                    doc.text(`Dicetak pada: ${new Date().toLocaleString()}`, 14, 33);
+
+                    doc.autoTable({
+                        startY: 40,
+                        head: [['Nama Murid', 'Materi', 'Skor', 'Catatan AI', 'Tanggal']],
+                        body: data.map(d => [d.Murid, d.Materi, d.Skor, d.Catatan, d.Tanggal]),
+                        theme: 'grid',
+                        headStyles: { fillColor: [79, 70, 229] },
+                        styles: { fontSize: 8 }
+                    });
+
+                    doc.save(`${fileName}.pdf`);
+                    showAlert("PDF berhasil diunduh", "📄");
+                } catch (e) {
+                    showAlert("Gagal export PDF", "❌");
+                }
             } else {
-                showAlert("Gunakan PDF/Excel dulu ya, Pak!", "ℹ️");
+                showAlert("Format Word segera hadir!", "ℹ️");
             }
         }
 
