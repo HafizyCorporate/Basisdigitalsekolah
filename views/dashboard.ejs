@@ -40,6 +40,11 @@
             <h1 class="text-xl font-extrabold text-indigo-400 tracking-tighter italic">GLOBAL AI</h1>
             <p class="text-[9px] text-slate-500 font-mono tracking-widest mt-1">GURU PANEL v2.0</p>
         </div>
+
+        <div class="mb-6 p-4 rounded-2xl bg-white/5 border border-white/10">
+            <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Pengajar</p>
+            <h3 class="text-sm font-bold truncate"><%= nama_guru %></h3>
+        </div>
         
         <div class="mb-6 overflow-hidden rounded-2xl bg-slate-800 h-32 border border-white/10 relative">
             <video id="teacher-cam" class="w-full h-full absolute inset-0 bg-black" autoplay playsinline></video>
@@ -81,13 +86,13 @@
 
         <header class="flex justify-between items-end mb-12">
             <div>
-                <h2 class="text-3xl font-extrabold text-slate-800">Ruang Kerja Guru</h2>
-                <p class="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">🏫 <%= instansi %></p>
+                <h2 class="text-3xl font-extrabold text-slate-800">Halo, Guru <%= nama_guru %>!</h2>
+                <p class="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">🏫 <%= instansi %> • ID: <%= kode %></p>
             </div>
             <div class="hidden md:block">
                 <div class="card-elegant px-6 py-3 rounded-2xl flex items-center gap-3 bg-slate-50">
                     <div id="status-dot" class="w-3 h-3 bg-emerald-500 rounded-full animate-ping"></div>
-                    <span id="status-text" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">System Ready</span>
+                    <span id="status-text" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kelas Aktif</span>
                 </div>
             </div>
         </header>
@@ -132,7 +137,12 @@
 
     <script>
         const socket = io();
+        const namaGuru = "<%= nama_guru %>";
+        const kodeSekolah = "<%= kode %>";
         let lastGeneratedData = null;
+
+        // --- 0. JOIN ROOM ---
+        socket.emit('join-room', kodeSekolah);
 
         // --- 1. LOGIKA LIVE CAM ---
         async function initCamera() {
@@ -167,7 +177,7 @@
                     body: JSON.stringify({ instruksi: prompt })
                 });
                 const data = await res.json();
-                lastGeneratedData = data; // Simpan untuk dipublikasikan
+                lastGeneratedData = data; 
                 
                 document.getElementById('empty-state').classList.add('hidden');
                 document.getElementById('preview-area').classList.remove('hidden');
@@ -186,25 +196,24 @@
 
         function publishToStudents() {
             if(!lastGeneratedData) return;
-            // Kirim materi ke semua siswa via socket
-            socket.emit('new-materi', lastGeneratedData);
+            // Sertakan Room (kode sekolah) saat kirim materi
+            socket.emit('new-materi', { ...lastGeneratedData, room: kodeSekolah });
             showAlert('Materi telah dikirim ke semua siswa!', '🚀');
         }
 
-        // --- TAMBAHAN: LOGIKA PUBLISH KUIS ---
         function publishQuiz() {
             if(!lastGeneratedData || !lastGeneratedData.soal) {
                 showAlert('Buat materi dulu agar ada kuisnya!', '⚠️');
                 return;
             }
-            // Kirim data kuis ke siswa via Socket
+            // Sertakan Room (kode sekolah) saat kirim kuis
             socket.emit('start-quiz', { 
+                room: kodeSekolah,
                 judul: lastGeneratedData.judul, 
                 soal: lastGeneratedData.soal 
             });
             showAlert('Kuis interaktif telah dikirim ke siswa!', '🎯');
             
-            // Efek visual tombol sukses
             const btn = document.getElementById('btnQuiz');
             btn.classList.replace('bg-amber-500', 'bg-emerald-500');
             setTimeout(() => btn.classList.replace('bg-emerald-500', 'bg-amber-500'), 2000);
@@ -220,17 +229,22 @@
         function sendChat() {
             const input = document.getElementById('chat-input');
             if(input.value.trim()) {
-                socket.emit('chat-message', { user: 'Guru', msg: input.value });
+                socket.emit('chat-message', { 
+                    user: namaGuru, 
+                    msg: input.value, 
+                    room: kodeSekolah,
+                    role: 'Guru' 
+                });
                 input.value = '';
             }
         }
 
         socket.on('chat-message', (data) => {
             const chatBox = document.getElementById('chat-box');
-            const isMe = data.user === 'Guru';
+            const isMe = data.user === namaGuru;
             chatBox.innerHTML += `
                 <div class="${isMe ? 'text-right' : 'text-left'}">
-                    <span class="font-black text-[9px] block text-slate-400 uppercase">${data.user}</span>
+                    <span class="font-black text-[9px] block text-slate-400 uppercase">${data.user} ${data.role ? '('+data.role+')' : ''}</span>
                     <div class="inline-block p-2 rounded-2xl ${isMe ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'} mt-1">
                         ${data.msg}
                     </div>
