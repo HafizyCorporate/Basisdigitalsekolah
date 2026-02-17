@@ -181,8 +181,7 @@
 
                 <div class="border-t border-white/10 pt-6">
                     <p class="text-slate-500 text-[10px] font-bold mb-4 uppercase tracking-widest">Grid Peserta Didik</p>
-                    <div id="students-live-grid" class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-10 gap-3">
-                        </div>
+                    <div id="students-live-grid" class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-10 gap-3"></div>
                 </div>
             </div>
         </section>
@@ -246,20 +245,63 @@
         let currentRoom = null;
         let currentAbsen = [];
         let isPresentationMode = false;
-        
-        // Data untuk Scoreboard
         let allScores = [];
 
-        // --- FUNGSI LIVE CLASSROOM BARU ---
-
+        // --- PENAMBAHAN LOGIKA STREAMING (TIDAK MERUBAH LOGIKA ASLI) ---
+        
         async function initLiveCameras() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 640, height: 480 }, 
+                    audio: true 
+                });
+                
+                // Set stream ke elemen video guru
                 document.getElementById('teacher-cam').srcObject = stream;
                 document.getElementById('guru-live-cam').srcObject = stream;
                 document.getElementById('guru-pip-cam').srcObject = stream;
-            } catch (err) { console.warn("Akses kamera ditolak"); }
+
+                // Mulai kirim gambar ke murid
+                startStreamingToStudents();
+
+            } catch (err) { 
+                console.warn("Akses kamera ditolak", err);
+                showAlert("Kamera tidak aktif!", "❌");
+            }
         }
+
+        function startStreamingToStudents() {
+            const video = document.getElementById('guru-live-cam');
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            
+            // Ukuran transmisi (diperkecil agar ringan)
+            canvas.width = 400;
+            canvas.height = 300;
+
+            function broadcastFrame() {
+                if (video.paused || video.ended) return;
+                
+                // Gambar video ke canvas tersembunyi
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Convert ke Base64 (JPG)
+                const frameData = canvas.toDataURL('image/jpeg', 0.5);
+                
+                // Kirim ke semua murid di room yang sama
+                socket.emit('update-frame', {
+                    room: currentRoom || kodeSekolah,
+                    image: frameData
+                });
+
+                // Looping terus menerus
+                requestAnimationFrame(broadcastFrame);
+            }
+
+            video.onplay = () => broadcastFrame();
+        }
+
+        // --- LANJUTAN LOGIKA ASLI ANDA ---
 
         function switchDisplayMode() {
             if(!lastGeneratedData) return showAlert("Buat materi dulu dengan AI!", "⚠️");
@@ -292,7 +334,6 @@
             showAlert("Semua audio murid dimatikan!", "🔇");
         }
 
-        // Simpan logika video murid masuk (Disederhanakan untuk visual)
         socket.on('join-live', (data) => {
             const grid = document.getElementById('students-live-grid');
             const tile = document.createElement('div');
@@ -301,15 +342,10 @@
             grid.appendChild(tile);
         });
 
-        // --- LOGIKA LIVE SCORE & RANKING ---
         socket.on('update-score-guru', (data) => {
-            // data: { name, score, feedback, time }
             const existing = allScores.findIndex(s => s.name === data.name);
-            if(existing > -1) {
-                allScores[existing] = data;
-            } else {
-                allScores.push(data);
-            }
+            if(existing > -1) allScores[existing] = data;
+            else allScores.push(data);
             renderScoreboard();
             showAlert(`Nilai baru dari ${data.name}!`, '📊');
         });
@@ -318,10 +354,7 @@
             const tbody = document.getElementById('live-score-body');
             const empty = document.getElementById('empty-score-row');
             if(empty) empty.remove();
-
-            // Ranking Otomatis (Sort dari Skor Tertinggi)
             allScores.sort((a, b) => b.score - a.score);
-
             tbody.innerHTML = '';
             allScores.forEach((s, i) => {
                 const isTop = i === 0;
@@ -343,7 +376,6 @@
             if(allScores.length === 0) return showAlert("Belum ada data nilai!", "⚠️");
             const header = [["Rank", "Nama Murid", "Skor", "Feedback AI", "Waktu"]];
             const body = allScores.map((s, i) => [i + 1, s.name, s.score, s.feedback, new Date().toLocaleString()]);
-
             if (tipe === 'excel') {
                 const wb = XLSX.utils.book_new();
                 const ws = XLSX.utils.aoa_to_sheet([[`REKAP NILAI: ${lastGeneratedData?.judul || 'Live Class'}`], [], ...header, ...body]);
@@ -358,8 +390,6 @@
             }
             showAlert(`Export ${tipe.toUpperCase()} berhasil!`, '✅');
         }
-
-        // --- LOGIKA ASLI ANDA (TIDAK BERUBAH) ---
 
         socket.on('update-absen', (daftarMurid) => {
             currentAbsen = daftarMurid;
