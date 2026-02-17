@@ -9,21 +9,22 @@ const processAI = async (instruksi) => {
 
   // UPDATE MODEL: Langsung ke Gemini 3.0 Pro
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  
+  // PERBAIKAN ERROR 400: Menghapus responseMimeType yang tidak dikenali
   const model = genAI.getGenerativeModel({ 
-    model: "gemini-3.0-pro",
-    generationConfig: { responseMimeType: "application/json" } 
+    model: "gemini-3.0-pro" 
   });
   
-  // LOGIKA: Prompt diperketat untuk Kunci Jawaban PG & Kriteria Essay
+  // LOGIKA: Prompt diperketat untuk menjamin JSON valid meskipun tanpa responseMimeType
   const prompt = `Bertindaklah sebagai Guru SMK Internasional yang ahli. 
-  Buatkan materi pelajaran tentang: "${instruksi}".
+  TUGAS: Buatkan materi pelajaran tentang: "${instruksi}".
   
-  TUGAS ANDA:
+  INSTRUKSI KHUSUS:
   1. MATERI: Buat konten HTML rapi (Tailwind CSS) dengan heading, list, dan poin penting.
   2. PG: 5 Soal Pilihan Ganda. Sertakan kunci jawaban (string yang sama dengan pilihan).
   3. ESSAY: 3 Soal Essay. Sertakan 'kriteria' berupa daftar kata kunci untuk penilaian otomatis.
 
-  FORMAT JSON WAJIB:
+  WAJIB KEMBALIKAN HANYA DATA JSON DENGAN STRUKTUR BERIKUT:
   {
     "judul": "Judul Materi",
     "html": "Konten HTML Materi...",
@@ -42,13 +43,13 @@ const processAI = async (instruksi) => {
     ]
   }
   
-  PENTING: Jangan berikan teks apapun selain JSON.`;
+  PENTING: Dilarang memberikan teks penjelasan, pembuka, atau penutup. Hanya JSON murni.`;
 
   try {
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     
-    // Ekstraksi JSON
+    // Ekstraksi JSON (Tetap menggunakan logika Anda yang sudah ada)
     const startJson = text.indexOf('{');
     const endJson = text.lastIndexOf('}');
     
@@ -59,18 +60,19 @@ const processAI = async (instruksi) => {
     const cleanJson = text.substring(startJson, endJson + 1);
     const parsedData = JSON.parse(cleanJson);
 
-    // Default value jika data tidak lengkap
+    // Default value jika data tidak lengkap (Tetap sesuai logika Anda)
     if (!parsedData.soal) parsedData.soal = [];
     if (!parsedData.essay) parsedData.essay = [];
     
     return parsedData;
 
   } catch (error) {
+    // Menangkap error jika terjadi kegagalan pada model atau parsing
     console.error("❌ ERROR AI (Gemini 3.0):", error.message);
     
     return {
       judul: "Gagal Memuat Materi",
-      html: "<p class='text-red-500'>Sistem AI sedang sibuk. Silakan coba lagi.</p>",
+      html: "<p class='text-red-500'>Sistem AI sedang sibuk karena limitasi API atau kendala jaringan. Silakan coba lagi.</p>",
       soal: [],
       essay: []
     };
