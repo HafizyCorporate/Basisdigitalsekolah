@@ -297,7 +297,7 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
-        // --- 4. LOGIKA MATERI & KUIS AI (MODIFIED) ---
+        // --- 4. LOGIKA MATERI & KUIS AI ---
 
         socket.on('new-materi', (data) => {
             showCuteAlert('Materi baru dari Guru!', '📑');
@@ -323,7 +323,6 @@
 
             let html = "";
 
-            // 1. Render Pilihan Ganda (PG)
             if(data.soal_pg && data.soal_pg.length > 0) {
                 html += `<p class="text-[10px] font-black text-sky-400 uppercase mb-4">Bagian 1: Pilihan Ganda</p>`;
                 html += data.soal_pg.map((s, idx) => `
@@ -339,7 +338,6 @@
                     </div>`).join('');
             }
 
-            // 2. Render Quiz Singkat
             if(data.soal_quiz && data.soal_quiz.length > 0) {
                 html += `<p class="text-[10px] font-black text-amber-400 uppercase my-6">Bagian 2: Flash Quiz</p>`;
                 html += data.soal_quiz.map((q, idx) => `
@@ -349,7 +347,6 @@
                     </div>`).join('');
             }
 
-            // 3. Render Essay
             if(data.soal_essay && data.soal_essay.length > 0) {
                 html += `<p class="text-[10px] font-black text-pink-400 uppercase my-6">Bagian 3: Analisis Essay</p>`;
                 html += data.soal_essay.map((e, idx) => `
@@ -369,54 +366,48 @@
         }
 
         function finishQuiz() {
-            // Kumpulkan Jawaban PG
             const pgAnswers = [];
             document.querySelectorAll('.pg-item').forEach(item => {
                 const selected = item.querySelector('.option-selected');
                 pgAnswers.push(selected ? selected.innerText.trim() : "");
             });
 
-            // Kumpulkan Jawaban Quiz Singkat
             const quizAnswers = [];
             document.querySelectorAll('.quiz-ans').forEach(input => {
                 quizAnswers.push(input.value.trim());
             });
 
-            // Kumpulkan Jawaban Essay
             const essayAnswers = [];
             document.querySelectorAll('.essay-ans').forEach(textarea => {
                 essayAnswers.push(textarea.value.trim());
             });
 
-            // Objek Jawaban Mentah
             const studentAnswers = {
                 pg: pgAnswers,
                 quiz: quizAnswers,
                 essay: essayAnswers
             };
 
-            // Loading state
             document.getElementById('quiz-content').classList.add('hidden');
             document.getElementById('quiz-result').classList.remove('hidden');
             document.getElementById('quiz-footer').classList.add('hidden');
             document.getElementById('final-score-val').innerText = "...";
             document.getElementById('ai-feedback').innerText = "AI sedang memeriksa jawabanmu...";
 
-            // Emit ke Server untuk diproses periksaUjian()
+            // JANTUNG PERBAIKAN: Tidak lagi mengirim 'soalAsli' ke server
             socket.emit('submit-jawaban-siswa', {
                 name: namaSiswa,
                 email: emailSiswa,
                 kelas: kelasTersimpan || 'Umum',
                 room: currentRoom,
                 materi_judul: currentQuizData ? currentQuizData.judul : "Kuis Live",
-                jawabanMurid: studentAnswers,
-                soalAsli: currentQuizData 
+                jawabanMurid: studentAnswers
+                // soalAsli sudah tidak perlu karena server menyimpannya di activeQuizzes[room]
             });
 
             showCuteAlert('Jawaban terkirim ke Guru!', '🚀');
         }
 
-        // Listener untuk menerima hasil penilaian AI dari server
         socket.on('score-updated-live', (data) => {
             if(data.nama_siswa === namaSiswa) {
                 document.getElementById('final-score-val').innerText = data.skor;
