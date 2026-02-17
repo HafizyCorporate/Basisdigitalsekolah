@@ -44,6 +44,7 @@
         }
 
         .score-pop { font-size: 3rem; font-weight: 900; color: #ff6b95; text-shadow: 4px 4px 0px #ffecf0; }
+        .option-selected { background: #ff6b95 !important; color: white !important; border-color: #ff6b95 !important; }
     </style>
 </head>
 <body class="p-4 md:p-10">
@@ -167,9 +168,6 @@
         let myStream = null;
         let currentQuizData = null; 
 
-        let correctAnswers = 0;
-        let totalQuizQuestions = 0;
-
         // --- 1. LOGIKA VIDEO & STREAMING ---
         
         socket.on('update-frame', (data) => {
@@ -184,17 +182,14 @@
                 video.id = 'video-element';
                 video.srcObject = myStream;
                 video.autoplay = true;
-                video.muted = true; // Agar tidak feedback suara sendiri
+                video.muted = true;
                 video.className = "w-full h-full object-cover";
                 
                 const container = document.getElementById('cam-container');
                 container.innerHTML = '';
                 container.appendChild(video);
                 
-                // Beritahu guru kita live
                 socket.emit('join-live', { room: currentRoom, nama: namaSiswa });
-                
-                // Mulai kirim frame ke guru
                 sendFrameToGuru();
 
                 document.getElementById('btn-cam').classList.add('hidden');
@@ -215,7 +210,7 @@
                 const frame = canvas.toDataURL('image/jpeg', 0.5);
                 socket.emit('stream-frame', { room: currentRoom, image: frame });
             }
-            setTimeout(sendFrameToGuru, 200); // 5 frame per detik (hemat kuota)
+            setTimeout(sendFrameToGuru, 200);
         }
 
         socket.on('change-view-mode', (data) => {
@@ -302,7 +297,7 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
-        // --- 4. LOGIKA MATERI & KUIS AI ---
+        // --- 4. LOGIKA MATERI & KUIS AI (MODIFIED) ---
 
         socket.on('new-materi', (data) => {
             showCuteAlert('Materi baru dari Guru!', '📑');
@@ -318,8 +313,6 @@
         socket.on('start-quiz', (data) => {
             currentQuizData = data; 
             showCuteAlert('KUIS DIMULAI!', '🎯');
-            correctAnswers = 0;
-            totalQuizQuestions = data.soal.length;
             
             const body = document.getElementById('quiz-body');
             document.getElementById('quiz-overlay').classList.remove('hidden');
@@ -328,25 +321,39 @@
             document.getElementById('quiz-footer').classList.remove('hidden');
             document.getElementById('quiz-title').innerText = "KUIS: " + data.judul;
 
-            // Render Soal Pilihan Ganda
-            let html = `<p class="text-[10px] font-black text-sky-400 uppercase mb-4">Bagian 1: Pilihan Ganda</p>`;
-            html += data.soal.map((s, idx) => `
-                <div class="p-4 bg-sky-50 rounded-[2rem] border-2 border-sky-100 mb-4">
-                    <p class="font-bold text-slate-700 mb-3 text-sm">${idx + 1}. ${s.q}</p>
-                    <div class="grid grid-cols-1 gap-2">
-                        ${s.a.map(opsi => `
-                            <button onclick="checkAnswer(this, '${opsi}', '${s.c}')" 
-                                class="option-btn p-3 bg-white rounded-xl border-2 border-white hover:border-pink-200 transition-all text-xs font-bold text-slate-600 shadow-sm">
-                                ${opsi}
-                            </button>`).join('')}
-                    </div>
-                </div>`).join('');
+            let html = "";
 
-            // Render Soal Essay (Jika ada)
-            if(data.essay && data.essay.length > 0) {
-                html += `<p class="text-[10px] font-black text-pink-400 uppercase my-6">Bagian 2: Analisis Essay</p>`;
-                html += data.essay.map((e, idx) => `
-                    <div class="p-4 bg-pink-50 rounded-[2rem] border-2 border-pink-100 mb-4">
+            // 1. Render Pilihan Ganda (PG)
+            if(data.soal_pg && data.soal_pg.length > 0) {
+                html += `<p class="text-[10px] font-black text-sky-400 uppercase mb-4">Bagian 1: Pilihan Ganda</p>`;
+                html += data.soal_pg.map((s, idx) => `
+                    <div class="pg-item p-4 bg-sky-50 rounded-[2rem] border-2 border-sky-100 mb-4" data-index="${idx}">
+                        <p class="font-bold text-slate-700 mb-3 text-sm">${idx + 1}. ${s.q}</p>
+                        <div class="grid grid-cols-1 gap-2">
+                            ${s.a.map(opsi => `
+                                <button onclick="selectOption(this, ${idx})" 
+                                    class="option-btn p-3 bg-white rounded-xl border-2 border-white hover:border-pink-200 transition-all text-xs font-bold text-slate-600 shadow-sm">
+                                    ${opsi}
+                                </button>`).join('')}
+                        </div>
+                    </div>`).join('');
+            }
+
+            // 2. Render Quiz Singkat
+            if(data.soal_quiz && data.soal_quiz.length > 0) {
+                html += `<p class="text-[10px] font-black text-amber-400 uppercase my-6">Bagian 2: Flash Quiz</p>`;
+                html += data.soal_quiz.map((q, idx) => `
+                    <div class="quiz-item p-4 bg-amber-50 rounded-[2rem] border-2 border-amber-100 mb-4">
+                        <p class="font-bold text-slate-700 mb-3 text-sm">${idx + 1}. ${q.q}</p>
+                        <input type="text" class="quiz-ans w-full p-3 rounded-xl border-2 border-white outline-none text-xs font-semibold" placeholder="Jawaban singkat...">
+                    </div>`).join('');
+            }
+
+            // 3. Render Essay
+            if(data.soal_essay && data.soal_essay.length > 0) {
+                html += `<p class="text-[10px] font-black text-pink-400 uppercase my-6">Bagian 3: Analisis Essay</p>`;
+                html += data.soal_essay.map((e, idx) => `
+                    <div class="essay-item p-4 bg-pink-50 rounded-[2rem] border-2 border-pink-100 mb-4">
                         <p class="font-bold text-slate-700 mb-3 text-sm">${idx + 1}. ${e.q}</p>
                         <textarea class="essay-ans w-full p-3 rounded-xl border-2 border-white outline-none text-xs font-semibold h-24" placeholder="Ketik jawabanmu..."></textarea>
                     </div>`).join('');
@@ -355,45 +362,70 @@
             body.innerHTML = html;
         });
 
-        function checkAnswer(btn, picked, correct) {
-            const parent = btn.parentElement;
-            parent.querySelectorAll('button').forEach(b => b.disabled = true);
-            if(picked === correct) {
-                btn.classList.add('bg-green-500', 'text-white');
-                correctAnswers++;
-            } else {
-                btn.classList.add('bg-red-500', 'text-white');
-            }
+        function selectOption(btn, qIdx) {
+            const container = btn.closest('.pg-item');
+            container.querySelectorAll('.option-btn').forEach(b => b.classList.remove('option-selected'));
+            btn.classList.add('option-selected');
         }
 
         function finishQuiz() {
-            const finalScore = totalQuizQuestions > 0 ? Math.round((correctAnswers / totalQuizQuestions) * 100) : 0;
-            
-            // Logika Feedback AI Sederhana
-            let feedback = finalScore >= 80 ? "Hebat! Kamu menguasai materi ini." : "Ayo belajar lagi, kamu pasti bisa!";
+            // Kumpulkan Jawaban PG
+            const pgAnswers = [];
+            document.querySelectorAll('.pg-item').forEach(item => {
+                const selected = item.querySelector('.option-selected');
+                pgAnswers.push(selected ? selected.innerText.trim() : "");
+            });
 
+            // Kumpulkan Jawaban Quiz Singkat
+            const quizAnswers = [];
+            document.querySelectorAll('.quiz-ans').forEach(input => {
+                quizAnswers.push(input.value.trim());
+            });
+
+            // Kumpulkan Jawaban Essay
+            const essayAnswers = [];
+            document.querySelectorAll('.essay-ans').forEach(textarea => {
+                essayAnswers.push(textarea.value.trim());
+            });
+
+            // Objek Jawaban Mentah
+            const studentAnswers = {
+                pg: pgAnswers,
+                quiz: quizAnswers,
+                essay: essayAnswers
+            };
+
+            // Loading state
             document.getElementById('quiz-content').classList.add('hidden');
             document.getElementById('quiz-result').classList.remove('hidden');
             document.getElementById('quiz-footer').classList.add('hidden');
-            document.getElementById('final-score-val').innerText = finalScore;
-            document.getElementById('ai-feedback').innerText = `"${feedback}"`;
-            document.getElementById('score-card').classList.remove('hidden');
-            document.getElementById('sidebar-score').innerText = finalScore;
+            document.getElementById('final-score-val').innerText = "...";
+            document.getElementById('ai-feedback').innerText = "AI sedang memeriksa jawabanmu...";
 
-            // KIRIM DATA LENGKAP KE SERVER (Sinkron dengan server.js baru)
-            socket.emit('update-score-guru', {
+            // Emit ke Server untuk diproses periksaUjian()
+            socket.emit('submit-jawaban-siswa', {
                 name: namaSiswa,
                 email: emailSiswa,
-                materi_judul: currentQuizData ? currentQuizData.judul : "Kuis Live",
-                score: finalScore,
-                feedback: feedback,
                 kelas: kelasTersimpan || 'Umum',
                 room: currentRoom,
-                time: new Date().toLocaleTimeString()
+                materi_judul: currentQuizData ? currentQuizData.judul : "Kuis Live",
+                jawabanMurid: studentAnswers,
+                soalAsli: currentQuizData 
             });
 
-            showCuteAlert('Nilai terkirim ke Guru!', '✅');
+            showCuteAlert('Jawaban terkirim ke Guru!', '🚀');
         }
+
+        // Listener untuk menerima hasil penilaian AI dari server
+        socket.on('score-updated-live', (data) => {
+            if(data.nama_siswa === namaSiswa) {
+                document.getElementById('final-score-val').innerText = data.skor;
+                document.getElementById('ai-feedback').innerText = data.umpan_balik;
+                document.getElementById('sidebar-score').innerText = data.skor;
+                document.getElementById('score-card').classList.remove('hidden');
+                showCuteAlert('Koreksi AI selesai!', '🏆');
+            }
+        });
 
         function closeQuiz() { document.getElementById('quiz-overlay').classList.add('hidden'); }
         document.getElementById('chat-input').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendChat(); });
