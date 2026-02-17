@@ -317,6 +317,19 @@ app.post('/api/submit-penilaian', async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Database Error: " + err.message }); }
 });
 
+// ✨ TAMBAHAN API: SIMPAN SKOR KE TABEL PUSAT global_jawaban
+app.post('/api/save-score-global', async (req, res) => {
+    const { name, score, feedback, kelas, materi_id } = req.body;
+    try {
+        await pool.query(
+            `INSERT INTO global_jawaban (nama_siswa, skor, umpan_balik_ai, nama_kelas, materi_id, created_at) 
+             VALUES ($1, $2, $3, $4, $5, NOW())`,
+            [name, score, feedback, kelas || 'Umum', materi_id || 0]
+        );
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.get('/api/rekap-nilai/:kode', async (req, res) => {
     try {
         const result = await pool.query(`SELECT * FROM "${req.params.kode}".penilaian ORDER BY waktu DESC`);
@@ -388,6 +401,34 @@ io.on('connection', (socket) => {
   socket.on('submit-score-live', (scoreData) => {
     // Kirim skor ke Guru di room yang sama secara real-time
     io.to(scoreData.room).emit('score-update-guru', scoreData);
+  });
+
+  // ✨ TAMBAHAN SOCKET: LISTEN & SAVE SKOR AI (Terhubung ke Dashboard Murid)
+  socket.on('update-score-guru', async (data) => {
+    try {
+        const { name, score, feedback, kelas, materi_id } = data;
+        const room = socket.userRoom;
+
+        // 1. Simpan ke Database (global_jawaban)
+        const query = `
+            INSERT INTO global_jawaban 
+            (nama_siswa, skor, umpan_balik_ai, nama_kelas, materi_id, created_at) 
+            VALUES ($1, $2, $3, $4, $5, NOW())
+        `;
+        await pool.query(query, [name, score, feedback, kelas || 'Umum', materi_id || 0]);
+
+        // 2. Beritahu Guru secara Real-time agar Scoreboard ter-update
+        io.to(room).emit('score-updated-live', {
+            nama_siswa: name,
+            skor: score,
+            umpan_balik: feedback,
+            waktu: new Date().toLocaleTimeString('id-ID')
+        });
+
+        console.log(`📊 AI Scorer: ${name} simpan skor ${score} ke DB`);
+    } catch (err) {
+        console.error("❌ Gagal simpan skor via Socket:", err.message);
+    }
   });
 
   // Fitur 4: Camera Signaling
