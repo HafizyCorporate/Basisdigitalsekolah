@@ -27,39 +27,26 @@
             box-shadow: 0 10px 0 #e04a76; z-index: 5000; transition: all 0.5s;
             width: 80%; text-align: center; justify-content: center;
         }
-        @media (min-width: 768px) {
-            #cuteAlert { width: auto; padding: 1.5rem 3rem; }
-        }
         .alert-active { top: 30px !important; }
         
-        #video-element { transform: scaleX(-1); }
+        /* Mirroring for camera */
+        #video-element, #teacher-video-stream { transform: scaleX(-1); object-fit: cover; }
         #quiz-overlay { z-index: 4000; }
 
-        /* PENYESUAIAN KHUSUS HP */
+        /* LIVE CLASSROOM STYLES */
+        .live-frame-container { background: #1e1b4b; border-radius: 2.5rem; border: 8px solid #e0e7ff; overflow: hidden; box-shadow: 0 15px 0 #e0e7ff; }
+
         @media (max-width: 768px) {
             .bubble-card { border-radius: 2rem; border-width: 4px; box-shadow: 0 10px 0 #ffecf0; }
             main { margin-top: 1rem; }
             #no-materi { height: 400px; padding: 2rem; }
-            #no-materi h2 { font-size: 1.5rem; }
             .prose { font-size: 0.9rem; }
-            #chat-box { height: 12rem; } 
         }
 
-        /* KHUSUS DESKTOP: MENU KIRI, MATERI KANAN */
         @media (min-width: 769px) {
-            .desktop-container {
-                display: flex !important;
-                flex-direction: row !important; /* Menu kiri, materi kanan */
-                align-items: flex-start;
-            }
-            aside {
-                width: 320px !important; /* Lebar menu dikunci */
-                position: sticky;
-                top: 2.5rem;
-            }
-            main {
-                flex: 1 !important; /* Materi mengambil sisa ruang */
-            }
+            .desktop-container { display: flex !important; flex-direction: row !important; align-items: flex-start; }
+            aside { width: 320px !important; position: sticky; top: 2.5rem; }
+            main { flex: 1 !important; }
         }
     </style>
 </head>
@@ -85,7 +72,7 @@
         <aside class="w-full space-y-6 order-2 md:order-1">
             <div class="bubble-card p-6 bg-white border-pink-100">
                 <p class="text-[9px] font-black text-pink-400 uppercase tracking-widest mb-2 text-center">🏫 Ruang Kelas Kamu</p>
-                <select id="select-kelas-murid" onchange="muridPindahKelas()" class="w-full p-3 rounded-2xl border-2 border-pink-50 bg-pink-50/50 text-xs font-bold text-pink-600 outline-none focus:border-pink-300 transition-all">
+                <select id="select-kelas-murid" onchange="muridPindahKelas()" class="w-full p-3 rounded-2xl border-2 border-pink-50 bg-pink-50/50 text-xs font-bold text-pink-600 outline-none">
                     <option value="">-- Pilih Kelas --</option>
                 </select>
             </div>
@@ -95,9 +82,9 @@
                     <span id="placeholder-avatar">🐶</span>
                 </div>
                 <h2 class="text-xl md:text-2xl font-black text-pink-500 uppercase"><%= nama_siswa %></h2>
-                <p class="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest">ID: <%= kode_sekolah %></p>
+                <p class="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest">SISWA AKTIF</p>
                 
-                <button onclick="startCamera()" class="mt-2 text-[10px] font-bold text-pink-400 border border-pink-200 px-3 py-1 rounded-full hover:bg-pink-50 transition-all uppercase">Aktifkan Kamera</button>
+                <button id="btn-cam" onclick="startCamera()" class="mt-2 text-[10px] font-bold text-pink-400 border border-pink-200 px-3 py-1 rounded-full hover:bg-pink-50 transition-all uppercase">📸 Aktifkan Kamera</button>
             </div>
             
             <div class="bubble-card p-4 md:p-6 bg-indigo-50 border-indigo-100 shadow-[0_10px_0_#e0e7ff] md:shadow-[0_20px_0_#e0e7ff] text-center">
@@ -109,13 +96,29 @@
                 <h3 class="font-black text-yellow-700 text-sm mb-4 uppercase flex items-center gap-2"><span>💬</span> Diskusi Kelas</h3>
                 <div id="chat-box" class="h-48 md:h-64 overflow-y-auto space-y-3 p-2 mb-4 text-xs md:text-sm font-semibold"></div>
                 <div class="flex gap-2">
-                    <input id="chat-input" type="text" placeholder="Ketik..." class="w-full p-3 rounded-2xl border-2 border-yellow-100 outline-none focus:border-yellow-400 text-xs">
+                    <input id="chat-input" type="text" placeholder="Ketik..." class="w-full p-3 rounded-2xl border-2 border-yellow-100 text-xs outline-none">
                     <button onclick="sendChat()" class="bg-yellow-400 text-white p-3 rounded-2xl hover:scale-110 active:scale-90 transition-all">🚀</button>
                 </div>
             </div>
         </aside>
 
-        <main class="w-full order-1 md:order-2">
+        <main class="w-full order-1 md:order-2 space-y-8">
+            <div id="live-stage-murid" class="live-frame-container hidden animate-fun">
+                <div class="relative w-full h-[200px] md:h-[400px]">
+                    <video id="teacher-video-stream" class="w-full h-full object-cover" autoplay playsinline></video>
+                    
+                    <div id="teacher-presentation-overlay" class="hidden absolute inset-0 bg-white p-6 md:p-10 overflow-y-auto prose prose-pink max-w-none">
+                        <h2 id="live-judul" class="text-pink-500 font-black"></h2>
+                        <div id="live-konten" class="text-sm"></div>
+                    </div>
+
+                    <div class="absolute top-4 left-4 flex items-center gap-2">
+                        <div class="bg-red-500 text-white text-[8px] font-bold px-2 py-1 rounded-full animate-pulse">GURU LIVE</div>
+                        <div id="status-mode" class="bg-black/50 text-white text-[8px] px-2 py-1 rounded-full">Mode: Kamera</div>
+                    </div>
+                </div>
+            </div>
+
             <div id="no-materi" class="bubble-card flex flex-col items-center justify-center p-8 md:p-12 text-center bg-white min-h-[300px] md:h-[600px]">
                 <div class="relative mb-6 md:mb-8">
                     <div class="w-24 h-24 md:w-32 md:h-32 bg-sky-50 rounded-full animate-ping absolute opacity-20"></div>
@@ -135,13 +138,63 @@
     </div>
 
     <script>
-        // --- LOGIKA JAVASCRIPT TETAP SAMA DAN TERKONEKSI ---
         const socket = io();
         const namaSiswa = "<%= nama_siswa %>";
         const emailSiswa = "<%= email_siswa %>"; 
         const kodeSekolah = "<%= kode_sekolah %>";
         let kelasTersimpan = "<%= kelas_siswa %>"; 
         let currentRoom = kodeSekolah;
+        let myStream = null;
+
+        // --- FUNGSI LIVE CLASSROOM ---
+
+        async function startCamera() {
+            try {
+                myStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                const video = document.createElement('video');
+                video.id = 'video-element';
+                video.srcObject = myStream;
+                video.autoplay = true;
+                video.className = "w-full h-full object-cover rounded-full";
+                const container = document.getElementById('cam-container');
+                container.innerHTML = '';
+                container.appendChild(video);
+                
+                // Beri tahu Guru bahwa murid sudah "Live"
+                socket.emit('join-live', { room: currentRoom, name: namaSiswa });
+                
+                document.getElementById('btn-cam').classList.add('hidden');
+                showCuteAlert('Kamu sudah masuk Live Classroom!', '📹');
+            } catch (err) { 
+                showCuteAlert('Ups! Izin kamera ditolak.', '❌'); 
+            }
+        }
+
+        // Mendeteksi perubahan tampilan dari Guru
+        socket.on('change-view-mode', (data) => {
+            const overlay = document.getElementById('teacher-presentation-overlay');
+            const statusMode = document.getElementById('status-mode');
+            
+            if (data.mode === 'presentation') {
+                overlay.classList.remove('hidden');
+                statusMode.innerText = "Mode: Materi AI";
+                showCuteAlert('Guru sedang menampilkan materi!', '📑');
+            } else {
+                overlay.classList.add('hidden');
+                statusMode.innerText = "Mode: Kamera";
+                showCuteAlert('Kembali ke video Guru', '👨‍🏫');
+            }
+        });
+
+        // Paksa Mute dari Guru
+        socket.on('force-mute', () => {
+            if (myStream) {
+                myStream.getAudioTracks().forEach(track => track.enabled = false);
+                showCuteAlert('Suara kamu dimatikan Guru', '🔇');
+            }
+        });
+
+        // --- LOGIKA ASLI ANDA ---
 
         async function initKelasMurid() {
             try {
@@ -174,6 +227,7 @@
             currentRoom = newRoom;
             document.getElementById('status-materi-text').innerText = `Menunggu materi dari Guru di ${namaKelas}...`;
             document.getElementById('chat-box').innerHTML = ''; 
+            document.getElementById('live-stage-murid').classList.remove('hidden');
         }
 
         window.onload = () => { initKelasMurid(); };
@@ -186,21 +240,6 @@
             setTimeout(() => alert.classList.remove('alert-active'), 3000);
         }
 
-        async function startCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const video = document.createElement('video');
-                video.id = 'video-element';
-                video.srcObject = stream;
-                video.autoplay = true;
-                video.className = "w-full h-full object-cover rounded-full";
-                const container = document.getElementById('cam-container');
-                container.innerHTML = '';
-                container.appendChild(video);
-                showCuteAlert('Kamera sudah menyala!', '📸');
-            } catch (err) { showCuteAlert('Ups! Izin kamera ditolak.', '❌'); }
-        }
-
         function sendChat() {
             const input = document.getElementById('chat-input');
             if(input.value.trim()) {
@@ -211,7 +250,9 @@
 
         socket.on('chat-message', (data) => {
             const chatBox = document.getElementById('chat-box');
-            if(data.role === 'Guru') { document.getElementById('nama-guru-display').innerText = data.user; }
+            if(data.role === 'Guru') { 
+                document.getElementById('nama-guru-display').innerText = data.user; 
+            }
             const side = data.user === namaSiswa ? 'text-right' : 'text-left';
             const color = data.user === namaSiswa ? 'bg-pink-100' : 'bg-white';
             const labelColor = data.role === 'Guru' ? 'text-indigo-500 font-black' : 'text-gray-400';
@@ -219,13 +260,18 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
-        document.getElementById('chat-input').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendChat(); });
-
         socket.on('new-materi', (data) => {
             showCuteAlert('Materi baru sudah siap!', '🎁');
             document.getElementById('no-materi').classList.add('hidden');
             document.getElementById('materi-display').classList.remove('hidden');
+            
+            // Update materi bawah
             document.getElementById('content-materi').innerHTML = `<h1 class="text-2xl md:text-4xl font-black text-pink-500 mb-8">${data.judul}</h1><div class="text-slate-600 leading-relaxed">${data.html}</div>`;
+            
+            // Update materi di Live Overlay Guru
+            document.getElementById('live-judul').innerText = data.judul;
+            document.getElementById('live-konten').innerHTML = data.html;
+            
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
 
@@ -259,6 +305,7 @@
         }
 
         function closeQuiz() { document.getElementById('quiz-overlay').classList.add('hidden'); }
+        document.getElementById('chat-input').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendChat(); });
     </script>
 </body>
 </html>
