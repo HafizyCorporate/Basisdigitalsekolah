@@ -25,22 +25,16 @@
             background: #ff6b95; color: white; padding: 1rem 2rem;
             border-radius: 5rem; font-weight: 800; border: 4px solid white;
             box-shadow: 0 10px 0 #e04a76; z-index: 5000; transition: all 0.5s;
-            width: 80%; text-align: center; justify-content: center;
+            width: 80%; text-align: center; display: flex; align-items: center; justify-content: center;
         }
         .alert-active { top: 30px !important; }
         
-        /* Mirroring for camera */
-        #video-element, #teacher-video-stream { transform: scaleX(-1); object-fit: cover; }
+        #video-element, #teacher-video-stream { transform: scaleX(-1); object-fit: cover; background: #000; }
         #quiz-overlay { z-index: 4000; }
-
-        /* LIVE CLASSROOM STYLES */
         .live-frame-container { background: #1e1b4b; border-radius: 2.5rem; border: 8px solid #e0e7ff; overflow: hidden; box-shadow: 0 15px 0 #e0e7ff; }
 
         @media (max-width: 768px) {
             .bubble-card { border-radius: 2rem; border-width: 4px; box-shadow: 0 10px 0 #ffecf0; }
-            main { margin-top: 1rem; }
-            #no-materi { height: 400px; padding: 2rem; }
-            .prose { font-size: 0.9rem; }
         }
 
         @media (min-width: 769px) {
@@ -49,7 +43,6 @@
             main { flex: 1 !important; }
         }
 
-        /* AI Scorer Badge */
         .score-pop { font-size: 3rem; font-weight: 900; color: #ff6b95; text-shadow: 4px 4px 0px #ffecf0; }
     </style>
 </head>
@@ -57,19 +50,19 @@
 
     <div id="quiz-overlay" class="hidden fixed inset-0 bg-pink-500/20 backdrop-blur-md flex items-center justify-center p-4">
         <div class="bubble-card max-w-2xl w-full p-6 md:p-10 bg-white animate-fun relative max-h-[90vh] overflow-y-auto">
-            <button onclick="closeQuiz()" class="absolute top-4 right-4 md:top-6 md:right-8 text-gray-400 hover:text-pink-500 font-bold text-xs">TUTUP [X]</button>
+            <button onclick="closeQuiz()" class="absolute top-4 right-4 text-gray-400 hover:text-pink-500 font-bold text-xs uppercase tracking-tighter">Tutup [X]</button>
             <div id="quiz-content">
                 <h2 id="quiz-title" class="text-xl md:text-2xl font-black text-pink-500 mb-6 uppercase">🎯 Kuis Kilat!</h2>
                 <div id="quiz-body" class="space-y-6"></div>
                 <div id="quiz-footer" class="hidden mt-8 pt-6 border-t-4 border-pink-50 text-center">
-                    <button onclick="finishQuiz()" class="bg-pink-500 text-white px-10 py-4 rounded-3xl font-black shadow-[0_10px_0_#e04a76] hover:translate-y-1 hover:shadow-[0_5px_0_#e04a76] transition-all uppercase">Kirim Jawaban & Lihat Nilai AI 🚀</button>
+                    <button onclick="finishQuiz()" class="bg-pink-500 text-white px-10 py-4 rounded-3xl font-black shadow-[0_10px_0_#e04a76] hover:translate-y-1 hover:shadow-[0_5px_0_#e04a76] transition-all uppercase">Kirim ke Guru 🚀</button>
                 </div>
             </div>
             <div id="quiz-result" class="hidden text-center py-10">
                 <div class="score-pop mb-2" id="final-score-val">0</div>
                 <h3 class="text-2xl font-black text-slate-700 uppercase mb-4">Nilai Kamu!</h3>
                 <div class="p-6 bg-pink-50 rounded-[2rem] border-4 border-pink-100 mb-6">
-                    <p class="text-[10px] font-black text-pink-400 uppercase mb-2">Evaluasi AI Untukmu:</p>
+                    <p class="text-[10px] font-black text-pink-400 uppercase mb-2">Pesan AI Untukmu:</p>
                     <p id="ai-feedback" class="text-sm font-bold text-slate-600 italic">"Analisis sedang diproses..."</p>
                 </div>
                 <button onclick="closeQuiz()" class="text-pink-500 font-black uppercase text-sm underline">Kembali ke Kelas</button>
@@ -77,8 +70,8 @@
         </div>
     </div>
 
-    <div id="cuteAlert" class="flex items-center gap-4">
-        <span id="cuteIcon" class="text-2xl md:text-3xl">🍓</span>
+    <div id="cuteAlert">
+        <span id="cuteIcon" class="text-2xl md:text-3xl mr-3">🍓</span>
         <span id="cuteMsg" class="text-xs md:text-base">Halo! Semangat Belajar ya!</span>
     </div>
 
@@ -104,25 +97,24 @@
             </div>
 
             <div class="bubble-card p-8 text-center bg-white relative">
-                <div id="cam-container" class="w-20 h-20 md:w-24 md:h-24 bg-pink-100 rounded-full mx-auto mb-4 flex items-center justify-center text-4xl md:text-5xl border-4 border-pink-200 overflow-hidden">
+                <div id="cam-container" class="w-20 h-20 md:w-24 md:h-24 bg-pink-100 rounded-full mx-auto mb-4 flex items-center justify-center text-4xl border-4 border-pink-200 overflow-hidden">
                     <span id="placeholder-avatar">🐶</span>
                 </div>
-                <h2 class="text-xl md:text-2xl font-black text-pink-500 uppercase"><%= nama_siswa %></h2>
+                <h2 class="text-xl font-black text-pink-500 uppercase"><%= nama_siswa %></h2>
                 <p class="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest">SISWA AKTIF</p>
-                
                 <button id="btn-cam" onclick="startCamera()" class="mt-2 text-[10px] font-bold text-pink-400 border border-pink-200 px-3 py-1 rounded-full hover:bg-pink-50 transition-all uppercase">📸 Aktifkan Kamera</button>
             </div>
             
-            <div class="bubble-card p-4 md:p-6 bg-indigo-50 border-indigo-100 shadow-[0_10px_0_#e0e7ff] md:shadow-[0_20px_0_#e0e7ff] text-center">
+            <div class="bubble-card p-4 bg-indigo-50 border-indigo-100 shadow-[0_10px_0_#e0e7ff] text-center">
                 <p class="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">Guru Kamu</p>
-                <h4 id="nama-guru-display" class="font-bold text-indigo-700 uppercase text-xs md:text-base">Menunggu Guru...</h4>
+                <h4 id="nama-guru-display" class="font-bold text-indigo-700 uppercase text-xs md:text-sm">Menunggu Guru...</h4>
             </div>
 
-            <div class="bubble-card p-6 bg-yellow-50 border-yellow-200 shadow-[0_10px_0_#fef3c7] md:shadow-[0_20px_0_#fef3c7]">
-                <h3 class="font-black text-yellow-700 text-sm mb-4 uppercase flex items-center gap-2"><span>💬</span> Diskusi Kelas</h3>
-                <div id="chat-box" class="h-48 md:h-64 overflow-y-auto space-y-3 p-2 mb-4 text-xs md:text-sm font-semibold"></div>
+            <div class="bubble-card p-6 bg-yellow-50 border-yellow-200 shadow-[0_10px_0_#fef3c7]">
+                <h3 class="font-black text-yellow-700 text-sm mb-4 uppercase flex items-center gap-2"><span>💬</span> Chat Kelas</h3>
+                <div id="chat-box" class="h-48 overflow-y-auto space-y-3 p-2 mb-4 text-[11px] font-semibold"></div>
                 <div class="flex gap-2">
-                    <input id="chat-input" type="text" placeholder="Ketik..." class="w-full p-3 rounded-2xl border-2 border-yellow-100 text-xs outline-none">
+                    <input id="chat-input" type="text" placeholder="Tanya sesuatu..." class="w-full p-3 rounded-2xl border-2 border-yellow-100 text-xs outline-none">
                     <button onclick="sendChat()" class="bg-yellow-400 text-white p-3 rounded-2xl hover:scale-110 active:scale-90 transition-all">🚀</button>
                 </div>
             </div>
@@ -130,8 +122,8 @@
 
         <main class="w-full order-1 md:order-2 space-y-8">
             <div id="live-stage-murid" class="live-frame-container hidden animate-fun">
-                <div class="relative w-full h-[200px] md:h-[400px]">
-                    <img id="teacher-video-stream" class="w-full h-full object-cover bg-slate-900" />
+                <div class="relative w-full aspect-video">
+                    <img id="teacher-video-stream" class="w-full h-full object-cover" />
                     
                     <div id="teacher-presentation-overlay" class="hidden absolute inset-0 bg-white p-6 md:p-10 overflow-y-auto prose prose-pink max-w-none">
                         <h2 id="live-judul" class="text-pink-500 font-black"></h2>
@@ -139,29 +131,31 @@
                     </div>
 
                     <div class="absolute top-4 left-4 flex items-center gap-2">
-                        <div class="bg-red-500 text-white text-[8px] font-bold px-2 py-1 rounded-full animate-pulse">GURU LIVE</div>
-                        <div id="status-mode" class="bg-black/50 text-white text-[8px] px-2 py-1 rounded-full">Mode: Kamera</div>
+                        <div class="bg-red-500 text-white text-[8px] font-bold px-2 py-1 rounded-full animate-pulse">GURU SEDANG LIVE</div>
+                        <div id="status-mode" class="bg-black/40 text-white text-[8px] px-2 py-1 rounded-full">Mode: Kamera</div>
                     </div>
                 </div>
             </div>
 
-            <div id="no-materi" class="bubble-card flex flex-col items-center justify-center p-8 md:p-12 text-center bg-white min-h-[300px] md:h-[600px]">
-                <div class="relative mb-6 md:mb-8">
-                    <div class="w-24 h-24 md:w-32 md:h-32 bg-sky-50 rounded-full animate-ping absolute opacity-20"></div>
-                    <span class="text-5xl md:text-7xl relative">☁️</span>
+            <div id="no-materi" class="bubble-card flex flex-col items-center justify-center p-8 text-center bg-white min-h-[400px]">
+                <div class="relative mb-8">
+                    <div class="w-24 h-24 bg-sky-50 rounded-full animate-ping absolute opacity-20"></div>
+                    <span class="text-6xl relative">☁️</span>
                 </div>
-                <h2 class="text-xl md:text-3xl font-black text-sky-400 uppercase">Tunggu Sebentar...</h2>
-                <p id="status-materi-text" class="text-slate-400 mt-2 font-semibold text-xs md:text-base">Pilih kelasmu dulu untuk melihat materi!</p>
+                <h2 class="text-2xl font-black text-sky-400 uppercase">Belum Ada Materi</h2>
+                <p id="status-materi-text" class="text-slate-400 mt-2 font-semibold text-xs">Pilih kelas atau tunggu guru memulai pelajaran.</p>
             </div>
 
             <div id="materi-display" class="hidden animate-fun">
-                <div class="bubble-card p-8 md:p-16 bg-white border-sky-100 shadow-[0_10px_0_#e0f2fe] md:shadow-[0_20px_0_#e0f2fe] prose prose-pink max-w-none">
+                <div class="bubble-card p-8 md:p-12 bg-white border-sky-100 shadow-[0_20px_0_#e0f2fe] prose prose-pink max-w-none">
                     <div id="content-materi"></div>
                 </div>
             </div>
         </main>
 
     </div>
+
+    <canvas id="hidden-canvas" class="hidden" width="240" height="180"></canvas>
 
     <script>
         const socket = io();
@@ -171,21 +165,17 @@
         let kelasTersimpan = "<%= kelas_siswa %>"; 
         let currentRoom = kodeSekolah;
         let myStream = null;
+        let currentQuizData = null; 
 
         let correctAnswers = 0;
         let totalQuizQuestions = 0;
 
-        // --- PENAMBAHAN LOGIKA PENERIMA STREAMING (TANPA MERUBAH ASLINYA) ---
+        // --- 1. LOGIKA VIDEO & STREAMING ---
         
         socket.on('update-frame', (data) => {
-            // Hanya update jika murid berada di room yang sama
-            if(data.room === currentRoom) {
-                const img = document.getElementById('teacher-video-stream');
-                if(img) img.src = data.image;
-            }
+            const img = document.getElementById('teacher-video-stream');
+            if(img) img.src = data.image;
         });
-
-        // --- LANJUTAN LOGIKA ASLI ---
 
         async function startCamera() {
             try {
@@ -194,41 +184,53 @@
                 video.id = 'video-element';
                 video.srcObject = myStream;
                 video.autoplay = true;
-                video.className = "w-full h-full object-cover rounded-full";
+                video.muted = true; // Agar tidak feedback suara sendiri
+                video.className = "w-full h-full object-cover";
+                
                 const container = document.getElementById('cam-container');
                 container.innerHTML = '';
                 container.appendChild(video);
                 
-                socket.emit('join-live', { room: currentRoom, name: namaSiswa });
+                // Beritahu guru kita live
+                socket.emit('join-live', { room: currentRoom, nama: namaSiswa });
                 
+                // Mulai kirim frame ke guru
+                sendFrameToGuru();
+
                 document.getElementById('btn-cam').classList.add('hidden');
-                showCuteAlert('Kamu sudah masuk Live Classroom!', '📹');
+                showCuteAlert('Kamera kamu aktif!', '📹');
             } catch (err) { 
-                showCuteAlert('Ups! Izin kamera ditolak.', '❌'); 
+                showCuteAlert('Gagal akses kamera!', '❌'); 
             }
+        }
+
+        function sendFrameToGuru() {
+            if(!myStream) return;
+            const video = document.getElementById('video-element');
+            const canvas = document.getElementById('hidden-canvas');
+            const ctx = canvas.getContext('2d');
+
+            if (video && video.readyState === video.HAVE_ENOUGH_DATA) {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const frame = canvas.toDataURL('image/jpeg', 0.5);
+                socket.emit('stream-frame', { room: currentRoom, image: frame });
+            }
+            setTimeout(sendFrameToGuru, 200); // 5 frame per detik (hemat kuota)
         }
 
         socket.on('change-view-mode', (data) => {
             const overlay = document.getElementById('teacher-presentation-overlay');
             const statusMode = document.getElementById('status-mode');
-            
             if (data.mode === 'presentation') {
                 overlay.classList.remove('hidden');
                 statusMode.innerText = "Mode: Materi AI";
-                showCuteAlert('Guru sedang menampilkan materi!', '📑');
             } else {
                 overlay.classList.add('hidden');
                 statusMode.innerText = "Mode: Kamera";
-                showCuteAlert('Kembali ke video Guru', '👨‍🏫');
             }
         });
 
-        socket.on('force-mute', () => {
-            if (myStream) {
-                myStream.getAudioTracks().forEach(track => track.enabled = false);
-                showCuteAlert('Suara kamu dimatikan Guru', '🔇');
-            }
-        });
+        // --- 2. LOGIKA KELAS & ROOM ---
 
         async function initKelasMurid() {
             try {
@@ -239,8 +241,8 @@
                     const isSelected = (k.nama_kelas === kelasTersimpan) ? 'selected' : '';
                     select.innerHTML += `<option value="${k.nama_kelas}" ${isSelected}>${k.nama_kelas}</option>`;
                 });
-                if(kelasTersimpan && kelasTersimpan !== "null") { joinRoomSiswa(kelasTersimpan); }
-            } catch (e) { console.error("Gagal memuat daftar kelas"); }
+                if(kelasTersimpan && kelasTersimpan !== "null") joinRoomSiswa(kelasTersimpan);
+            } catch (e) { console.error("Gagal muat kelas"); }
         }
 
         async function muridPindahKelas() {
@@ -251,20 +253,22 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ email: emailSiswa, kelas: kelasBaru })
             });
+            kelasTersimpan = kelasBaru;
             joinRoomSiswa(kelasBaru);
-            showCuteAlert(`Kamu masuk ke kelas ${kelasBaru}!`, '🌈');
+            showCuteAlert(`Pindah ke ${kelasBaru}!`, '🌈');
         }
 
         function joinRoomSiswa(namaKelas) {
             const newRoom = `${kodeSekolah}-${namaKelas}`;
             socket.emit('join-room', { room: newRoom, nama: namaSiswa, role: 'Siswa' });
             currentRoom = newRoom;
-            document.getElementById('status-materi-text').innerText = `Menunggu materi dari Guru di ${namaKelas}...`;
-            document.getElementById('chat-box').innerHTML = ''; 
+            document.getElementById('status-materi-text').innerText = `Menunggu instruksi Guru di ${namaKelas}...`;
             document.getElementById('live-stage-murid').classList.remove('hidden');
         }
 
-        window.onload = () => { initKelasMurid(); };
+        window.onload = initKelasMurid;
+
+        // --- 3. LOGIKA CHAT & NOTIF ---
 
         function showCuteAlert(msg, icon = '🍓') {
             const alert = document.getElementById('cuteAlert');
@@ -284,90 +288,103 @@
 
         socket.on('chat-message', (data) => {
             const chatBox = document.getElementById('chat-box');
-            if(data.role === 'Guru') { 
-                document.getElementById('nama-guru-display').innerText = data.user; 
-            }
+            if(data.role === 'Guru') document.getElementById('nama-guru-display').innerText = data.user;
+            
             const side = data.user === namaSiswa ? 'text-right' : 'text-left';
             const color = data.user === namaSiswa ? 'bg-pink-100' : 'bg-white';
-            const labelColor = data.role === 'Guru' ? 'text-indigo-500 font-black' : 'text-gray-400';
-            chatBox.innerHTML += `<div class="animate-fun ${side}"><span class="text-[9px] ${labelColor} uppercase">${data.user}</span><div class="p-3 rounded-2xl ${color} border border-gray-100 shadow-sm inline-block max-w-[80%]">${data.msg}</div></div>`;
+            const label = data.role === 'Guru' ? 'text-indigo-500 font-black' : 'text-gray-400';
+            
+            chatBox.innerHTML += `
+                <div class="animate-fun ${side}">
+                    <span class="text-[8px] ${label} uppercase block">${data.user}</span>
+                    <div class="p-2 px-3 rounded-2xl ${color} border border-pink-50 inline-block max-w-[90%]">${data.msg}</div>
+                </div>`;
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
+        // --- 4. LOGIKA MATERI & KUIS AI ---
+
         socket.on('new-materi', (data) => {
-            showCuteAlert('Materi baru sudah siap!', '🎁');
+            showCuteAlert('Materi baru dari Guru!', '📑');
             document.getElementById('no-materi').classList.add('hidden');
             document.getElementById('materi-display').classList.remove('hidden');
-            document.getElementById('content-materi').innerHTML = `<h1 class="text-2xl md:text-4xl font-black text-pink-500 mb-8">${data.judul}</h1><div class="text-slate-600 leading-relaxed">${data.html}</div>`;
+            document.getElementById('content-materi').innerHTML = `
+                <h1 class="text-2xl md:text-3xl font-black text-pink-500 mb-6 uppercase tracking-tight">${data.judul}</h1>
+                <div class="text-slate-600 leading-relaxed">${data.html}</div>`;
             document.getElementById('live-judul').innerText = data.judul;
             document.getElementById('live-konten').innerHTML = data.html;
-            window.scrollTo({ top: 0, behavior: 'smooth' });
         });
 
         socket.on('start-quiz', (data) => {
-            showCuteAlert('GURU MEMULAI KUIS! AYO JAWAB!', '🎯');
+            currentQuizData = data; 
+            showCuteAlert('KUIS DIMULAI!', '🎯');
             correctAnswers = 0;
             totalQuizQuestions = data.soal.length;
             
-            const overlay = document.getElementById('quiz-overlay');
             const body = document.getElementById('quiz-body');
-            const content = document.getElementById('quiz-content');
-            const result = document.getElementById('quiz-result');
-            const footer = document.getElementById('quiz-footer');
-
-            overlay.classList.remove('hidden');
-            content.classList.remove('hidden');
-            result.classList.add('hidden');
-            footer.classList.remove('hidden');
-
+            document.getElementById('quiz-overlay').classList.remove('hidden');
+            document.getElementById('quiz-content').classList.remove('hidden');
+            document.getElementById('quiz-result').classList.add('hidden');
+            document.getElementById('quiz-footer').classList.remove('hidden');
             document.getElementById('quiz-title').innerText = "KUIS: " + data.judul;
-            body.innerHTML = data.soal.map((s, idx) => `
-                <div class="p-5 bg-sky-50 rounded-[2rem] border-4 border-sky-100 mb-4">
-                    <p class="font-bold text-slate-700 mb-4 text-sm md:text-lg">${idx + 1}. ${s.q}</p>
-                    <div class="grid grid-cols-1 gap-3">
-                        ${s.a.map(opsi => `<button onclick="checkAnswer(this, '${opsi}', '${s.c}')" class="option-btn p-3 md:p-4 bg-white rounded-2xl border-4 border-white hover:border-pink-200 transition-all text-xs md:text-sm font-bold text-slate-600 shadow-sm">${opsi}</button>`).join('')}
+
+            // Render Soal Pilihan Ganda
+            let html = `<p class="text-[10px] font-black text-sky-400 uppercase mb-4">Bagian 1: Pilihan Ganda</p>`;
+            html += data.soal.map((s, idx) => `
+                <div class="p-4 bg-sky-50 rounded-[2rem] border-2 border-sky-100 mb-4">
+                    <p class="font-bold text-slate-700 mb-3 text-sm">${idx + 1}. ${s.q}</p>
+                    <div class="grid grid-cols-1 gap-2">
+                        ${s.a.map(opsi => `
+                            <button onclick="checkAnswer(this, '${opsi}', '${s.c}')" 
+                                class="option-btn p-3 bg-white rounded-xl border-2 border-white hover:border-pink-200 transition-all text-xs font-bold text-slate-600 shadow-sm">
+                                ${opsi}
+                            </button>`).join('')}
                     </div>
-                </div>
-            `).join('');
+                </div>`).join('');
+
+            // Render Soal Essay (Jika ada)
+            if(data.essay && data.essay.length > 0) {
+                html += `<p class="text-[10px] font-black text-pink-400 uppercase my-6">Bagian 2: Analisis Essay</p>`;
+                html += data.essay.map((e, idx) => `
+                    <div class="p-4 bg-pink-50 rounded-[2rem] border-2 border-pink-100 mb-4">
+                        <p class="font-bold text-slate-700 mb-3 text-sm">${idx + 1}. ${e.q}</p>
+                        <textarea class="essay-ans w-full p-3 rounded-xl border-2 border-white outline-none text-xs font-semibold h-24" placeholder="Ketik jawabanmu..."></textarea>
+                    </div>`).join('');
+            }
+
+            body.innerHTML = html;
         });
 
         function checkAnswer(btn, picked, correct) {
             const parent = btn.parentElement;
-            const buttons = parent.querySelectorAll('button');
-            buttons.forEach(b => b.disabled = true);
-            
+            parent.querySelectorAll('button').forEach(b => b.disabled = true);
             if(picked === correct) {
-                btn.classList.add('bg-green-500', 'text-white', 'border-green-200');
-                showCuteAlert('HEBAT! Jawaban Benar!', '🌟');
+                btn.classList.add('bg-green-500', 'text-white');
                 correctAnswers++;
             } else {
-                btn.classList.add('bg-red-500', 'text-white', 'border-red-200');
-                showCuteAlert('Oops! Kurang tepat!', '🧸');
-                buttons.forEach(b => {
-                    if(b.innerText === correct) b.classList.add('border-green-500', 'text-green-600');
-                });
+                btn.classList.add('bg-red-500', 'text-white');
             }
         }
 
         function finishQuiz() {
             const finalScore = totalQuizQuestions > 0 ? Math.round((correctAnswers / totalQuizQuestions) * 100) : 0;
-            let feedback = "";
-            if(finalScore === 100) feedback = "Luar biasa! Kamu memahami seluruh materi dengan sempurna. Pertahankan prestasimu!";
-            else if(finalScore >= 75) feedback = "Bagus sekali! Kamu sudah menguasai sebagian besar materi. Sedikit lagi menuju sempurna!";
-            else if(finalScore >= 50) feedback = "Cukup baik, tapi ada beberapa bagian yang perlu kamu pelajari lagi. Jangan menyerah!";
-            else feedback = "Jangan berkecil hati. Mari kita ulas lagi materinya bersama-sama. Kamu pasti bisa!";
+            
+            // Logika Feedback AI Sederhana
+            let feedback = finalScore >= 80 ? "Hebat! Kamu menguasai materi ini." : "Ayo belajar lagi, kamu pasti bisa!";
 
             document.getElementById('quiz-content').classList.add('hidden');
             document.getElementById('quiz-result').classList.remove('hidden');
             document.getElementById('quiz-footer').classList.add('hidden');
             document.getElementById('final-score-val').innerText = finalScore;
             document.getElementById('ai-feedback').innerText = `"${feedback}"`;
-            
             document.getElementById('score-card').classList.remove('hidden');
             document.getElementById('sidebar-score').innerText = finalScore;
 
+            // KIRIM DATA LENGKAP KE SERVER (Sinkron dengan server.js baru)
             socket.emit('update-score-guru', {
                 name: namaSiswa,
+                email: emailSiswa,
+                materi_judul: currentQuizData ? currentQuizData.judul : "Kuis Live",
                 score: finalScore,
                 feedback: feedback,
                 kelas: kelasTersimpan || 'Umum',
@@ -375,7 +392,7 @@
                 time: new Date().toLocaleTimeString()
             });
 
-            showCuteAlert('Nilai kamu sudah terkirim ke Guru!', '✅');
+            showCuteAlert('Nilai terkirim ke Guru!', '✅');
         }
 
         function closeQuiz() { document.getElementById('quiz-overlay').classList.add('hidden'); }
