@@ -167,12 +167,13 @@
                                     <th class="p-4">Nama Murid</th>
                                     <th class="p-4">Skor</th>
                                     <th class="p-4">Analisis AI / Jawaban</th>
-                                    <th class="p-4 text-right">Status</th>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4 text-right">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="live-score-body">
                                 <tr id="empty-score-row">
-                                    <td colspan="5" class="p-10 text-center text-slate-600 italic">Menunggu murid menyelesaikan kuis...</td>
+                                    <td colspan="6" class="p-10 text-center text-slate-600 italic">Menunggu murid menyelesaikan kuis...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -366,7 +367,13 @@
                             <span class="px-3 py-1 rounded-lg bg-indigo-500/20 text-indigo-400 font-mono font-bold">${s.score}</span>
                         </td>
                         <td class="p-4 text-slate-400 italic text-[10px] max-w-xs truncate">${s.feedback || 'Selesai'}</td>
-                        <td class="p-4 text-right"><div class="w-2 h-2 bg-emerald-500 rounded-full inline-block animate-pulse"></div></td>
+                        <td class="p-4"><div class="w-2 h-2 bg-emerald-500 rounded-full inline-block animate-pulse"></div></td>
+                        <td class="p-4 text-right">
+                             <button onclick="bukaKoreksi('${s.name}', ${s.score})" 
+                                class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1 rounded-xl text-[9px] font-black hover:bg-amber-500 hover:text-white transition-all">
+                                📝 KOREKSI
+                            </button>
+                        </td>
                     </tr>
                 `;
             });
@@ -531,6 +538,52 @@
             alert.classList.add('alert-show');
             setTimeout(() => alert.classList.remove('alert-show'), 3000);
         }
+
+        // --- LOGIKA KOREKSI NILAI MANUAL (GURU OVERRIDE) ---
+        async function bukaKoreksi(namaSiswa, skorLama) {
+            const judulMateri = lastGeneratedData ? lastGeneratedData.judul : "Live Quiz";
+            const skorBaru = prompt(`Koreksi nilai untuk: ${namaSiswa}\nSkor AI saat ini: ${skorLama}\n\nMasukkan nilai baru (0-100):`, skorLama);
+            
+            if (skorBaru !== null && skorBaru !== "" && !isNaN(skorBaru)) {
+                try {
+                    const response = await fetch('/api/koreksi-nilai', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            nama_siswa: namaSiswa,
+                            materi: judulMateri,
+                            skor_baru: parseInt(skorBaru),
+                            kode_sekolah: kodeSekolah
+                        })
+                    });
+
+                    const hasil = await response.json();
+                    if (hasil.success) {
+                        showAlert(`Nilai ${namaSiswa} berhasil diupdate!`, '✅');
+                        // Update lokal
+                        const idx = allScores.findIndex(s => s.name === namaSiswa);
+                        if(idx > -1) {
+                            allScores[idx].score = parseInt(skorBaru);
+                            renderScoreboard();
+                        }
+                    } else {
+                        showAlert("Gagal simpan ke database.", "❌");
+                    }
+                } catch (err) {
+                    showAlert("Masalah koneksi server.", "❌");
+                }
+            }
+        }
+
+        // Mendengarkan update skor live jika ada trigger dari server
+        socket.on('score-updated-live', (data) => {
+            const idx = allScores.findIndex(s => s.name === data.nama_siswa);
+            if(idx > -1) {
+                allScores[idx].score = data.skor;
+                renderScoreboard();
+                showAlert(`Skor ${data.nama_siswa} dikoreksi Guru!`, '✏️');
+            }
+        });
     </script>
 </body>
 </html>
