@@ -148,6 +148,37 @@
                     </div>
                 </div>
 
+                <div class="mt-8 border-t border-white/10 pt-6 mb-8">
+                    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-4 gap-4">
+                        <div>
+                            <p class="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Live Scoreboard & Ranking</p>
+                            <p id="active-quiz-title" class="text-indigo-400 text-xs font-bold italic mt-1">Belum ada kuis aktif</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="exportFullData('excel')" class="bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 px-4 py-2 rounded-xl text-[10px] font-bold hover:bg-emerald-600 hover:text-white transition-all">EXPORT EXCEL</button>
+                            <button onclick="exportFullData('pdf')" class="bg-red-600/20 text-red-400 border border-red-500/30 px-4 py-2 rounded-xl text-[10px] font-bold hover:bg-red-600 hover:text-white transition-all">EXPORT PDF</button>
+                        </div>
+                    </div>
+                    <div class="overflow-hidden rounded-2xl border border-white/5 bg-white/5 backdrop-blur-sm">
+                        <table class="w-full text-left text-[11px] text-slate-300">
+                            <thead class="bg-slate-800 text-slate-400 uppercase text-[9px] font-black">
+                                <tr>
+                                    <th class="p-4">Rank</th>
+                                    <th class="p-4">Nama Murid</th>
+                                    <th class="p-4">Skor</th>
+                                    <th class="p-4">Analisis AI / Jawaban</th>
+                                    <th class="p-4 text-right">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="live-score-body">
+                                <tr id="empty-score-row">
+                                    <td colspan="5" class="p-10 text-center text-slate-600 italic">Menunggu murid menyelesaikan kuis...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <div class="border-t border-white/10 pt-6">
                     <p class="text-slate-500 text-[10px] font-bold mb-4 uppercase tracking-widest">Grid Peserta Didik</p>
                     <div id="students-live-grid" class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-10 gap-3">
@@ -215,6 +246,9 @@
         let currentRoom = null;
         let currentAbsen = [];
         let isPresentationMode = false;
+        
+        // Data untuk Scoreboard
+        let allScores = [];
 
         // --- FUNGSI LIVE CLASSROOM BARU ---
 
@@ -266,6 +300,64 @@
             tile.innerHTML = `<div class="absolute bottom-1 left-1 bg-black/50 text-[8px] text-white px-2 py-0.5 rounded">${data.name}</div>`;
             grid.appendChild(tile);
         });
+
+        // --- LOGIKA LIVE SCORE & RANKING ---
+        socket.on('update-score-guru', (data) => {
+            // data: { name, score, feedback, time }
+            const existing = allScores.findIndex(s => s.name === data.name);
+            if(existing > -1) {
+                allScores[existing] = data;
+            } else {
+                allScores.push(data);
+            }
+            renderScoreboard();
+            showAlert(`Nilai baru dari ${data.name}!`, '📊');
+        });
+
+        function renderScoreboard() {
+            const tbody = document.getElementById('live-score-body');
+            const empty = document.getElementById('empty-score-row');
+            if(empty) empty.remove();
+
+            // Ranking Otomatis (Sort dari Skor Tertinggi)
+            allScores.sort((a, b) => b.score - a.score);
+
+            tbody.innerHTML = '';
+            allScores.forEach((s, i) => {
+                const isTop = i === 0;
+                tbody.innerHTML += `
+                    <tr class="border-t border-white/5 hover:bg-white/5 transition-all animate-pop">
+                        <td class="p-4 font-black ${isTop ? 'text-amber-400' : 'text-slate-500'} text-lg">${isTop ? '👑 1' : i+1}</td>
+                        <td class="p-4 font-bold text-white">${s.name}</td>
+                        <td class="p-4">
+                            <span class="px-3 py-1 rounded-lg bg-indigo-500/20 text-indigo-400 font-mono font-bold">${s.score}</span>
+                        </td>
+                        <td class="p-4 text-slate-400 italic text-[10px] max-w-xs truncate">${s.feedback || 'Selesai'}</td>
+                        <td class="p-4 text-right"><div class="w-2 h-2 bg-emerald-500 rounded-full inline-block animate-pulse"></div></td>
+                    </tr>
+                `;
+            });
+        }
+
+        function exportFullData(tipe) {
+            if(allScores.length === 0) return showAlert("Belum ada data nilai!", "⚠️");
+            const header = [["Rank", "Nama Murid", "Skor", "Feedback AI", "Waktu"]];
+            const body = allScores.map((s, i) => [i + 1, s.name, s.score, s.feedback, new Date().toLocaleString()]);
+
+            if (tipe === 'excel') {
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet([[`REKAP NILAI: ${lastGeneratedData?.judul || 'Live Class'}`], [], ...header, ...body]);
+                XLSX.utils.book_append_sheet(wb, ws, "Nilai");
+                XLSX.writeFile(wb, `Rekap_Nilai_${new Date().getTime()}.xlsx`);
+            } else {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('l', 'mm', 'a4');
+                doc.text(`REKAP NILAI - ${instansi}`, 14, 15);
+                doc.autoTable({ head: header, body: body, startY: 25 });
+                doc.save(`Rekap_Nilai_${new Date().getTime()}.pdf`);
+            }
+            showAlert(`Export ${tipe.toUpperCase()} berhasil!`, '✅');
+        }
 
         // --- LOGIKA ASLI ANDA (TIDAK BERUBAH) ---
 
@@ -366,6 +458,7 @@
                 document.getElementById('preview-area').classList.remove('hidden');
                 document.getElementById('res-judul').innerText = data.judul;
                 document.getElementById('res-html').innerHTML = data.html;
+                document.getElementById('active-quiz-title').innerText = "Kuis Aktif: " + data.judul;
                 showAlert('Materi Selesai!', '✅');
             } catch (e) { showAlert('Gagal AI.', '❌'); } finally {
                 btn.disabled = false; btnText.innerText = "PRODUKSI SEKARANG";
