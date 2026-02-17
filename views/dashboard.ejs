@@ -24,7 +24,6 @@
         }
         .alert-show { transform: translateX(0); }
         
-        /* Mirroring for Live Cam */
         #teacher-cam { transform: scaleX(-1); object-fit: cover; }
     </style>
 </head>
@@ -90,9 +89,14 @@
                 <p class="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">🏫 <%= instansi %> • ID: <%= kode %></p>
             </div>
             <div class="hidden md:block">
-                <div class="card-elegant px-6 py-3 rounded-2xl flex items-center gap-3 bg-slate-50">
-                    <div id="status-dot" class="w-3 h-3 bg-emerald-500 rounded-full animate-ping"></div>
-                    <span id="status-text" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kelas Aktif</span>
+                <div class="card-elegant px-4 py-2 rounded-2xl flex items-center gap-4 bg-white border-indigo-100">
+                    <div class="flex flex-col">
+                        <span class="text-[8px] font-black text-indigo-400 uppercase">Ruang Kelas</span>
+                        <select id="select-kelas" onchange="pindahKelas()" class="text-[11px] font-bold text-slate-700 bg-transparent outline-none">
+                            <option value="">-- Pilih Kelas --</option>
+                        </select>
+                    </div>
+                    <button onclick="tambahKelas()" class="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all">＋</button>
                 </div>
             </div>
         </header>
@@ -140,9 +144,53 @@
         const namaGuru = "<%= nama_guru %>";
         const kodeSekolah = "<%= kode %>";
         let lastGeneratedData = null;
+        let currentRoom = null; // Menandakan kelas yang aktif saat ini
 
-        // --- 0. JOIN ROOM ---
+        // --- 0. JOIN ROOM AWAL ---
         socket.emit('join-room', kodeSekolah);
+
+        // --- LOGIKA KELAS DINAMIS (BARU) ---
+        async function loadKelas() {
+            try {
+                const res = await fetch(`/api/kelas/${kodeSekolah}`);
+                const data = await res.json();
+                const select = document.getElementById('select-kelas');
+                select.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+                data.forEach(k => {
+                    select.innerHTML += `<option value="${k.nama_kelas}">${k.nama_kelas}</option>`;
+                });
+            } catch (e) { console.error("Gagal memuat kelas"); }
+        }
+
+        async function tambahKelas() {
+            const nama = prompt("Masukkan Nama Kelas (Contoh: 1.1 atau 7-A):");
+            if(nama) {
+                await fetch('/api/kelas', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ kode_sekolah: kodeSekolah, nama_kelas: nama })
+                });
+                loadKelas();
+                showAlert(`Kelas ${nama} Berhasil Dibuat!`, '🏫');
+            }
+        }
+
+        function pindahKelas() {
+            const kelasSelected = document.getElementById('select-kelas').value;
+            if(!kelasSelected) {
+                currentRoom = kodeSekolah; // Kembali ke umum jika tidak ada kelas
+                showAlert('Kembali ke Ruang Umum', '🏢');
+                return;
+            }
+
+            const newRoom = `${kodeSekolah}-${kelasSelected}`;
+            // Beritahu server untuk pindah room agar chat tidak campur
+            socket.emit('switch-room', { oldRoom: currentRoom || kodeSekolah, newRoom: newRoom });
+            currentRoom = newRoom;
+            
+            document.getElementById('chat-box').innerHTML = ''; // Reset chat saat pindah kelas
+            showAlert(`Masuk ke Kelas: ${kelasSelected}`, '📡');
+        }
 
         // --- 1. LOGIKA LIVE CAM ---
         async function initCamera() {
@@ -155,7 +203,12 @@
                 showAlert('Kamera tidak terdeteksi.', '⚠️');
             }
         }
-        window.onload = initCamera;
+        
+        // Gabungkan window.onload
+        window.onload = () => {
+            initCamera();
+            loadKelas();
+        };
 
         // --- 2. LOGIKA AI & PUBLIKASI ---
         async function generate() {
@@ -196,9 +249,10 @@
 
         function publishToStudents() {
             if(!lastGeneratedData) return;
-            // Sertakan Room (kode sekolah) saat kirim materi
-            socket.emit('new-materi', { ...lastGeneratedData, room: kodeSekolah });
-            showAlert('Materi telah dikirim ke semua siswa!', '🚀');
+            // Gunakan currentRoom (Kelas spesifik) jika ada, jika tidak pakai kodeSekolah (Umum)
+            const targetRoom = currentRoom || kodeSekolah;
+            socket.emit('new-materi', { ...lastGeneratedData, room: targetRoom });
+            showAlert(`Materi dikirim ke ${document.getElementById('select-kelas').value || 'Semua'}!`, '🚀');
         }
 
         function publishQuiz() {
@@ -206,13 +260,13 @@
                 showAlert('Buat materi dulu agar ada kuisnya!', '⚠️');
                 return;
             }
-            // Sertakan Room (kode sekolah) saat kirim kuis
+            const targetRoom = currentRoom || kodeSekolah;
             socket.emit('start-quiz', { 
-                room: kodeSekolah,
+                room: targetRoom,
                 judul: lastGeneratedData.judul, 
                 soal: lastGeneratedData.soal 
             });
-            showAlert('Kuis interaktif telah dikirim ke siswa!', '🎯');
+            showAlert(`Kuis dikirim ke ${document.getElementById('select-kelas').value || 'Semua'}!`, '🎯');
             
             const btn = document.getElementById('btnQuiz');
             btn.classList.replace('bg-amber-500', 'bg-emerald-500');
@@ -228,11 +282,12 @@
 
         function sendChat() {
             const input = document.getElementById('chat-input');
+            const targetRoom = currentRoom || kodeSekolah;
             if(input.value.trim()) {
                 socket.emit('chat-message', { 
                     user: namaGuru, 
                     msg: input.value, 
-                    room: kodeSekolah,
+                    room: targetRoom,
                     role: 'Guru' 
                 });
                 input.value = '';
