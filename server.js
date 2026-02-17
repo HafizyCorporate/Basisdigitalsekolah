@@ -45,11 +45,69 @@ let onlineUsers = {};
 // ==========================================
 // 🎯 1. ROUTES (AUTH & API)
 // ==========================================
+
+// --- TAMPILAN (GET) ---
 app.get('/', (req, res) => res.render('landing'));
 app.get('/login', (req, res) => res.render('login', { msg: null }));
 app.get('/login-siswa', (req, res) => res.render('login_siswa', { msg: null }));
 
-// Auth Guru & Siswa (Logika Tetap Sama)
+// Route Register Baru (Menampilkan File EJS Anda)
+app.get('/register', (req, res) => res.render('register', { msg: null }));           // Instansi
+app.get('/register-guru', (req, res) => res.render('register-guru', { msg: null })); // Guru
+app.get('/register-siswa', (req, res) => res.render('register_siswa', { msg: null })); // Siswa
+app.get('/verify-guru', (req, res) => res.render('verify-guru', { msg: null, email: req.query.email || "" }));
+
+// --- LOGIKA PENDAFTARAN (POST) ---
+
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+// 1. Register Instansi & Buat Schema
+app.post('/auth/register', async (req, res) => {
+  const { nama, email, pass } = req.body;
+  const kode = "SCH-" + Math.random().toString(36).substring(2, 7).toUpperCase();
+  const otp = generateOTP(); 
+  try {
+    const hashed = await bcrypt.hash(pass, 10);
+    await pool.query(
+      'INSERT INTO global_instansi (nama_instansi, kode_instansi, admin_email, password, otp) VALUES ($1,$2,$3,$4,$5)', 
+      [nama, kode, email, hashed, otp]
+    );
+    await pool.query(`CREATE SCHEMA IF NOT EXISTS "${kode}"`);
+    await pool.query(`CREATE TABLE IF NOT EXISTS "${kode}".penilaian (id SERIAL PRIMARY KEY, nama TEXT, email TEXT, kelas TEXT, tipe TEXT, skor INT, jawaban_essay TEXT, feedback_ai TEXT, materi TEXT, waktu TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+    
+    await sendMail(email, "Kode Verifikasi", `OTP: ${otp}, Kode Sekolah: ${kode}`);
+    res.render('verify-guru', { msg: `Masukkan OTP untuk: ${email}`, email: email });
+  } catch (err) { res.status(500).send("Error: " + err.message); }
+});
+
+// 2. Register Guru
+app.post('/auth/register-guru', async (req, res) => {
+    const { nama, email, pass, kode_sekolah } = req.body;
+    try {
+        const hashed = await bcrypt.hash(pass, 10);
+        await pool.query(
+            'INSERT INTO global_guru (nama_guru, email, password, kode_sekolah) VALUES ($1, $2, $3, $4)',
+            [nama, email, hashed, kode_sekolah]
+        );
+        res.render('login', { msg: "Pendaftaran Guru Berhasil! Silakan Login." });
+    } catch (err) { res.render('register-guru', { msg: "Email sudah terdaftar atau kode salah." }); }
+});
+
+// 3. Register Siswa
+app.post('/auth/register-siswa', async (req, res) => {
+    const { nama, email, pass, kode_sekolah, kelas } = req.body;
+    try {
+        const hashed = await bcrypt.hash(pass, 10);
+        await pool.query(
+            'INSERT INTO global_siswa (nama_siswa, email, password, kode_sekolah, kelas) VALUES ($1, $2, $3, $4, $5)',
+            [nama, email, hashed, kode_sekolah, kelas]
+        );
+        res.render('login_siswa', { msg: "Pendaftaran Siswa Berhasil! Silakan Login." });
+    } catch (err) { res.render('register_siswa', { msg: "Gagal mendaftar siswa." }); }
+});
+
+// --- LOGIKA LOGIN (POST) ---
+
 app.post('/auth/login-guru', async (req, res) => {
   const { email, pass } = req.body;
   try {
@@ -88,6 +146,7 @@ app.post('/api/generate', async (req, res) => {
     res.json(data);
   } catch (err) { res.status(500).json({ error: "AI Sedang sibuk." }); }
 });
+
 
 // ==========================================
 // 🚀 2. SOCKET.IO (MODERN COLLABORATION)
