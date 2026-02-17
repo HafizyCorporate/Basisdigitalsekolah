@@ -80,6 +80,8 @@ app.post('/auth/register', async (req, res) => {
     );
     await pool.query(`CREATE SCHEMA IF NOT EXISTS "${kode}"`);
     await pool.query(`CREATE TABLE IF NOT EXISTS "${kode}".materi (id SERIAL PRIMARY KEY, judul TEXT, konten JSONB)`);
+    // Tambahan: Buat tabel penilaian otomatis saat registrasi instansi
+    await pool.query(`CREATE TABLE IF NOT EXISTS "${kode}".penilaian (id SERIAL PRIMARY KEY, nama TEXT, email TEXT, kelas TEXT, tipe TEXT, skor INT, jawaban_essay TEXT, feedback_ai TEXT, materi TEXT, waktu TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
     
     await sendMail(
       email, 
@@ -301,6 +303,28 @@ app.post('/api/update-kelas-siswa', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// --- API BARU UNTUK PENILAIAN & EXPORT ---
+
+app.post('/api/submit-penilaian', async (req, res) => {
+    const { nama, email, kelas, tipe, skor, jawaban_essay, feedback_ai, materi, kode_sekolah } = req.body;
+    try {
+        await pool.query(
+            `INSERT INTO "${kode_sekolah}".penilaian (nama, email, kelas, tipe, skor, jawaban_essay, feedback_ai, materi) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [nama, email, kelas, tipe, skor, jawaban_essay, feedback_ai, materi]
+        );
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Database Error: " + err.message }); }
+});
+
+app.get('/api/rekap-nilai/:kode', async (req, res) => {
+    try {
+        const result = await pool.query(`SELECT * FROM "${req.params.kode}".penilaian ORDER BY waktu DESC`);
+        res.json(result.rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+
 // ==========================================
 // 🚀 5. SOCKET.IO REAL-TIME LOGIC (SINKRON PER KELAS)
 // ==========================================
@@ -313,23 +337,19 @@ io.on('connection', (socket) => {
 
   // LOGIKA PEMISAH KELAS: Masuk ke Room berdasarkan Kode Sekolah/Kelas
   socket.on('join-room', (data) => {
-    // Mendukung data string (lama) atau object {room, nama, role} (baru)
     const roomID = typeof data === 'object' ? data.room : data;
     const userName = data.nama || null;
     const userRole = data.role || 'Umum';
 
     socket.join(roomID);
     
-    // Simpan data di instance socket agar bisa diakses saat disconnect
     socket.userName = userName;
     socket.userRoom = roomID;
     socket.userRole = userRole;
 
-    // Jika Siswa bergabung, masukkan ke daftar absensi online
     if (userRole === 'Siswa' && userName) {
         if (!onlineUsers[roomID]) onlineUsers[roomID] = new Set();
         onlineUsers[roomID].add(userName);
-        // Kirim update absen ke semua orang di room (Guru akan melihat ini)
         io.to(roomID).emit('update-absen', Array.from(onlineUsers[roomID]));
     }
 
@@ -340,32 +360,37 @@ io.on('connection', (socket) => {
   socket.on('switch-room', (data) => {
       if(data.oldRoom) socket.leave(data.oldRoom);
       socket.join(data.newRoom);
-      socket.userRoom = data.newRoom; // Update room aktif guru
+      socket.userRoom = data.newRoom;
 
-      // Berikan data absen terbaru di kelas baru tersebut kepada guru
       const currentList = onlineUsers[data.newRoom] ? Array.from(onlineUsers[data.newRoom]) : [];
       socket.emit('update-absen', currentList);
 
       console.log(`🔄 Guru pindah dari ${data.oldRoom} ke ${data.newRoom}`);
   });
 
-  // Fitur 1: Live Chat (Hanya untuk Room yang sama)
+  // Fitur 1: Live Chat
   socket.on('chat-message', (data) => {
     io.to(data.room).emit('chat-message', data); 
   });
 
-  // Fitur 2: Sinkronisasi Materi Baru (Kirim ke Room tertentu)
+  // Fitur 2: Sinkronisasi Materi
   socket.on('new-materi', (data) => {
     socket.to(data.room).emit('new-materi', data);
   });
 
-  // Fitur 3: KUIS LIVE (Mulai Kuis per Kelas)
+  // Fitur 3: KUIS LIVE
   socket.on('start-quiz', (quizData) => {
     socket.to(quizData.room).emit('start-quiz', quizData);
     console.log(`🎯 Kuis Live "${quizData.judul}" Terkirim ke Kelas ${quizData.room}`);
   });
 
-  // Fitur 4: Camera Signaling (Status Kamera per Kelas)
+  // --- FITUR BARU: LIVE SCOREBOARD ---
+  socket.on('submit-score-live', (scoreData) => {
+    // Kirim skor ke Guru di room yang sama secara real-time
+    io.to(scoreData.room).emit('score-update-guru', scoreData);
+  });
+
+  // Fitur 4: Camera Signaling
   socket.on('camera-signal', (data) => {
     socket.to(data.room).emit('camera-signal', data);
   });
@@ -374,7 +399,6 @@ io.on('connection', (socket) => {
     const room = socket.userRoom;
     const nama = socket.userName;
 
-    // Hapus siswa dari daftar absen jika disconnect
     if (socket.userRole === 'Siswa' && onlineUsers[room]) {
         onlineUsers[room].delete(nama);
         io.to(room).emit('update-absen', Array.from(onlineUsers[room]));
@@ -391,7 +415,7 @@ const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
   console.log(`
   =========================================
-  🚀 SERVER GLOBAL SCHOOL AKTIF (GEMINI 2.5)
+  🚀 SERVER GLOBAL SCHOOL AKTIF (GEMINI 3 FLASH)
   -----------------------------------------
   📍 Port     : ${PORT}
   📧 Email    : Brevo Connected (OTP Ready)
