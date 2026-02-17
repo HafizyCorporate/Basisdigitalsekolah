@@ -112,7 +112,23 @@ app.post('/auth/login-siswa', async (req, res) => {
 // 🤖 4. API (SINKRONISASI FRONTEND)
 // ==========================================
 
-// FIXED: Penamaan API disesuaikan dengan dashboard.ejs (muatRiwayat)
+// FIXED: API Daftar Kelas untuk Dropdown Murid
+app.get('/api/kelas/:kode', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT DISTINCT nama_kelas FROM global_jawaban WHERE nama_kelas IS NOT NULL');
+        res.json(result.rows);
+    } catch (err) { res.status(500).json([]); }
+});
+
+// FIXED: API Update Kelas Permanen Siswa
+app.post('/api/update-kelas-siswa', async (req, res) => {
+    const { email, kelas } = req.body;
+    try {
+        await pool.query('UPDATE global_siswa SET kelas = $1 WHERE email = $2', [kelas, email]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.get('/api/riwayat-nilai/:kode', async (req, res) => {
     try {
         const result = await pool.query(`SELECT * FROM "${req.params.kode}".penilaian ORDER BY waktu DESC`);
@@ -120,9 +136,7 @@ app.get('/api/riwayat-nilai/:kode', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// FIXED: API Koreksi disesuaikan dengan dashboard.ejs (simpanKoreksi)
 app.post('/api/update-nilai-manual', async (req, res) => {
-    // Di dashboard.ejs mengirim: nama_siswa, materi, skor_baru, kode_sekolah
     const { nama_siswa, materi, skor_baru, kode_sekolah } = req.body;
     try {
         await pool.query(
@@ -172,9 +186,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // FIXED: Menambahkan join-live agar Kamera Siswa muncul di Guru
   socket.on('join-live', (data) => {
-      // Broadcast ke guru di room yang sama bahwa ada siswa mulai live
       socket.to(data.room).emit('new-live-student', {
           nama: data.nama,
           image: data.image
@@ -193,26 +205,29 @@ io.on('connection', (socket) => {
     socket.to(quizData.room).emit('start-quiz', quizData);
   });
 
-  // FIXED: Sinkronisasi update-score-guru agar masuk ke tabel SEKOLAH & GLOBAL
+  // FIXED: Penanganan Schema Sekolah & Penyimpanan Global
   socket.on('update-score-guru', async (data) => {
     try {
         const { name, score, feedback, kelas, room, time, email, materi_judul } = data;
 
-        // 1. Simpan ke Tabel Khusus Sekolah (Untuk Riwayat/Export)
+        // Ambil Kode Sekolah (SCH-XXXX) dari Nama Room (SCH-XXXX-KELAS)
+        const kodeSekolah = room.split('-').slice(0, 2).join('-');
+
+        // 1. Simpan ke Tabel Khusus Sekolah
         await pool.query(
-            `INSERT INTO "${room}".penilaian (nama, email, kelas, tipe, skor, feedback_ai, materi) 
+            `INSERT INTO "${kodeSekolah}".penilaian (nama, email, kelas, tipe, skor, feedback_ai, materi) 
              VALUES ($1, $2, $3, $4, $5, $6, $7)`,
             [name, email || '', kelas, 'Kuis AI', score, feedback, materi_judul || 'Kuis Live']
         );
 
-        // 2. Simpan ke Tabel Global (Untuk Ranking)
+        // 2. Simpan ke Tabel Global (Untuk Ranking Antar Sekolah)
         await pool.query(
             `INSERT INTO global_jawaban (nama_siswa, skor, umpan_balik_ai, nama_kelas, created_at) 
              VALUES ($1, $2, $3, $4, NOW())`,
             [name, score, feedback, kelas]
         );
 
-        // 3. Update Live ke Dashboard Guru
+        // 3. Update Live Dashboard Guru
         io.to(room).emit('score-updated-live', {
             nama_siswa: name,
             skor: score,
