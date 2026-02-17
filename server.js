@@ -234,7 +234,9 @@ app.post('/auth/login-siswa', async (req, res) => {
     
     res.render('dashboard-murid', { 
         nama_siswa: result.rows[0].nama_siswa, 
-        kode_sekolah: result.rows[0].kode_sekolah 
+        email_siswa: result.rows[0].email,
+        kode_sekolah: result.rows[0].kode_sekolah,
+        kelas_siswa: result.rows[0].kelas 
     });
   } catch (err) { res.send(err.message); }
 });
@@ -266,7 +268,7 @@ app.post('/auth/reset-password-siswa', async (req, res) => {
 });
 
 // ==========================================
-// 🤖 4. API UNTUK AI
+// 🤖 4. API UNTUK AI & KELAS (MANAJEMEN)
 // ==========================================
 
 app.post('/api/generate', async (req, res) => {
@@ -274,6 +276,29 @@ app.post('/api/generate', async (req, res) => {
     const data = await processAI(req.body.instruksi);
     res.json(data);
   } catch (err) { res.status(500).json({ error: "AI sedang sibuk." }); }
+});
+
+app.get('/api/kelas/:kode', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM global_kelas WHERE kode_sekolah = $1', [req.params.kode]);
+        res.json(result.rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/kelas', async (req, res) => {
+    const { kode_sekolah, nama_kelas } = req.body;
+    try {
+        await pool.query('INSERT INTO global_kelas (kode_sekolah, nama_kelas) VALUES ($1, $2)', [kode_sekolah, nama_kelas]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/update-kelas-siswa', async (req, res) => {
+    const { email, kelas } = req.body;
+    try {
+        await pool.query('UPDATE global_siswa SET kelas = $1 WHERE email = $2', [kelas, email]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ==========================================
@@ -285,10 +310,17 @@ app.post('/api/generate', async (req, res) => {
 io.on('connection', (socket) => {
   console.log('User Terkoneksi:', socket.id);
 
-  // LOGIKA PEMISAH KELAS: Masuk ke Room berdasarkan Kode Sekolah
-  socket.on('join-room', (kodeSekolah) => {
-    socket.join(kodeSekolah);
-    console.log(`📡 User ${socket.id} bergabung ke kelas: ${kodeSekolah}`);
+  // LOGIKA PEMISAH KELAS: Masuk ke Room berdasarkan Kode Sekolah/Kelas
+  socket.on('join-room', (roomID) => {
+    socket.join(roomID);
+    console.log(`📡 User ${socket.id} bergabung ke room: ${roomID}`);
+  });
+
+  // PINDAH KELAS (GURU)
+  socket.on('switch-room', (data) => {
+      if(data.oldRoom) socket.leave(data.oldRoom);
+      socket.join(data.newRoom);
+      console.log(`🔄 Guru pindah dari ${data.oldRoom} ke ${data.newRoom}`);
   });
 
   // Fitur 1: Live Chat (Hanya untuk Room yang sama)
