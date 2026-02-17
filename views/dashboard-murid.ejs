@@ -48,6 +48,9 @@
             aside { width: 320px !important; position: sticky; top: 2.5rem; }
             main { flex: 1 !important; }
         }
+
+        /* AI Scorer Badge */
+        .score-pop { font-size: 3rem; font-weight: 900; color: #ff6b95; text-shadow: 4px 4px 0px #ffecf0; }
     </style>
 </head>
 <body class="p-4 md:p-10">
@@ -58,6 +61,18 @@
             <div id="quiz-content">
                 <h2 id="quiz-title" class="text-xl md:text-2xl font-black text-pink-500 mb-6 uppercase">🎯 Kuis Kilat!</h2>
                 <div id="quiz-body" class="space-y-6"></div>
+                <div id="quiz-footer" class="hidden mt-8 pt-6 border-t-4 border-pink-50 text-center">
+                    <button onclick="finishQuiz()" class="bg-pink-500 text-white px-10 py-4 rounded-3xl font-black shadow-[0_10px_0_#e04a76] hover:translate-y-1 hover:shadow-[0_5px_0_#e04a76] transition-all uppercase">Kirim Jawaban & Lihat Nilai AI 🚀</button>
+                </div>
+            </div>
+            <div id="quiz-result" class="hidden text-center py-10">
+                <div class="score-pop mb-2" id="final-score-val">0</div>
+                <h3 class="text-2xl font-black text-slate-700 uppercase mb-4">Nilai Kamu!</h3>
+                <div class="p-6 bg-pink-50 rounded-[2rem] border-4 border-pink-100 mb-6">
+                    <p class="text-[10px] font-black text-pink-400 uppercase mb-2">Evaluasi AI Untukmu:</p>
+                    <p id="ai-feedback" class="text-sm font-bold text-slate-600 italic">"Analisis sedang diproses..."</p>
+                </div>
+                <button onclick="closeQuiz()" class="text-pink-500 font-black uppercase text-sm underline">Kembali ke Kelas</button>
             </div>
         </div>
     </div>
@@ -70,6 +85,17 @@
     <div class="max-w-6xl mx-auto flex flex-col desktop-container gap-8">
         
         <aside class="w-full space-y-6 order-2 md:order-1">
+            <div id="score-card" class="bubble-card p-6 bg-gradient-to-br from-pink-500 to-rose-400 border-none shadow-[0_15px_0_#e04a76] text-white hidden">
+                <div class="flex justify-between items-center mb-2">
+                    <p class="text-[9px] font-black uppercase tracking-widest opacity-80">Rangkuman Nilai</p>
+                    <span class="text-xl">🏆</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <h2 id="sidebar-score" class="text-4xl font-black">0</h2>
+                    <span class="text-xs font-bold opacity-80">Poin AI</span>
+                </div>
+            </div>
+
             <div class="bubble-card p-6 bg-white border-pink-100">
                 <p class="text-[9px] font-black text-pink-400 uppercase tracking-widest mb-2 text-center">🏫 Ruang Kelas Kamu</p>
                 <select id="select-kelas-murid" onchange="muridPindahKelas()" class="w-full p-3 rounded-2xl border-2 border-pink-50 bg-pink-50/50 text-xs font-bold text-pink-600 outline-none">
@@ -146,6 +172,10 @@
         let currentRoom = kodeSekolah;
         let myStream = null;
 
+        // --- LOGIKA AI SCORER STATE ---
+        let correctAnswers = 0;
+        let totalQuizQuestions = 0;
+
         // --- FUNGSI LIVE CLASSROOM ---
 
         async function startCamera() {
@@ -160,7 +190,6 @@
                 container.innerHTML = '';
                 container.appendChild(video);
                 
-                // Beri tahu Guru bahwa murid sudah "Live"
                 socket.emit('join-live', { room: currentRoom, name: namaSiswa });
                 
                 document.getElementById('btn-cam').classList.add('hidden');
@@ -170,7 +199,6 @@
             }
         }
 
-        // Mendeteksi perubahan tampilan dari Guru
         socket.on('change-view-mode', (data) => {
             const overlay = document.getElementById('teacher-presentation-overlay');
             const statusMode = document.getElementById('status-mode');
@@ -186,7 +214,6 @@
             }
         });
 
-        // Paksa Mute dari Guru
         socket.on('force-mute', () => {
             if (myStream) {
                 myStream.getAudioTracks().forEach(track => track.enabled = false);
@@ -264,28 +291,37 @@
             showCuteAlert('Materi baru sudah siap!', '🎁');
             document.getElementById('no-materi').classList.add('hidden');
             document.getElementById('materi-display').classList.remove('hidden');
-            
-            // Update materi bawah
             document.getElementById('content-materi').innerHTML = `<h1 class="text-2xl md:text-4xl font-black text-pink-500 mb-8">${data.judul}</h1><div class="text-slate-600 leading-relaxed">${data.html}</div>`;
-            
-            // Update materi di Live Overlay Guru
             document.getElementById('live-judul').innerText = data.judul;
             document.getElementById('live-konten').innerHTML = data.html;
-            
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
 
+        // --- UPDATE LOGIKA KUIS DENGAN AI SCORER ---
         socket.on('start-quiz', (data) => {
             showCuteAlert('GURU MEMULAI KUIS! AYO JAWAB!', '🎯');
+            
+            // Reset state AI Scorer
+            correctAnswers = 0;
+            totalQuizQuestions = data.soal.length;
+            
             const overlay = document.getElementById('quiz-overlay');
             const body = document.getElementById('quiz-body');
+            const content = document.getElementById('quiz-content');
+            const result = document.getElementById('quiz-result');
+            const footer = document.getElementById('quiz-footer');
+
             overlay.classList.remove('hidden');
+            content.classList.remove('hidden');
+            result.classList.add('hidden');
+            footer.classList.remove('hidden');
+
             document.getElementById('quiz-title').innerText = "KUIS: " + data.judul;
             body.innerHTML = data.soal.map((s, idx) => `
                 <div class="p-5 bg-sky-50 rounded-[2rem] border-4 border-sky-100 mb-4">
                     <p class="font-bold text-slate-700 mb-4 text-sm md:text-lg">${idx + 1}. ${s.q}</p>
                     <div class="grid grid-cols-1 gap-3">
-                        ${s.a.map(opsi => `<button onclick="checkAnswer(this, '${opsi}', '${s.c}')" class="p-3 md:p-4 bg-white rounded-2xl border-4 border-white hover:border-pink-200 transition-all text-xs md:text-sm font-bold text-slate-600 shadow-sm">${opsi}</button>`).join('')}
+                        ${s.a.map(opsi => `<button onclick="checkAnswer(this, '${opsi}', '${s.c}')" class="option-btn p-3 md:p-4 bg-white rounded-2xl border-4 border-white hover:border-pink-200 transition-all text-xs md:text-sm font-bold text-slate-600 shadow-sm">${opsi}</button>`).join('')}
                     </div>
                 </div>
             `).join('');
@@ -295,13 +331,51 @@
             const parent = btn.parentElement;
             const buttons = parent.querySelectorAll('button');
             buttons.forEach(b => b.disabled = true);
+            
             if(picked === correct) {
                 btn.classList.add('bg-green-500', 'text-white', 'border-green-200');
                 showCuteAlert('HEBAT! Jawaban Benar!', '🌟');
+                correctAnswers++;
             } else {
                 btn.classList.add('bg-red-500', 'text-white', 'border-red-200');
                 showCuteAlert('Oops! Kurang tepat!', '🧸');
+                // Tandai jawaban yang benar
+                buttons.forEach(b => {
+                    if(b.innerText === correct) b.classList.add('border-green-500', 'text-green-600');
+                });
             }
+        }
+
+        // FUNGSI BARU: FINISH QUIZ (PENGIRIMAN KE GURU)
+        function finishQuiz() {
+            const finalScore = Math.round((correctAnswers / totalQuizQuestions) * 100);
+            
+            // Logika Evaluasi AI Sederhana
+            let feedback = "";
+            if(finalScore === 100) feedback = "Luar biasa! Kamu memahami seluruh materi dengan sempurna. Pertahankan prestasimu!";
+            else if(finalScore >= 75) feedback = "Bagus sekali! Kamu sudah menguasai sebagian besar materi. Sedikit lagi menuju sempurna!";
+            else if(finalScore >= 50) feedback = "Cukup baik, tapi ada beberapa bagian yang perlu kamu pelajari lagi. Jangan menyerah!";
+            else feedback = "Jangan berkecil hati. Mari kita ulas lagi materinya bersama-sama. Kamu pasti bisa!";
+
+            // Tampilkan hasil di Murid
+            document.getElementById('quiz-content').classList.add('hidden');
+            document.getElementById('quiz-result').classList.remove('hidden');
+            document.getElementById('final-score-val').innerText = finalScore;
+            document.getElementById('ai-feedback').innerText = `"${feedback}"`;
+            
+            // Update Sidebar Murid
+            document.getElementById('score-card').classList.remove('hidden');
+            document.getElementById('sidebar-score').innerText = finalScore;
+
+            // KIRIM NILAI KE GURU (Terhubung dengan update-score-guru di Dashboard Guru)
+            socket.emit('update-score-guru', {
+                name: namaSiswa,
+                score: finalScore,
+                feedback: feedback,
+                time: new Date().toLocaleTimeString()
+            });
+
+            showCuteAlert('Nilai kamu sudah terkirim ke Guru!', '✅');
         }
 
         function closeQuiz() { document.getElementById('quiz-overlay').classList.add('hidden'); }
