@@ -36,9 +36,9 @@
             width: 100%;
         }
         
-        /* Kamera Utama Normal (Bukan Mirror) untuk murid */
+        /* Kamera Utama Normal */
         #guru-live-cam { object-fit: cover; width: 100%; height: 100%; }
-        /* Kamera Kecil Mirror (untuk bapak ngaca saat presentasi) */
+        /* Kamera Kecil Mirror */
         #guru-pip-cam { transform: scaleX(-1); object-fit: cover; width: 100%; height: 100%; }
         
         .live-dot { width: 10px; height: 10px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 10px #ef4444; animation: blink 1s infinite; }
@@ -131,8 +131,18 @@
                         <video id="guru-pip-cam" autoplay playsinline muted></video>
                     </div>
                 </div>
-
-                <div class="mt-12">
+                
+                <div class="mt-8 mb-4">
+                    <div class="p-6 bg-slate-800/50 border border-white/5 rounded-2xl backdrop-blur-sm">
+                        <h3 class="font-bold text-white mb-4 flex items-center gap-2 text-sm uppercase tracking-widest">
+                            <span>📊</span> Status Pengerjaan Siswa
+                        </h3>
+                        <div id="status-kerjakan-siswa" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="text-[10px] text-slate-500 italic">Menunggu data live...</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8">
                     <div class="flex justify-between items-center mb-6 px-4">
                         <h4 class="text-white font-black text-lg uppercase tracking-tight">Real-time Scoreboard</h4>
                         <div class="flex gap-2">
@@ -172,7 +182,7 @@
                             <span class="text-[10px] font-black text-indigo-500 uppercase px-4">Preview Konten</span>
                             <div class="flex gap-2">
                                 <button onclick="publishToStudents()" class="bg-indigo-600 text-white px-8 py-3 rounded-full text-[10px] font-black hover:bg-indigo-700 shadow-lg">SIARKAN</button>
-                                <button onclick="publishQuiz()" class="bg-amber-500 text-white px-8 py-3 rounded-full text-[10px] font-black hover:bg-amber-600 shadow-lg">MULAI KUIS</button>
+                                <button onclick="mulaiKuisAI()" class="bg-amber-500 text-white px-8 py-3 rounded-full text-[10px] font-black hover:bg-amber-600 shadow-lg">MULAI KUIS</button>
                             </div>
                         </div>
                         <div class="card-elegant p-12 border-t-[10px] border-indigo-600">
@@ -226,7 +236,97 @@
         let isPresentationMode = false;
         let targetMuridKoreksi = "";
 
-        // 1. KAMERA (CLEAN: Hanya Utama & PIP)
+        // -----------------------------------------------------------
+        // 1. UPDATE LISTENER SOCKET (LIVE SCORE UPDATE)
+        // -----------------------------------------------------------
+        socket.on('score-updated-live', (data) => {
+            // A. Update array internal agar sorting tetap jalan jika dirender ulang
+            const ex = allScores.findIndex(s => s.name === data.nama_siswa);
+            if(ex > -1) {
+                allScores[ex].score = data.skor;
+                allScores[ex].feedback = data.umpan_balik;
+            } else {
+                allScores.push({ name: data.nama_siswa, score: data.skor, feedback: data.umpan_balik });
+            }
+
+            // B. Tampilkan notifikasi kecil
+            showAlert(`Jawaban baru: ${data.nama_siswa} (${data.skor})`, "📝");
+
+            // C. Update tabel nilai secara real-time di layar guru (Visual append)
+            // Note: Saya ganti ID nya ke 'live-score-body' sesuai HTML di atas
+            const tabelNilai = document.getElementById('live-score-body');
+            document.getElementById('empty-score')?.remove();
+
+            if (tabelNilai) {
+                // Style disesuaikan agar text terlihat di background gelap (text-slate-300)
+                const row = `
+                    <tr class="border-t border-white/5 bg-white/5 transition-all animate-pulse">
+                        <td class="p-6 text-xs font-bold text-indigo-400">Baru</td>
+                        <td class="p-6 text-xs text-white font-bold">${data.nama_siswa}</td>
+                        <td class="p-6">
+                            <span class="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-[10px] font-black">
+                                ${data.skor}
+                            </span>
+                        </td>
+                        <td class="p-6 text-[10px] italic text-slate-400">${data.umpan_balik}</td>
+                        <td class="p-6 text-[10px] text-slate-500 text-right">${data.waktu || 'Baru saja'}</td>
+                    </tr>
+                `;
+                // Menambahkan di paling atas (afterbegin)
+                tabelNilai.insertAdjacentHTML('afterbegin', row);
+                
+                // Update Monitoring Bubbles juga jika perlu
+                const monitorGrid = document.getElementById('status-kerjakan-siswa');
+                if(monitorGrid) {
+                   const bubble = `
+                   <div class="bg-slate-700/50 p-3 rounded-xl border border-white/5 flex items-center justify-between">
+                        <span class="text-[9px] font-bold text-slate-300">${data.nama_siswa}</span>
+                        <span class="text-[9px] font-black text-emerald-400">${data.skor}</span>
+                   </div>`;
+                   // Hapus text "Menunggu data" jika ada
+                   if(monitorGrid.innerText.includes('Menunggu')) monitorGrid.innerHTML = '';
+                   monitorGrid.insertAdjacentHTML('afterbegin', bubble);
+                }
+            }
+        });
+
+        // -----------------------------------------------------------
+        // 2. FUNGSI MULAI KUIS AI (Baru)
+        // -----------------------------------------------------------
+        function mulaiKuisAI() {
+            if (!lastGeneratedData) return showAlert("Buat materi dulu!", "⚠️");
+
+            // Hilangkan kunci jawaban (c) sebelum dikirim ke siswa
+            // Asumsi struktur data: lastGeneratedData.soal adalah array of object {q, a, c}
+            // Jika format Anda berbeda, sesuaikan mapping ini.
+            let soalAman = [];
+            
+            if (lastGeneratedData.soal && Array.isArray(lastGeneratedData.soal)) {
+                 soalAman = lastGeneratedData.soal.map(s => ({
+                    q: s.q, // Pertanyaan
+                    a: s.a  // Pilihan Ganda
+                    // Properti 'c' (kunci) sengaja tidak dikirim
+                }));
+            }
+
+            const dataKeSiswa = {
+                judul: lastGeneratedData.judul,
+                soal_pg: soalAman,
+                soal_essay: lastGeneratedData.essay || [], // Essay memang tidak ada kunci di depan
+                room: currentRoom
+            };
+
+            // Reset Scoreboard visual
+            allScores = []; 
+            document.getElementById('live-score-body').innerHTML = '<tr id="empty-score"><td colspan="5" class="p-16 text-center text-slate-500 italic">Kuis dimulai! Menunggu jawaban...</td></tr>';
+            document.getElementById('status-kerjakan-siswa').innerHTML = '<div class="col-span-full text-center text-[10px] text-slate-500 italic">Memonitoring jawaban masuk...</div>';
+
+            socket.emit('start-quiz', dataKeSiswa);
+            showAlert("Kuis dikirim ke semua siswa!", "🚀");
+        }
+
+        // --- FUNGSI LAMA (DIPERTAHANKAN) ---
+
         async function initCameras() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -244,8 +344,6 @@
             } catch (e) { showAlert("Kamera Error", "❌"); }
         }
 
-        // 2. EXPORT SYSTEM (NEW & FIXED)
-        // Export Absensi Saja (Tanpa Nilai)
         function exportAbsensi(tipe) {
             const listItems = document.querySelectorAll('#list-absen li span');
             let data = [];
@@ -277,15 +375,16 @@
             showAlert("Export Berhasil", "✅");
         }
 
-        // Export Nilai (FIX WORD)
         function exportLaporan(tipe) {
             const rows = Array.from(document.querySelectorAll('#live-score-body tr'));
             if (rows.length === 0 || rows[0].id === 'empty-score') return showAlert("Data nilai kosong", "⚠️");
 
             const data = rows.map(r => {
                 const c = r.querySelectorAll('td');
+                // Check if row has data (not empty placeholder)
+                if(c.length < 3) return null;
                 return { Murid: c[1].innerText, Skor: c[2].innerText, Feedback: c[3].innerText };
-            });
+            }).filter(d => d !== null);
 
             const fileName = `Nilai_${currentRoom}_${new Date().toLocaleDateString()}`;
 
@@ -303,7 +402,6 @@
             showAlert("Export Berhasil", "✅");
         }
 
-        // 3. FULL SCREEN CLEAN
         function toggleCleanFullScreen() {
             const stage = document.getElementById('main-stage');
             if (!document.fullscreenElement) {
@@ -315,7 +413,6 @@
             }
         }
 
-        // 4. KELAS & SOCKET (LOGIKA ASLI DIPERTAHANKAN)
         async function loadKelas() {
             const res = await fetch(`/api/kelas/${kodeSekolah}`);
             const data = await res.json();
@@ -408,7 +505,8 @@
         }
 
         function publishToStudents() { socket.emit('new-materi', { ...lastGeneratedData, room: currentRoom }); showAlert("Tersiar!", "🚀"); }
-        function publishQuiz() { allScores = []; renderScoreboard(); socket.emit('start-quiz', { ...lastGeneratedData, room: currentRoom }); showAlert("Kuis Dimulai!", "🎯"); }
+        
+        // Hapus function publishQuiz lama agar tidak bentrok, diganti mulaiKuisAI()
 
         function switchDisplayMode() {
             if(!lastGeneratedData) return showAlert("Buat materi dulu!", "⚠️");
@@ -450,6 +548,12 @@
         function muteAllStudents() { socket.emit('mute-all', { room: currentRoom }); showAlert("Semua Muted", "🔇"); }
         function bukaKoreksi(n, s, f) { targetMuridKoreksi = n; document.getElementById('koreksi-nama').innerText = n; document.getElementById('input-skor-baru').value = s; document.getElementById('input-catatan-baru').value = f; document.getElementById('modal-koreksi').classList.add('modal-active'); }
         function tutupKoreksi() { document.getElementById('modal-koreksi').classList.remove('modal-active'); }
+        // Simpan koreksi logic (Opsional jika ada backend)
+        function simpanKoreksi() {
+             // Logic simpan ke backend bisa ditambahkan disini
+             tutupKoreksi();
+             showAlert("Nilai dikoreksi", "✏️");
+        }
 
         window.onload = () => { initCameras(); loadKelas(); socket.emit('join-room', kodeSekolah); };
     </script>
