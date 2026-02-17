@@ -7,7 +7,7 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.1.0",
+    "@google/generative-ai": "^0.21.0", 
     "@getbrevo/brevo": "^2.0.0",
     "express": "^4.18.2",
     "pg": "^8.11.3",
