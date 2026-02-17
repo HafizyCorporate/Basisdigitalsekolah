@@ -222,6 +222,61 @@
             </div>
         </section>
 
+        <section class="mt-20 pt-10 border-t border-slate-200">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 gap-4">
+                <div>
+                    <h3 class="text-2xl font-extrabold text-slate-800 tracking-tight">Pusat Evaluasi & Analitik</h3>
+                    <p class="text-slate-500 text-sm mt-1">Data riwayat kuis dan grafik performa dari PostgreSQL</p>
+                </div>
+                <button onclick="muatRiwayat()" class="bg-slate-900 text-white px-6 py-3 rounded-2xl text-[10px] font-black hover:bg-slate-800 shadow-lg shadow-slate-200 transition-all uppercase tracking-widest flex items-center gap-2">
+                    🔄 <span>Update Data Database</span>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+                <div class="card-elegant p-6 rounded-[2rem] border-l-4 border-indigo-500">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rata-rata Kelas</p>
+                    <h4 id="avg-score" class="text-3xl font-black text-slate-800 mt-2">-</h4>
+                    <p class="text-[10px] text-slate-400 font-bold mt-1">Kalkulasi Semua Kuis</p>
+                </div>
+                <div class="card-elegant p-6 rounded-[2rem] border-l-4 border-emerald-500">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Lulus KKM (>75)</p>
+                    <h4 id="pass-count" class="text-3xl font-black text-slate-800 mt-2">-</h4>
+                    <p class="text-[10px] text-emerald-500 font-bold mt-1">Siswa Berprestasi</p>
+                </div>
+                <div class="card-elegant p-6 rounded-[2rem] border-l-4 border-amber-500">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Sesi</p>
+                    <h4 id="quiz-count" class="text-3xl font-black text-slate-800 mt-2">-</h4>
+                    <p class="text-[10px] text-slate-400 font-bold mt-1">Materi Tersimpan</p>
+                </div>
+            </div>
+
+            <div class="card-elegant rounded-[2.5rem] overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-[11px]">
+                        <thead class="bg-slate-50 text-slate-400 uppercase text-[9px] font-black">
+                            <tr>
+                                <th class="p-6">Waktu & Sesi</th>
+                                <th class="p-6">Nama Murid</th>
+                                <th class="p-6">Grafik Performa</th>
+                                <th class="p-6">Skor</th>
+                                <th class="p-6 text-right">Status DB</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-body" class="divide-y divide-slate-100">
+                            <tr>
+                                <td colspan="5" class="p-20 text-center">
+                                    <div class="flex flex-col items-center opacity-40">
+                                        <span class="text-4xl mb-4">📂</span>
+                                        <p class="font-bold uppercase tracking-widest">Klik "Update Data" untuk memuat riwayat</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
         <div id="chat-panel" class="hidden absolute right-8 top-32 w-80 bg-white border border-slate-200 rounded-3xl shadow-2xl z-50 flex flex-col overflow-hidden animate-pop">
             <div class="p-4 bg-indigo-600 text-white font-bold text-xs flex justify-between items-center">
                 <span>CHAT KELAS LIVE</span>
@@ -248,23 +303,17 @@
         let isPresentationMode = false;
         let allScores = [];
 
-        // --- PENAMBAHAN LOGIKA STREAMING (TIDAK MERUBAH LOGIKA ASLI) ---
-        
+        // --- KAMERA & STREAMING ---
         async function initLiveCameras() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { width: 640, height: 480 }, 
                     audio: true 
                 });
-                
-                // Set stream ke elemen video guru
                 document.getElementById('teacher-cam').srcObject = stream;
                 document.getElementById('guru-live-cam').srcObject = stream;
                 document.getElementById('guru-pip-cam').srcObject = stream;
-
-                // Mulai kirim gambar ke murid
                 startStreamingToStudents();
-
             } catch (err) { 
                 console.warn("Akses kamera ditolak", err);
                 showAlert("Kamera tidak aktif!", "❌");
@@ -275,38 +324,20 @@
             const video = document.getElementById('guru-live-cam');
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
-            
-            // Ukuran transmisi (diperkecil agar ringan)
             canvas.width = 400;
             canvas.height = 300;
-
             function broadcastFrame() {
                 if (video.paused || video.ended) return;
-                
-                // Gambar video ke canvas tersembunyi
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                
-                // Convert ke Base64 (JPG)
                 const frameData = canvas.toDataURL('image/jpeg', 0.5);
-                
-                // Kirim ke semua murid di room yang sama
-                socket.emit('update-frame', {
-                    room: currentRoom || kodeSekolah,
-                    image: frameData
-                });
-
-                // Looping terus menerus
+                socket.emit('update-frame', { room: currentRoom || kodeSekolah, image: frameData });
                 requestAnimationFrame(broadcastFrame);
             }
-
             video.onplay = () => broadcastFrame();
         }
 
-        // --- LANJUTAN LOGIKA ASLI ANDA ---
-
         function switchDisplayMode() {
             if(!lastGeneratedData) return showAlert("Buat materi dulu dengan AI!", "⚠️");
-            
             isPresentationMode = !isPresentationMode;
             const stage = document.getElementById('presentation-stage');
             const mainCam = document.getElementById('guru-live-cam');
@@ -363,19 +394,13 @@
                     <tr class="border-t border-white/5 hover:bg-white/5 transition-all animate-pop">
                         <td class="p-4 font-black ${isTop ? 'text-amber-400' : 'text-slate-500'} text-lg">${isTop ? '👑 1' : i+1}</td>
                         <td class="p-4 font-bold text-white">${s.name}</td>
-                        <td class="p-4">
-                            <span class="px-3 py-1 rounded-lg bg-indigo-500/20 text-indigo-400 font-mono font-bold">${s.score}</span>
-                        </td>
+                        <td class="p-4"><span class="px-3 py-1 rounded-lg bg-indigo-500/20 text-indigo-400 font-mono font-bold">${s.score}</span></td>
                         <td class="p-4 text-slate-400 italic text-[10px] max-w-xs truncate">${s.feedback || 'Selesai'}</td>
                         <td class="p-4"><div class="w-2 h-2 bg-emerald-500 rounded-full inline-block animate-pulse"></div></td>
                         <td class="p-4 text-right">
-                             <button onclick="bukaKoreksi('${s.name}', ${s.score})" 
-                                class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1 rounded-xl text-[9px] font-black hover:bg-amber-500 hover:text-white transition-all">
-                                📝 KOREKSI
-                            </button>
+                             <button onclick="bukaKoreksi('${s.name}', ${s.score})" class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1 rounded-xl text-[9px] font-black hover:bg-amber-500 hover:text-white transition-all">📝 KOREKSI</button>
                         </td>
-                    </tr>
-                `;
+                    </tr>`;
             });
         }
 
@@ -404,13 +429,8 @@
             const count = document.getElementById('count-absen');
             count.innerText = daftarMurid.length;
             list.innerHTML = "";
-            if (daftarMurid.length === 0) {
-                list.innerHTML = '<li class="italic text-slate-600 font-normal">Menunggu kelas...</li>';
-                return;
-            }
-            daftarMurid.forEach(nama => {
-                list.innerHTML += `<li class="flex items-center gap-2 text-white/80 animate-pop"><div class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>${nama}</li>`;
-            });
+            if (daftarMurid.length === 0) { list.innerHTML = '<li class="italic text-slate-600 font-normal">Menunggu kelas...</li>'; return; }
+            daftarMurid.forEach(nama => { list.innerHTML += `<li class="flex items-center gap-2 text-white/80 animate-pop"><div class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>${nama}</li>`; });
         });
 
         function exportLaporan(tipe) {
@@ -475,8 +495,6 @@
             showAlert(`Masuk ke Kelas: ${kelasSelected || 'Umum'}`, '📡');
         }
 
-        window.onload = () => { initLiveCameras(); loadKelas(); };
-
         async function generate() {
             const btn = document.getElementById('btnGen');
             const btnText = document.getElementById('btnText');
@@ -539,7 +557,6 @@
             setTimeout(() => alert.classList.remove('alert-show'), 3000);
         }
 
-        // --- LOGIKA KOREKSI NILAI MANUAL (GURU OVERRIDE) ---
         async function bukaKoreksi(namaSiswa, skorLama) {
             const judulMateri = lastGeneratedData ? lastGeneratedData.judul : "Live Quiz";
             const skorBaru = prompt(`Koreksi nilai untuk: ${namaSiswa}\nSkor AI saat ini: ${skorLama}\n\nMasukkan nilai baru (0-100):`, skorLama);
@@ -549,41 +566,103 @@
                     const response = await fetch('/api/koreksi-nilai', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            nama_siswa: namaSiswa,
-                            materi: judulMateri,
-                            skor_baru: parseInt(skorBaru),
-                            kode_sekolah: kodeSekolah
-                        })
+                        body: JSON.stringify({ nama_siswa: namaSiswa, materi: judulMateri, skor_baru: parseInt(skorBaru), kode_sekolah: kodeSekolah })
                     });
-
                     const hasil = await response.json();
                     if (hasil.success) {
                         showAlert(`Nilai ${namaSiswa} berhasil diupdate!`, '✅');
-                        // Update lokal
                         const idx = allScores.findIndex(s => s.name === namaSiswa);
-                        if(idx > -1) {
-                            allScores[idx].score = parseInt(skorBaru);
-                            renderScoreboard();
-                        }
-                    } else {
-                        showAlert("Gagal simpan ke database.", "❌");
-                    }
-                } catch (err) {
-                    showAlert("Masalah koneksi server.", "❌");
-                }
+                        if(idx > -1) { allScores[idx].score = parseInt(skorBaru); renderScoreboard(); }
+                        // Jika riwayat sedang terbuka, refresh juga
+                        muatRiwayat();
+                    } else { showAlert("Gagal simpan ke database.", "❌"); }
+                } catch (err) { showAlert("Masalah koneksi server.", "❌"); }
             }
         }
 
-        // Mendengarkan update skor live jika ada trigger dari server
         socket.on('score-updated-live', (data) => {
             const idx = allScores.findIndex(s => s.name === data.nama_siswa);
-            if(idx > -1) {
-                allScores[idx].score = data.skor;
-                renderScoreboard();
-                showAlert(`Skor ${data.nama_siswa} dikoreksi Guru!`, '✏️');
-            }
+            if(idx > -1) { allScores[idx].score = data.skor; renderScoreboard(); showAlert(`Skor ${data.nama_siswa} dikoreksi Guru!`, '✏️'); }
         });
+
+        // ============================================
+        // LOGIKA BARU: RIWAYAT & ANALITIK (DATABASE)
+        // ============================================
+        async function muatRiwayat() {
+            const body = document.getElementById('history-body');
+            const avgEl = document.getElementById('avg-score');
+            const passEl = document.getElementById('pass-count');
+            const quizCountEl = document.getElementById('quiz-count');
+            
+            body.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-slate-400 italic">Sedang memuat data dari database...</td></tr>';
+
+            try {
+                // Memanggil endpoint backend yang tersambung PostgreSQL
+                const res = await fetch(`/api/riwayat-nilai/${kodeSekolah}`);
+                const data = await res.json();
+
+                if(!data || data.length === 0) {
+                    body.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-slate-400 italic">Belum ada riwayat tersimpan di database.</td></tr>';
+                    avgEl.innerText = "-"; passEl.innerText = "-"; quizCountEl.innerText = "-";
+                    return;
+                }
+
+                let totalSkor = 0;
+                let lulus = 0;
+                const materiUnik = new Set();
+
+                body.innerHTML = '';
+                data.forEach(item => {
+                    totalSkor += item.skor;
+                    if(item.skor >= 75) lulus++;
+                    materiUnik.add(item.materi);
+
+                    const tgl = new Date(item.created_at).toLocaleDateString('id-ID', {day:'2-digit', month:'short'});
+                    const barColor = item.skor >= 75 ? 'bg-emerald-500' : 'bg-amber-500';
+
+                    body.innerHTML += `
+                        <tr class="hover:bg-slate-50/50 transition-all group">
+                            <td class="p-6">
+                                <div class="font-black text-slate-800">${item.materi}</div>
+                                <div class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">${tgl}</div>
+                            </td>
+                            <td class="p-6 font-bold text-slate-700">${item.nama_siswa}</td>
+                            <td class="p-6 w-48">
+                                <div class="flex items-center gap-3">
+                                    <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                        <div class="${barColor} h-full" style="width: ${item.skor}%"></div>
+                                    </div>
+                                    <span class="text-[9px] font-black text-slate-400">${item.skor}%</span>
+                                </div>
+                            </td>
+                            <td class="p-6">
+                                <span class="px-3 py-1 rounded-full ${item.skor >= 75 ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'} font-black text-xs">
+                                    ${item.skor}
+                                </span>
+                            </td>
+                            <td class="p-6 text-right">
+                                <span class="text-[9px] font-bold text-slate-300 uppercase">TERSIMPAN</span>
+                            </td>
+                        </tr>`;
+                });
+
+                // Update Angka Analitik
+                avgEl.innerText = Math.round(totalSkor / data.length);
+                passEl.innerText = lulus;
+                quizCountEl.innerText = materiUnik.size;
+                showAlert("Data Riwayat Terkini!", "📊");
+
+            } catch (err) {
+                console.error(err);
+                body.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-red-400 italic">Gagal terhubung ke database. Pastikan backend server aktif.</td></tr>';
+            }
+        }
+
+        window.onload = () => { 
+            initLiveCameras(); 
+            loadKelas();
+            muatRiwayat(); // Memuat riwayat otomatis saat halaman dibuka
+        };
     </script>
 </body>
 </html>
