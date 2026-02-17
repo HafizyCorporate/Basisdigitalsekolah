@@ -28,10 +28,7 @@
         }
         .alert-active { top: 30px !important; }
         
-        /* Gaya video agar bulat sempurna sesuai tema */
         #video-element { transform: scaleX(-1); }
-
-        /* KUIS OVERLAY */
         #quiz-overlay { z-index: 4000; }
     </style>
 </head>
@@ -42,8 +39,7 @@
             <button onclick="closeQuiz()" class="absolute top-6 right-8 text-gray-400 hover:text-pink-500 font-bold">TUTUP [X]</button>
             <div id="quiz-content">
                 <h2 id="quiz-title" class="text-2xl font-black text-pink-500 mb-6 uppercase">🎯 Kuis Kilat!</h2>
-                <div id="quiz-body" class="space-y-6">
-                    </div>
+                <div id="quiz-body" class="space-y-6"></div>
             </div>
         </div>
     </div>
@@ -60,13 +56,19 @@
                     <span id="placeholder-avatar">🐶</span>
                 </div>
                 <h2 class="text-2xl font-black text-pink-500 uppercase"><%= nama_siswa %></h2>
-                <button onclick="startCamera()" class="mt-2 text-[10px] font-bold text-pink-400 border border-pink-200 px-3 py-1 rounded-full hover:bg-pink-50 transition-all">AKTIFKAN KAMERA</button>
+                <p class="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest">ID: <%= kode_sekolah %></p>
+                
+                <button onclick="startCamera()" class="mt-2 text-[10px] font-bold text-pink-400 border border-pink-200 px-3 py-1 rounded-full hover:bg-pink-50 transition-all uppercase">Aktifkan Kamera</button>
             </div>
             
+            <div class="bubble-card p-6 bg-indigo-50 border-indigo-100 shadow-[0_20px_0_#e0e7ff] text-center">
+                <p class="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">Guru Kamu</p>
+                <h4 id="nama-guru-display" class="font-bold text-indigo-700 uppercase">Menunggu Guru...</h4>
+            </div>
+
             <div class="bubble-card p-6 bg-yellow-50 border-yellow-200 shadow-[0_20px_0_#fef3c7]">
                 <h3 class="font-black text-yellow-700 text-sm mb-4 uppercase flex items-center gap-2"><span>💬</span> Diskusi Kelas</h3>
-                <div id="chat-box" class="h-64 overflow-y-auto space-y-3 p-2 mb-4 text-sm font-semibold">
-                    </div>
+                <div id="chat-box" class="h-64 overflow-y-auto space-y-3 p-2 mb-4 text-sm font-semibold"></div>
                 <div class="flex gap-2">
                     <input id="chat-input" type="text" placeholder="Ketik pesan..." class="w-full p-3 rounded-2xl border-2 border-yellow-100 outline-none focus:border-yellow-400 text-xs">
                     <button onclick="sendChat()" class="bg-yellow-400 text-white p-3 rounded-2xl hover:scale-110 active:scale-90 transition-all">🚀</button>
@@ -81,13 +83,12 @@
                     <span class="text-7xl relative">☁️</span>
                 </div>
                 <h2 class="text-3xl font-black text-sky-400 uppercase">Tunggu Sebentar...</h2>
-                <p class="text-slate-400 mt-2 font-semibold">Guru kamu lagi bikin materi yang super seru!</p>
+                <p class="text-slate-400 mt-2 font-semibold">Gurumu lagi bikin materi yang super seru!</p>
             </div>
 
             <div id="materi-display" class="hidden animate-fun">
                 <div class="bubble-card p-10 md:p-16 bg-white border-sky-100 shadow-[0_20px_0_#e0f2fe] prose prose-pink max-w-none">
-                    <div id="content-materi">
-                        </div>
+                    <div id="content-materi"></div>
                 </div>
             </div>
         </main>
@@ -96,8 +97,11 @@
     <script>
         const socket = io();
         const namaSiswa = "<%= nama_siswa %>";
+        const kodeSekolah = "<%= kode_sekolah %>";
 
-        // --- 1. LOGIKA ALERT ---
+        // --- 0. JOIN ROOM ---
+        socket.emit('join-room', kodeSekolah);
+
         function showCuteAlert(msg, icon = '🍓') {
             const alert = document.getElementById('cuteAlert');
             document.getElementById('cuteMsg').innerText = msg;
@@ -106,7 +110,6 @@
             setTimeout(() => alert.classList.remove('alert-active'), 3000);
         }
 
-        // --- 2. LOGIKA LIVE CAM ---
         async function startCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -125,23 +128,35 @@
             }
         }
 
-        // --- 3. LOGIKA LIVE CHAT ---
         function sendChat() {
             const input = document.getElementById('chat-input');
             if(input.value.trim()) {
-                socket.emit('chat-message', { user: namaSiswa, msg: input.value });
+                // Mengirim info role 'Siswa' agar guru tahu siapa yang chat
+                socket.emit('chat-message', { 
+                    user: namaSiswa, 
+                    msg: input.value, 
+                    room: kodeSekolah, 
+                    role: 'Siswa' 
+                });
                 input.value = '';
             }
         }
 
         socket.on('chat-message', (data) => {
             const chatBox = document.getElementById('chat-box');
+            
+            // Logika untuk menampilkan nama guru jika role-nya 'Guru'
+            if(data.role === 'Guru') {
+                document.getElementById('nama-guru-display').innerText = data.user;
+            }
+
             const side = data.user === namaSiswa ? 'text-right' : 'text-left';
             const color = data.user === namaSiswa ? 'bg-pink-100' : 'bg-white';
+            const labelColor = data.role === 'Guru' ? 'text-indigo-500 font-black' : 'text-gray-400';
             
             chatBox.innerHTML += `
                 <div class="animate-fun ${side}">
-                    <span class="text-[9px] text-gray-400 uppercase">${data.user}</span>
+                    <span class="text-[9px] ${labelColor} uppercase">${data.user} ${data.role ? '('+data.role+')' : ''}</span>
                     <div class="p-3 rounded-2xl ${color} border border-gray-100 shadow-sm inline-block max-w-[80%]">
                         ${data.msg}
                     </div>
@@ -153,7 +168,6 @@
             if(e.key === 'Enter') sendChat();
         });
 
-        // --- 4. LOGIKA AI (Menerima Materi) ---
         socket.on('new-materi', (data) => {
             showCuteAlert('Materi baru sudah siap!', '🎁');
             document.getElementById('no-materi').classList.add('hidden');
@@ -165,7 +179,6 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
 
-        // --- 5. LOGIKA KUIS LIVE (BARU) ---
         socket.on('start-quiz', (data) => {
             showCuteAlert('GURU MEMULAI KUIS! AYO JAWAB!', '🎯');
             const overlay = document.getElementById('quiz-overlay');
@@ -175,7 +188,7 @@
             document.getElementById('quiz-title').innerText = "KUIS: " + data.judul;
             
             body.innerHTML = data.soal.map((s, idx) => `
-                <div class="p-5 bg-sky-50 rounded-[2rem] border-4 border-sky-100">
+                <div class="p-5 bg-sky-50 rounded-[2rem] border-4 border-sky-100 mb-4">
                     <p class="font-bold text-slate-700 mb-4 text-lg">${idx + 1}. ${s.q}</p>
                     <div class="grid grid-cols-1 gap-3">
                         ${s.a.map(opsi => `
@@ -190,7 +203,6 @@
         });
 
         function checkAnswer(btn, picked, correct) {
-            // Hindari klik berkali-kali pada soal yang sama
             const parent = btn.parentElement;
             const buttons = parent.querySelectorAll('button');
             buttons.forEach(b => b.disabled = true);
@@ -200,7 +212,7 @@
                 showCuteAlert('HEBAT! Jawaban Benar!', '🌟');
             } else {
                 btn.classList.add('bg-red-500', 'text-white', 'border-red-200');
-                showCuteAlert('Oops! Kurang tepat, ayo belajar lagi!', '🧸');
+                showCuteAlert('Oops! Kurang tepat!', '🧸');
             }
         }
 
