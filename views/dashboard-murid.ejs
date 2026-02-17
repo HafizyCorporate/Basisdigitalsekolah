@@ -346,9 +346,9 @@
             }
         }
 
-        // FUNGSI BARU: FINISH QUIZ (PENGIRIMAN KE GURU)
+        // FUNGSI BARU: FINISH QUIZ (SINKRON DENGAN DB & GURU)
         function finishQuiz() {
-            const finalScore = Math.round((correctAnswers / totalQuizQuestions) * 100);
+            const finalScore = totalQuizQuestions > 0 ? Math.round((correctAnswers / totalQuizQuestions) * 100) : 0;
             
             // Logika Evaluasi AI Sederhana
             let feedback = "";
@@ -357,9 +357,10 @@
             else if(finalScore >= 50) feedback = "Cukup baik, tapi ada beberapa bagian yang perlu kamu pelajari lagi. Jangan menyerah!";
             else feedback = "Jangan berkecil hati. Mari kita ulas lagi materinya bersama-sama. Kamu pasti bisa!";
 
-            // Tampilkan hasil di Murid
+            // Tampilkan hasil di UI Murid
             document.getElementById('quiz-content').classList.add('hidden');
             document.getElementById('quiz-result').classList.remove('hidden');
+            document.getElementById('quiz-footer').classList.add('hidden');
             document.getElementById('final-score-val').innerText = finalScore;
             document.getElementById('ai-feedback').innerText = `"${feedback}"`;
             
@@ -367,11 +368,13 @@
             document.getElementById('score-card').classList.remove('hidden');
             document.getElementById('sidebar-score').innerText = finalScore;
 
-            // KIRIM NILAI KE GURU (Terhubung dengan update-score-guru di Dashboard Guru)
+            // KIRIM NILAI KE GURU & DB (Melalui server.js)
             socket.emit('update-score-guru', {
                 name: namaSiswa,
                 score: finalScore,
                 feedback: feedback,
+                kelas: kelasTersimpan || 'Umum',
+                room: currentRoom,
                 time: new Date().toLocaleTimeString()
             });
 
