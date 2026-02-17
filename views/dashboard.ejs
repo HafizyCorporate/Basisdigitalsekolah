@@ -291,39 +291,39 @@
         });
 
         // -----------------------------------------------------------
-        // 2. FUNGSI MULAI KUIS AI (Baru)
+        // 2. FUNGSI MULAI KUIS AI (Versi Aman & Sinkron Gemini)
         // -----------------------------------------------------------
         function mulaiKuisAI() {
             if (!lastGeneratedData) return showAlert("Buat materi dulu!", "⚠️");
 
-            // Hilangkan kunci jawaban (c) sebelum dikirim ke siswa
-            // Asumsi struktur data: lastGeneratedData.soal adalah array of object {q, a, c}
-            // Jika format Anda berbeda, sesuaikan mapping ini.
-            let soalAman = [];
-            
-            if (lastGeneratedData.soal && Array.isArray(lastGeneratedData.soal)) {
-                 soalAman = lastGeneratedData.soal.map(s => ({
-                    q: s.q, // Pertanyaan
-                    a: s.a  // Pilihan Ganda
-                    // Properti 'c' (kunci) sengaja tidak dikirim
-                }));
-            }
+            // 1. Kirim "Master Key" ke server agar server bisa menilai nanti
+            socket.emit('server-store-quiz', { 
+                room: currentRoom, 
+                fullData: lastGeneratedData 
+            });
 
+            // 2. Filter data (Hapus kunci jawaban) sebelum dikirim ke browser Siswa
             const dataKeSiswa = {
                 judul: lastGeneratedData.judul,
-                soal_pg: soalAman,
-                soal_essay: lastGeneratedData.essay || [], // Essay memang tidak ada kunci di depan
+                // Hanya kirim Pertanyaan & Opsi (Kunci 'c' dibuang)
+                soal_pg: (lastGeneratedData.soal_pg || []).map(s => ({ q: s.q, a: s.a })),
+                // Hanya kirim Pertanyaan (Kriteria 'k' dibuang)
+                soal_essay: (lastGeneratedData.soal_essay || []).map(e => ({ q: e.q })),
+                // Hanya kirim Pertanyaan (Jawaban singkat dibuang)
+                soal_quiz: (lastGeneratedData.soal_quiz || []).map(q => ({ q: q.q })),
                 room: currentRoom
             };
 
-            // Reset Scoreboard visual
+            // 3. Reset tampilan Scoreboard di layar Guru
             allScores = []; 
             document.getElementById('live-score-body').innerHTML = '<tr id="empty-score"><td colspan="5" class="p-16 text-center text-slate-500 italic">Kuis dimulai! Menunggu jawaban...</td></tr>';
             document.getElementById('status-kerjakan-siswa').innerHTML = '<div class="col-span-full text-center text-[10px] text-slate-500 italic">Memonitoring jawaban masuk...</div>';
 
+            // 4. Sebar soal "bersih" ke seluruh siswa via socket
             socket.emit('start-quiz', dataKeSiswa);
             showAlert("Kuis dikirim ke semua siswa!", "🚀");
         }
+
 
         // --- FUNGSI LAMA (DIPERTAHANKAN) ---
 
