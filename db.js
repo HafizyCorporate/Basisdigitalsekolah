@@ -58,7 +58,7 @@ const initDb = async () => {
     `);
 
     // ============================================================
-    // 🚀 TAMBAHAN BARU: FITUR DASHBOARD GURU & SISWA
+    // 🚀 SINKRONISASI FITUR: CHAT, MATERI AI, & KUIS LIVE
     // ============================================================
 
     // 4. Tabel untuk Chat Real-time (Tersimpan Permanen)
@@ -78,34 +78,45 @@ const initDb = async () => {
       CREATE TABLE IF NOT EXISTS global_materi (
         id SERIAL PRIMARY KEY,
         kode_sekolah TEXT NOT NULL,
-        guru_id INTEGER NOT NULL,
+        guru_id INTEGER, -- Bisa null jika dibuat admin instansi
         judul TEXT NOT NULL,
         konten_html TEXT NOT NULL,
-        soal_json JSONB, -- Menyimpan soal pilihan ganda dari AI
+        soal_json JSONB, -- Menyimpan array kuis dari AI
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
-    // 6. Tabel untuk Jawaban & Nilai Siswa
+    // 6. Tabel untuk Jawaban & Nilai Siswa (Hasil Kuis)
     await client.query(`
       CREATE TABLE IF NOT EXISTS global_jawaban (
         id SERIAL PRIMARY KEY,
-        materi_id INTEGER NOT NULL,
-        siswa_id INTEGER NOT NULL,
+        materi_id INTEGER,
+        siswa_id INTEGER,
         nama_siswa TEXT NOT NULL,
-        jawaban_user JSONB, -- Pilihan jawaban siswa
-        skor TEXT,
+        jawaban_user JSONB, -- Pilihan jawaban siswa per soal
+        skor INTEGER DEFAULT 0, -- Nilai angka (0-100)
+        status_selesai BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
     
-    // LOGIKA TAMBAHAN (KODINGAN ASLI TETAP ADA)
+    // ============================================================
+    // 🛠️ MAINTENANCE & AUTO-PATCH COLUMNS (KODINGAN ASLI TETAP ADA)
+    // ============================================================
+    
+    // Pastikan kolom-kolom penting tersedia tanpa error jika sudah ada
     await client.query(`ALTER TABLE global_instansi ADD COLUMN IF NOT EXISTS otp TEXT;`);
     await client.query(`ALTER TABLE global_siswa ADD COLUMN IF NOT EXISTS otp TEXT;`);
     await client.query(`ALTER TABLE global_siswa ADD COLUMN IF NOT EXISTS kode_sekolah TEXT;`);
+    
+    // Tambahan Sinkronisasi: Pastikan tabel materi punya kolom soal_json untuk AI Gemini
+    await client.query(`ALTER TABLE global_materi ADD COLUMN IF NOT EXISTS soal_json JSONB;`);
+    
+    // Tambahan Sinkronisasi: Kolom skor di jawaban murid dipastikan berupa INTEGER untuk kalkulasi
+    await client.query(`ALTER TABLE global_jawaban ALTER COLUMN skor TYPE INTEGER USING skor::integer;`);
 
     client.release();
-    console.log("✅ Database Global (Instansi, Guru, Siswa, Chat, & Materi) Siap Digunakan!");
+    console.log("✅ Database Sinkron: Login, Chat, Kamera, & Kuis AI Siap!");
   } catch (err) { 
     console.error("❌ DB Error:", err.message);
   }
