@@ -156,7 +156,7 @@ app.post('/auth/login', async (req, res) => {
     if (result.rows.length === 0) return res.render('login', { msg: "Kode Instansi tidak ditemukan!" });
     const isMatch = await bcrypt.compare(pass, result.rows[0].password);
     if (!isMatch) return res.render('login', { msg: "Password salah!" });
-    res.render('dashboard', { instansi: result.rows[0].nama_instansi, kode: kode });
+    res.render('dashboard', { instansi: result.rows[0].nama_instansi, kode: kode, nama_guru: "Administrator" });
   } catch (err) { res.send(err.message); }
 });
 
@@ -172,7 +172,11 @@ app.post('/auth/login-guru', async (req, res) => {
     const infoSekolah = await pool.query('SELECT nama_instansi FROM global_instansi WHERE kode_instansi = $1', [result.rows[0].kode_sekolah]);
     const namaSekolah = infoSekolah.rows.length > 0 ? infoSekolah.rows[0].nama_instansi : "Global School";
 
-    res.render('dashboard', { instansi: namaSekolah, kode: result.rows[0].kode_sekolah });
+    res.render('dashboard', { 
+        instansi: namaSekolah, 
+        kode: result.rows[0].kode_sekolah,
+        nama_guru: result.rows[0].nama_guru 
+    });
   } catch (err) { res.render('login', { msg: "Terjadi kesalahan sistem login guru." }); }
 });
 
@@ -228,8 +232,10 @@ app.post('/auth/login-siswa', async (req, res) => {
     const isMatch = await bcrypt.compare(pass, result.rows[0].password);
     if (!isMatch) return res.render('login_siswa', { msg: "Password salah!" });
     
-    // RENDER DASHBOARD MURID (Penting agar sinkron)
-    res.render('dashboard-murid', { nama_siswa: result.rows[0].nama_siswa, kode_sekolah: result.rows[0].kode_sekolah });
+    res.render('dashboard-murid', { 
+        nama_siswa: result.rows[0].nama_siswa, 
+        kode_sekolah: result.rows[0].kode_sekolah 
+    });
   } catch (err) { res.send(err.message); }
 });
 
@@ -271,7 +277,7 @@ app.post('/api/generate', async (req, res) => {
 });
 
 // ==========================================
-// 🚀 5. SOCKET.IO REAL-TIME LOGIC (SYNCED)
+// 🚀 5. SOCKET.IO REAL-TIME LOGIC (SINKRON PER KELAS)
 // ==========================================
 
 
@@ -279,33 +285,34 @@ app.post('/api/generate', async (req, res) => {
 io.on('connection', (socket) => {
   console.log('User Terkoneksi:', socket.id);
 
-  // Join Room berdasarkan kode sekolah (agar antar sekolah tidak campur)
+  // LOGIKA PEMISAH KELAS: Masuk ke Room berdasarkan Kode Sekolah
   socket.on('join-room', (kodeSekolah) => {
     socket.join(kodeSekolah);
+    console.log(`📡 User ${socket.id} bergabung ke kelas: ${kodeSekolah}`);
   });
 
-  // Fitur 1: Live Chat (Sinkron Guru & Murid)
+  // Fitur 1: Live Chat (Hanya untuk Room yang sama)
   socket.on('chat-message', (data) => {
-    // Memastikan pesan sampai ke semua (io.emit) atau room tertentu
-    io.emit('chat-message', data); 
+    // data harus mengandung { room, user, msg, role }
+    io.to(data.room).emit('chat-message', data); 
   });
 
-  // Fitur 2: Sinkronisasi Materi Baru (Push ke Siswa)
+  // Fitur 2: Sinkronisasi Materi Baru (Kirim ke Room tertentu)
   socket.on('new-materi', (data) => {
-    // Data berisi {judul, html, soal}
-    socket.broadcast.emit('new-materi', data);
+    // data harus mengandung { room, judul, html, soal }
+    socket.to(data.room).emit('new-materi', data);
   });
 
-  // Fitur 3: KUIS LIVE (Mulai Kuis dari Guru)
+  // Fitur 3: KUIS LIVE (Mulai Kuis per Kelas)
   socket.on('start-quiz', (quizData) => {
-    // Broadcast data kuis ke semua siswa
-    socket.broadcast.emit('start-quiz', quizData);
-    console.log(`🎯 Kuis Live "${quizData.judul}" Terkirim!`);
+    // quizData harus mengandung { room, judul, soal }
+    socket.to(quizData.room).emit('start-quiz', quizData);
+    console.log(`🎯 Kuis Live "${quizData.judul}" Terkirim ke Kelas ${quizData.room}`);
   });
 
-  // Fitur 4: Camera Signaling (Status Kamera)
+  // Fitur 4: Camera Signaling (Status Kamera per Kelas)
   socket.on('camera-signal', (data) => {
-    socket.broadcast.emit('camera-signal', data);
+    socket.to(data.room).emit('camera-signal', data);
   });
 
   socket.on('disconnect', () => {
@@ -326,7 +333,7 @@ server.listen(PORT, () => {
   📍 Port     : ${PORT}
   📧 Email    : Brevo Connected (OTP Ready)
   📦 DB       : PostgreSQL Connected
-  🎥 Realtime : Quiz & Chat Synced
+  🎥 Realtime : Room-Based Multi-School Active
   =========================================
   `);
 });
