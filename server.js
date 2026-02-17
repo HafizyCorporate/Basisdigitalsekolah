@@ -10,7 +10,7 @@ const rateLimit = require('express-rate-limit');
 
 // Import file yang dipisah (Gudang, Otak, Kurir)
 const { pool, initDb } = require('./db');
-const { processAI } = require('./ai'); // Pastikan ai.js sudah diperbaiki (lihat poin 2)
+const { processAI } = require('./ai');
 const { sendMail } = require('./email');
 
 const app = express();
@@ -19,8 +19,9 @@ const app = express();
 app.set('trust proxy', 1); 
 
 const server = http.createServer(app);
+// Perbaikan: Tambahkan maxHttpBufferSize agar streaming video tidak terputus
 const io = new Server(server, {
-    maxHttpBufferSize: 1e7 // Meningkatkan kapasitas buffer untuk streaming video
+    maxHttpBufferSize: 1e7 
 });
 
 // --- SECURITY ADD-ON (MIDDLEWARE) ---
@@ -44,12 +45,15 @@ app.use(express.urlencoded({ extended: true }));
 // Jalankan Auto-Setup Database pas server nyala
 initDb();
 
+// --- FUNGSI HELPER: GENERATE OTP 6 DIGIT ---
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 // ==========================================
-// 🎯 1. ROUTES (AUTH & TAMPILAN) - TETAP SAMA
+// 🎯 1. ROUTES TAMPILAN (EJS)
 // ==========================================
+
 app.get('/', (req, res) => res.render('landing'));
+
 app.get('/login', (req, res) => res.render('login', { msg: null }));
 app.get('/register', (req, res) => res.render('register', { msg: null }));
 app.get('/forget', (req, res) => res.render('forget', { msg: null, step: 1, email: null }));
@@ -63,18 +67,31 @@ app.get('/verify-guru', (req, res) => {
     res.render('verify-guru', { msg: null, email: email });
 });
 
-// --- LOGIKA AUTH (GURU/SISWA) TETAP SESUAI KODINGAN ANDA ---
+// ==========================================
+// 👨‍🏫 2. LOGIKA GURU / INSTANSI / ADMIN
+// ==========================================
+
 app.post('/auth/register', async (req, res) => {
   const { nama, email, pass } = req.body;
   const kode = "SCH-" + Math.random().toString(36).substring(2, 7).toUpperCase();
   const otp = generateOTP(); 
   try {
     const hashed = await bcrypt.hash(pass, 10);
-    await pool.query('INSERT INTO global_instansi (nama_instansi, kode_instansi, admin_email, password, otp) VALUES ($1,$2,$3,$4,$5)', [nama, kode, email, hashed, otp]);
+    await pool.query(
+      'INSERT INTO global_instansi (nama_instansi, kode_instansi, admin_email, password, otp) VALUES ($1,$2,$3,$4,$5)', 
+      [nama, kode, email, hashed, otp]
+    );
     await pool.query(`CREATE SCHEMA IF NOT EXISTS "${kode}"`);
     await pool.query(`CREATE TABLE IF NOT EXISTS "${kode}".materi (id SERIAL PRIMARY KEY, judul TEXT, konten JSONB)`);
+    // Tambahan: Buat tabel penilaian otomatis saat registrasi instansi
     await pool.query(`CREATE TABLE IF NOT EXISTS "${kode}".penilaian (id SERIAL PRIMARY KEY, nama TEXT, email TEXT, kelas TEXT, tipe TEXT, skor INT, jawaban_essay TEXT, feedback_ai TEXT, materi TEXT, waktu TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
-    await sendMail(email, "Kode Verifikasi Pendaftaran Sekolah", `<h1>Verifikasi Akun</h1><p>KODE OTP ANDA: <b>${otp}</b></p><p>Kode Instansi: <b>${kode}</b></p>`);
+    
+    await sendMail(
+      email, 
+      "Kode Verifikasi Pendaftaran Sekolah", 
+      `<h1>Verifikasi Akun</h1><p>Terima kasih telah mendaftar.</p><p>KODE OTP ANDA: <b style="font-size:24px; color:blue;">${otp}</b></p><p>Kode Instansi: <b>${kode}</b></p>`
+    );
+    
     res.render('verify', { msg: `Pendaftaran Berhasil! Silakan masukkan OTP dari email: ${email}` });
   } catch (err) { res.status(500).send("Error Daftar: " + err.message); }
 });
@@ -82,10 +99,59 @@ app.post('/auth/register', async (req, res) => {
 app.post('/auth/verify', async (req, res) => {
     const { kode, otp } = req.body;
     try {
-      const result = await pool.query('SELECT * FROM global_instansi WHERE kode_instansi = $1 AND otp = $2', [kode, otp]);
-      if (result.rows.length > 0) res.render('login', { msg: "Verifikasi Sukses! Silakan Login." });
-      else res.render('verify', { msg: "Kode Instansi atau OTP Salah!" });
-    } catch (err) { res.status(500).send("Error Verifikasi: " + err.message); }
+      const result = await pool.query(
+        'SELECT * FROM global_instansi WHERE kode_instansi = $1 AND otp = $2',
+        [kode, otp]
+      );
+  
+      if (result.rows.length > 0) {
+        res.render('login', { msg: "Verifikasi Sukses! Silakan Login." });
+      } else {
+        res.render('verify', { msg: "Kode Instansi atau OTP Salah!" });
+      }
+    } catch (err) {
+      res.status(500).send("Error Verifikasi: " + err.message);
+    }
+});
+
+app.post('/auth/register-guru', async (req, res) => {
+  const { nama, email, pass, kode_sekolah } = req.body;
+  const otp = generateOTP();
+  try {
+    const hashed = await bcrypt.hash(pass, 10);
+    const checkSekolah = await pool.query('SELECT * FROM global_instansi WHERE kode_instansi = $1', [kode_sekolah]);
+    if(checkSekolah.rows.length === 0) return res.render('register-guru', { msg: "Kode Sekolah Tidak Valid!" });
+
+    await pool.query(
+      'INSERT INTO global_guru (nama_guru, email, password, kode_sekolah, otp) VALUES ($1,$2,$3,$4,$5)',
+      [nama, email, hashed, kode_sekolah, otp]
+    );
+    await sendMail(email, "OTP Guru", `<p>Kode OTP Guru Anda: <b>${otp}</b></p>`);
+    
+    res.render('verify-guru', { 
+        msg: `Pendaftaran Guru Berhasil! Masukkan OTP yang dikirim ke ${email}`, 
+        email: email 
+    });
+  } catch (err) { res.render('register-guru', { msg: "Email sudah terdaftar!" }); }
+});
+
+app.post('/auth/activate-guru', async (req, res) => {
+    const { email, otp } = req.body;
+    try {
+        const result = await pool.query(
+            'SELECT * FROM global_guru WHERE email = $1 AND otp = $2',
+            [email, otp]
+        );
+
+        if (result.rows.length > 0) {
+            await pool.query('UPDATE global_guru SET otp = NULL WHERE email = $1', [email]);
+            res.render('login', { msg: "Selamat! Akun Guru Anda telah aktif. Silakan Login." });
+        } else {
+            res.render('verify-guru', { msg: "Kode OTP Salah atau Kadaluarsa!", email: email });
+        }
+    } catch (err) {
+        res.status(500).send("Error Aktivasi: " + err.message);
+    }
 });
 
 app.post('/auth/login', async (req, res) => {
@@ -99,7 +165,70 @@ app.post('/auth/login', async (req, res) => {
   } catch (err) { res.send(err.message); }
 });
 
-// --- API SISWA & UPDATE KELAS ---
+app.post('/auth/login-guru', async (req, res) => {
+  const { email, pass } = req.body;
+  try {
+    const result = await pool.query('SELECT * FROM global_guru WHERE email = $1', [email]);
+    if (result.rows.length === 0) return res.render('login', { msg: "Akun Guru tidak ditemukan!" });
+    
+    const isMatch = await bcrypt.compare(pass, result.rows[0].password);
+    if (!isMatch) return res.render('login', { msg: "Password Guru salah!" });
+
+    const infoSekolah = await pool.query('SELECT nama_instansi FROM global_instansi WHERE kode_instansi = $1', [result.rows[0].kode_sekolah]);
+    const namaSekolah = infoSekolah.rows.length > 0 ? infoSekolah.rows[0].nama_instansi : "Global School";
+
+    res.render('dashboard', { 
+        instansi: namaSekolah, 
+        kode: result.rows[0].kode_sekolah,
+        nama_guru: result.rows[0].nama_guru 
+    });
+  } catch (err) { res.render('login', { msg: "Terjadi kesalahan sistem login guru." }); }
+});
+
+app.post('/auth/forget', async (req, res) => {
+  const { email } = req.body;
+  const otp = generateOTP();
+  try {
+    const result = await pool.query('UPDATE global_instansi SET otp = $1 WHERE admin_email = $2 RETURNING admin_email', [otp, email]);
+    if (result.rows.length > 0) {
+      await sendMail(email, "Reset Akses Admin", `<p>Kode OTP Pemulihan: <b>${otp}</b></p>`);
+      res.render('forget', { msg: "OTP Pemulihan sudah dikirim ke email bapak.", step: 2, email: email });
+    } else { res.render('forget', { msg: "Email tidak ditemukan!", step: 1, email: null }); }
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post('/auth/reset-password', async (req, res) => {
+  const { email, otp, newPass } = req.body;
+  try {
+    const result = await pool.query('SELECT * FROM global_instansi WHERE admin_email = $1 AND otp = $2', [email, otp]);
+    if (result.rows.length > 0) {
+      const hashed = await bcrypt.hash(newPass, 10);
+      await pool.query('UPDATE global_instansi SET password = $1, otp = NULL WHERE admin_email = $2', [hashed, email]);
+      res.render('login', { msg: "Password berhasil diganti! Silakan login." });
+    } else {
+      res.render('forget', { msg: "OTP Salah!", step: 2, email: email });
+    }
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+// ==========================================
+// 🎓 3. LOGIKA SISWA
+// ==========================================
+
+app.post('/auth/register-siswa', async (req, res) => {
+  const { nama, email, pass, kode_sekolah } = req.body;
+  const otp = generateOTP();
+  try {
+    const hashed = await bcrypt.hash(pass, 10);
+    await pool.query(
+      'INSERT INTO global_siswa (nama_siswa, email, password, kode_sekolah, otp) VALUES ($1,$2,$3,$4,$5)', 
+      [nama, email, hashed, kode_sekolah, otp]
+    );
+    await sendMail(email, "Verifikasi Siswa", `<h1>Halo ${nama}!</h1><p>KODE OTP ANDA: <b>${otp}</b></p>`);
+    res.render('login_siswa', { msg: "Daftar Berhasil! Cek OTP di email untuk masuk." });
+  } catch (err) { res.render('register_siswa', { msg: "Email sudah digunakan!" }); }
+});
+
 app.post('/auth/login-siswa', async (req, res) => {
   const { email, pass } = req.body;
   try {
@@ -107,11 +236,67 @@ app.post('/auth/login-siswa', async (req, res) => {
     if (result.rows.length === 0) return res.render('login_siswa', { msg: "Email tidak ditemukan!" });
     const isMatch = await bcrypt.compare(pass, result.rows[0].password);
     if (!isMatch) return res.render('login_siswa', { msg: "Password salah!" });
+    
     res.render('dashboard-murid', { 
-        nama_siswa: result.rows[0].nama_siswa, email_siswa: result.rows[0].email,
-        kode_sekolah: result.rows[0].kode_sekolah, kelas_siswa: result.rows[0].kelas 
+        nama_siswa: result.rows[0].nama_siswa, 
+        email_siswa: result.rows[0].email,
+        kode_sekolah: result.rows[0].kode_sekolah,
+        kelas_siswa: result.rows[0].kelas 
     });
   } catch (err) { res.send(err.message); }
+});
+
+app.post('/auth/forget-siswa', async (req, res) => {
+  const { email } = req.body;
+  const otp = generateOTP();
+  try {
+    const result = await pool.query('UPDATE global_siswa SET otp = $1 WHERE email = $2 RETURNING email', [otp, email]);
+    if (result.rows.length > 0) {
+      await sendMail(email, "OTP Reset Password Siswa", `<p>Halo, Kode OTP Reset Anda: <b>${otp}</b></p>`);
+      res.render('forget_siswa', { msg: "Kode OTP sudah dikirim ke email kamu.", step: 2, email: email });
+    } else { res.render('forget_siswa', { msg: "Email siswa tidak ditemukan!", step: 1, email: null }); }
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post('/auth/reset-password-siswa', async (req, res) => {
+  const { email, otp, newPass } = req.body;
+  try {
+    const result = await pool.query('SELECT * FROM global_siswa WHERE email = $1 AND otp = $2', [email, otp]);
+    if (result.rows.length > 0) {
+      const hashed = await bcrypt.hash(newPass, 10);
+      await pool.query('UPDATE global_siswa SET password = $1, otp = NULL WHERE email = $2', [hashed, email]);
+      res.render('login_siswa', { msg: "Password siswa berhasil diganti!" });
+    } else {
+      res.render('forget_siswa', { msg: "OTP Salah!", step: 2, email: email });
+    }
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+// ==========================================
+// 🤖 4. API UNTUK AI & KELAS (MANAJEMEN)
+// ==========================================
+
+app.post('/api/generate', async (req, res) => {
+  try {
+    // Memanggil processAI yang sudah diperbaiki di ai.js (Gemini 3.0)
+    const data = await processAI(req.body.instruksi);
+    res.json(data);
+  } catch (err) { res.status(500).json({ error: "AI sedang sibuk." }); }
+});
+
+app.get('/api/kelas/:kode', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM global_kelas WHERE kode_sekolah = $1', [req.params.kode]);
+        res.json(result.rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/kelas', async (req, res) => {
+    const { kode_sekolah, nama_kelas } = req.body;
+    try {
+        await pool.query('INSERT INTO global_kelas (kode_sekolah, nama_kelas) VALUES ($1, $2)', [kode_sekolah, nama_kelas]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/update-kelas-siswa', async (req, res) => {
@@ -122,41 +307,59 @@ app.post('/api/update-kelas-siswa', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ==========================================
-// 🤖 2. API AI (MENGGUNAKAN processAI DI ai.js)
-// ==========================================
-app.post('/api/generate', async (req, res) => {
-  try {
-    // Memanggil processAI yang sudah kita perbaiki skemanya
-    const data = await processAI(req.body.instruksi);
-    res.json(data);
-  } catch (err) { 
-    console.error("AI Error:", err.message);
-    res.status(500).json({ error: "AI sedang sibuk atau limit tercapai." }); 
-  }
+// --- API BARU UNTUK PENILAIAN & EXPORT ---
+
+app.post('/api/submit-penilaian', async (req, res) => {
+    const { nama, email, kelas, tipe, skor, jawaban_essay, feedback_ai, materi, kode_sekolah } = req.body;
+    try {
+        await pool.query(
+            `INSERT INTO "${kode_sekolah}".penilaian (nama, email, kelas, tipe, skor, jawaban_essay, feedback_ai, materi) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [nama, email, kelas, tipe, skor, jawaban_essay, feedback_ai, materi]
+        );
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Database Error: " + err.message }); }
 });
 
-app.get('/api/kelas/:kode', async (req, res) => {
+// ✨ TAMBAHAN API: SIMPAN SKOR KE TABEL PUSAT global_jawaban
+app.post('/api/save-score-global', async (req, res) => {
+    const { name, score, feedback, kelas, materi_id } = req.body;
     try {
-        const result = await pool.query('SELECT * FROM global_kelas WHERE kode_sekolah = $1', [req.params.kode]);
+        await pool.query(
+            `INSERT INTO global_jawaban (nama_siswa, skor, umpan_balik_ai, nama_kelas, materi_id, created_at) 
+             VALUES ($1, $2, $3, $4, $5, NOW())`,
+            [name, score, feedback, kelas || 'Umum', materi_id || 0]
+        );
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/rekap-nilai/:kode', async (req, res) => {
+    try {
+        const result = await pool.query(`SELECT * FROM "${req.params.kode}".penilaian ORDER BY waktu DESC`);
         res.json(result.rows);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+
 // ==========================================
-// 🚀 3. SOCKET.IO (REAL-TIME & VIDEO STREAM)
+// 🚀 5. SOCKET.IO REAL-TIME LOGIC (SINKRON PER KELAS)
 // ==========================================
+
+// Variable untuk mencatat siapa saja yang online di tiap room
 let onlineUsers = {}; 
 
 io.on('connection', (socket) => {
   console.log('User Terkoneksi:', socket.id);
 
+  // LOGIKA PEMISAH KELAS: Masuk ke Room berdasarkan Kode Sekolah/Kelas
   socket.on('join-room', (data) => {
     const roomID = typeof data === 'object' ? data.room : data;
     const userName = data.nama || null;
     const userRole = data.role || 'Umum';
 
     socket.join(roomID);
+    
     socket.userName = userName;
     socket.userRoom = roomID;
     socket.userRole = userRole;
@@ -166,63 +369,114 @@ io.on('connection', (socket) => {
         onlineUsers[roomID].add(userName);
         io.to(roomID).emit('update-absen', Array.from(onlineUsers[roomID]));
     }
+
+    console.log(`📡 User ${userName || socket.id} (${userRole}) bergabung ke room: ${roomID}`);
   });
 
-  // --- LOGIKA VIDEO STREAMING (BARU) ---
-  socket.on('stream-frame', (data) => {
-      // Guru mengirim frame gambar ke semua siswa di room yang sama
-      socket.to(data.room).emit('update-frame', { image: data.image, room: data.room });
+  // PINDAH KELAS (GURU)
+  socket.on('switch-room', (data) => {
+      if(data.oldRoom) socket.leave(data.oldRoom);
+      socket.join(data.newRoom);
+      socket.userRoom = data.newRoom;
+
+      const currentList = onlineUsers[data.newRoom] ? Array.from(onlineUsers[data.newRoom]) : [];
+      socket.emit('update-absen', currentList);
+
+      console.log(`🔄 Guru pindah dari ${data.oldRoom} ke ${data.newRoom}`);
   });
 
-  socket.on('change-view-mode', (data) => {
-      // Mengubah tampilan murid (Kamera/Materi AI)
-      socket.to(data.room).emit('change-view-mode', data);
-  });
-
-  socket.on('force-mute', (data) => {
-      socket.to(data.room).emit('force-mute');
-  });
-
-  // --- LOGIKA CHAT & MATERI ---
+  // Fitur 1: Live Chat
   socket.on('chat-message', (data) => {
     io.to(data.room).emit('chat-message', data); 
   });
 
+  // Fitur 2: Sinkronisasi Materi
   socket.on('new-materi', (data) => {
     socket.to(data.room).emit('new-materi', data);
   });
 
+  // Fitur 3: KUIS LIVE
   socket.on('start-quiz', (quizData) => {
     socket.to(quizData.room).emit('start-quiz', quizData);
+    console.log(`🎯 Kuis Live "${quizData.judul}" Terkirim ke Kelas ${quizData.room}`);
   });
 
+  // --- PERBAIKAN: LOGIKA VIDEO STREAMING (STREAM FRAME) ---
+  socket.on('stream-frame', (data) => {
+      // Guru mengirim frame gambar ke semua murid di room yang sama
+      socket.to(data.room).emit('update-frame', { image: data.image, room: data.room });
+  });
+
+  // --- PERBAIKAN: LOGIKA VIEW MODE (KAMERA/MATERI) ---
+  socket.on('change-view-mode', (data) => {
+      // Guru memaksa tampilan murid berubah
+      socket.to(data.room).emit('change-view-mode', data);
+  });
+
+  // Fitur 4: Live Scoreboard
+  socket.on('submit-score-live', (scoreData) => {
+    io.to(scoreData.room).emit('score-update-guru', scoreData);
+  });
+
+  // ✨ TAMBAHAN SOCKET: LISTEN & SAVE SKOR AI (Terhubung ke Dashboard Murid)
   socket.on('update-score-guru', async (data) => {
     try {
         const { name, score, feedback, kelas, materi_id } = data;
         const room = socket.userRoom;
-        await pool.query(
-            `INSERT INTO global_jawaban (nama_siswa, skor, umpan_balik_ai, nama_kelas, materi_id, created_at) 
-             VALUES ($1, $2, $3, $4, $5, NOW())`,
-            [name, score, feedback, kelas || 'Umum', materi_id || 0]
-        );
+
+        // 1. Simpan ke Database (global_jawaban)
+        const query = `
+            INSERT INTO global_jawaban 
+            (nama_siswa, skor, umpan_balik_ai, nama_kelas, materi_id, created_at) 
+            VALUES ($1, $2, $3, $4, $5, NOW())
+        `;
+        await pool.query(query, [name, score, feedback, kelas || 'Umum', materi_id || 0]);
+
+        // 2. Beritahu Guru secara Real-time agar Scoreboard ter-update
         io.to(room).emit('score-updated-live', {
-            nama_siswa: name, skor: score, umpan_balik: feedback,
+            nama_siswa: name,
+            skor: score,
+            umpan_balik: feedback,
             waktu: new Date().toLocaleTimeString('id-ID')
         });
-    } catch (err) { console.error("❌ Gagal simpan skor:", err.message); }
+
+        console.log(`📊 AI Scorer: ${name} simpan skor ${score} ke DB`);
+    } catch (err) {
+        console.error("❌ Gagal simpan skor via Socket:", err.message);
+    }
+  });
+
+  // Fitur 5: Camera Signaling (Lama)
+  socket.on('camera-signal', (data) => {
+    socket.to(data.room).emit('camera-signal', data);
   });
 
   socket.on('disconnect', () => {
     const room = socket.userRoom;
     const nama = socket.userName;
+
     if (socket.userRole === 'Siswa' && onlineUsers[room]) {
         onlineUsers[room].delete(nama);
         io.to(room).emit('update-absen', Array.from(onlineUsers[room]));
     }
+    console.log(`User ${nama || socket.id} Terputus`);
   });
 });
 
+// ==========================================
+// 🏁 6. SERVER RUN
+// ==========================================
+
 const PORT = process.env.PORT || 8080; 
 server.listen(PORT, () => {
-  console.log(`🚀 SERVER GLOBAL SCHOOL AKTIF PADA PORT: ${PORT}`);
+  console.log(`
+  =========================================
+  🚀 SERVER GLOBAL SCHOOL AKTIF (GEMINI 3 FLASH)
+  -----------------------------------------
+  📍 Port     : ${PORT}
+  📧 Email    : Brevo Connected (OTP Ready)
+  📦 DB       : PostgreSQL Connected
+  🎥 Realtime : Room-Based Multi-School Active
+  =========================================
+  `);
 });
