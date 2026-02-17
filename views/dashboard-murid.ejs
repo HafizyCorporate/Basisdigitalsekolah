@@ -104,12 +104,11 @@
     <script>
         const socket = io();
         const namaSiswa = "<%= nama_siswa %>";
-        const emailSiswa = "<%= email_siswa %>"; // Email untuk update DB
+        const emailSiswa = "<%= email_siswa %>"; 
         const kodeSekolah = "<%= kode_sekolah %>";
-        let kelasTersimpan = "<%= kelas_siswa %>"; // Dari DB
+        let kelasTersimpan = "<%= kelas_siswa %>"; 
         let currentRoom = kodeSekolah;
 
-        // --- LOGIKA KELAS OTOMATIS (BARU) ---
         async function initKelasMurid() {
             try {
                 const res = await fetch(`/api/kelas/${kodeSekolah}`);
@@ -131,30 +130,34 @@
             const kelasBaru = document.getElementById('select-kelas-murid').value;
             if(!kelasBaru) return;
 
-            // 1. Simpan permanen ke database via API
             await fetch('/api/update-kelas-siswa', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ email: emailSiswa, kelas: kelasBaru })
             });
 
-            // 2. Berpindah Room Socket
             joinRoomSiswa(kelasBaru);
             showCuteAlert(`Kamu masuk ke kelas ${kelasBaru}!`, '🌈');
         }
 
+        // --- PERBAIKAN: KIRIM DATA NAMA UNTUK ABSENSI GURU ---
         function joinRoomSiswa(namaKelas) {
             const newRoom = `${kodeSekolah}-${namaKelas}`;
-            socket.emit('join-room', newRoom);
+            
+            // Mengirim objek lengkap agar server/guru tahu siapa yang online di room ini
+            socket.emit('join-room', {
+                room: newRoom,
+                nama: namaSiswa,
+                role: 'Siswa'
+            });
+            
             currentRoom = newRoom;
             document.getElementById('status-materi-text').innerText = `Menunggu materi dari Guru di ${namaKelas}...`;
-            document.getElementById('chat-box').innerHTML = ''; // Reset chat saat ganti kelas
+            document.getElementById('chat-box').innerHTML = ''; 
         }
 
-        // --- LOAD AWAL ---
         window.onload = () => {
             initKelasMurid();
-            // startCamera(); // Opsional jika ingin langsung aktif
         };
 
         function showCuteAlert(msg, icon = '🍓') {
@@ -189,7 +192,7 @@
                 socket.emit('chat-message', { 
                     user: namaSiswa, 
                     msg: input.value, 
-                    room: currentRoom, // Kirim ke room kelas aktif
+                    room: currentRoom, 
                     role: 'Siswa' 
                 });
                 input.value = '';
@@ -270,3 +273,4 @@
     </script>
 </body>
 </html>
+
