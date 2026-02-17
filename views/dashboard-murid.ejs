@@ -42,7 +42,24 @@
             #no-materi { height: 400px; padding: 2rem; }
             #no-materi h2 { font-size: 1.5rem; }
             .prose { font-size: 0.9rem; }
-            #chat-box { h-48; } /* Perkecil chat di HP agar muat */
+            #chat-box { height: 12rem; } 
+        }
+
+        /* KHUSUS DESKTOP: MENU KIRI, MATERI KANAN */
+        @media (min-width: 769px) {
+            .desktop-container {
+                display: flex !important;
+                flex-direction: row !important; /* Menu kiri, materi kanan */
+                align-items: flex-start;
+            }
+            aside {
+                width: 320px !important; /* Lebar menu dikunci */
+                position: sticky;
+                top: 2.5rem;
+            }
+            main {
+                flex: 1 !important; /* Materi mengambil sisa ruang */
+            }
         }
     </style>
 </head>
@@ -63,8 +80,9 @@
         <span id="cuteMsg" class="text-xs md:text-base">Halo! Semangat Belajar ya!</span>
     </div>
 
-    <div class="max-w-6xl mx-auto flex flex-col md:flex-row gap-8">
-        <aside class="w-full md:w-80 space-y-6 order-2 md:order-1">
+    <div class="max-w-6xl mx-auto flex flex-col desktop-container gap-8">
+        
+        <aside class="w-full space-y-6 order-2 md:order-1">
             <div class="bubble-card p-6 bg-white border-pink-100">
                 <p class="text-[9px] font-black text-pink-400 uppercase tracking-widest mb-2 text-center">🏫 Ruang Kelas Kamu</p>
                 <select id="select-kelas-murid" onchange="muridPindahKelas()" class="w-full p-3 rounded-2xl border-2 border-pink-50 bg-pink-50/50 text-xs font-bold text-pink-600 outline-none focus:border-pink-300 transition-all">
@@ -97,7 +115,7 @@
             </div>
         </aside>
 
-        <main class="flex-1 order-1 md:order-2">
+        <main class="w-full order-1 md:order-2">
             <div id="no-materi" class="bubble-card flex flex-col items-center justify-center p-8 md:p-12 text-center bg-white min-h-[300px] md:h-[600px]">
                 <div class="relative mb-6 md:mb-8">
                     <div class="w-24 h-24 md:w-32 md:h-32 bg-sky-50 rounded-full animate-ping absolute opacity-20"></div>
@@ -108,15 +126,16 @@
             </div>
 
             <div id="materi-display" class="hidden animate-fun">
-                <div class="bubble-card p-8 md:p-16 bg-white border-sky-100 shadow-[0_10px_0_#e0f2fe] md:shadow-[0_20px_0_#e0f2fe] prose prose-pink max-w-none overflow-x-auto">
+                <div class="bubble-card p-8 md:p-16 bg-white border-sky-100 shadow-[0_10px_0_#e0f2fe] md:shadow-[0_20px_0_#e0f2fe] prose prose-pink max-w-none">
                     <div id="content-materi"></div>
                 </div>
             </div>
         </main>
+
     </div>
 
     <script>
-        // --- LOGIKA TIDAK DIRUBAH SAMA SEKALI ---
+        // --- LOGIKA JAVASCRIPT TETAP SAMA DAN TERKONEKSI ---
         const socket = io();
         const namaSiswa = "<%= nama_siswa %>";
         const emailSiswa = "<%= email_siswa %>"; 
@@ -129,39 +148,29 @@
                 const res = await fetch(`/api/kelas/${kodeSekolah}`);
                 const data = await res.json();
                 const select = document.getElementById('select-kelas-murid');
-                
                 data.forEach(k => {
                     const isSelected = (k.nama_kelas === kelasTersimpan) ? 'selected' : '';
                     select.innerHTML += `<option value="${k.nama_kelas}" ${isSelected}>${k.nama_kelas}</option>`;
                 });
-
-                if(kelasTersimpan && kelasTersimpan !== "null") {
-                    joinRoomSiswa(kelasTersimpan);
-                }
+                if(kelasTersimpan && kelasTersimpan !== "null") { joinRoomSiswa(kelasTersimpan); }
             } catch (e) { console.error("Gagal memuat daftar kelas"); }
         }
 
         async function muridPindahKelas() {
             const kelasBaru = document.getElementById('select-kelas-murid').value;
             if(!kelasBaru) return;
-
             await fetch('/api/update-kelas-siswa', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ email: emailSiswa, kelas: kelasBaru })
             });
-
             joinRoomSiswa(kelasBaru);
             showCuteAlert(`Kamu masuk ke kelas ${kelasBaru}!`, '🌈');
         }
 
         function joinRoomSiswa(namaKelas) {
             const newRoom = `${kodeSekolah}-${namaKelas}`;
-            socket.emit('join-room', {
-                room: newRoom,
-                nama: namaSiswa,
-                role: 'Siswa'
-            });
+            socket.emit('join-room', { room: newRoom, nama: namaSiswa, role: 'Siswa' });
             currentRoom = newRoom;
             document.getElementById('status-materi-text').innerText = `Menunggu materi dari Guru di ${namaKelas}...`;
             document.getElementById('chat-box').innerHTML = ''; 
