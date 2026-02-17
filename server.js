@@ -305,39 +305,62 @@ app.post('/api/update-kelas-siswa', async (req, res) => {
 // 🚀 5. SOCKET.IO REAL-TIME LOGIC (SINKRON PER KELAS)
 // ==========================================
 
-
+// Variable untuk mencatat siapa saja yang online di tiap room
+let onlineUsers = {}; 
 
 io.on('connection', (socket) => {
   console.log('User Terkoneksi:', socket.id);
 
   // LOGIKA PEMISAH KELAS: Masuk ke Room berdasarkan Kode Sekolah/Kelas
-  socket.on('join-room', (roomID) => {
+  socket.on('join-room', (data) => {
+    // Mendukung data string (lama) atau object {room, nama, role} (baru)
+    const roomID = typeof data === 'object' ? data.room : data;
+    const userName = data.nama || null;
+    const userRole = data.role || 'Umum';
+
     socket.join(roomID);
-    console.log(`📡 User ${socket.id} bergabung ke room: ${roomID}`);
+    
+    // Simpan data di instance socket agar bisa diakses saat disconnect
+    socket.userName = userName;
+    socket.userRoom = roomID;
+    socket.userRole = userRole;
+
+    // Jika Siswa bergabung, masukkan ke daftar absensi online
+    if (userRole === 'Siswa' && userName) {
+        if (!onlineUsers[roomID]) onlineUsers[roomID] = new Set();
+        onlineUsers[roomID].add(userName);
+        // Kirim update absen ke semua orang di room (Guru akan melihat ini)
+        io.to(roomID).emit('update-absen', Array.from(onlineUsers[roomID]));
+    }
+
+    console.log(`📡 User ${userName || socket.id} (${userRole}) bergabung ke room: ${roomID}`);
   });
 
   // PINDAH KELAS (GURU)
   socket.on('switch-room', (data) => {
       if(data.oldRoom) socket.leave(data.oldRoom);
       socket.join(data.newRoom);
+      socket.userRoom = data.newRoom; // Update room aktif guru
+
+      // Berikan data absen terbaru di kelas baru tersebut kepada guru
+      const currentList = onlineUsers[data.newRoom] ? Array.from(onlineUsers[data.newRoom]) : [];
+      socket.emit('update-absen', currentList);
+
       console.log(`🔄 Guru pindah dari ${data.oldRoom} ke ${data.newRoom}`);
   });
 
   // Fitur 1: Live Chat (Hanya untuk Room yang sama)
   socket.on('chat-message', (data) => {
-    // data harus mengandung { room, user, msg, role }
     io.to(data.room).emit('chat-message', data); 
   });
 
   // Fitur 2: Sinkronisasi Materi Baru (Kirim ke Room tertentu)
   socket.on('new-materi', (data) => {
-    // data harus mengandung { room, judul, html, soal }
     socket.to(data.room).emit('new-materi', data);
   });
 
   // Fitur 3: KUIS LIVE (Mulai Kuis per Kelas)
   socket.on('start-quiz', (quizData) => {
-    // quizData harus mengandung { room, judul, soal }
     socket.to(quizData.room).emit('start-quiz', quizData);
     console.log(`🎯 Kuis Live "${quizData.judul}" Terkirim ke Kelas ${quizData.room}`);
   });
@@ -348,7 +371,15 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    console.log('User Terputus');
+    const room = socket.userRoom;
+    const nama = socket.userName;
+
+    // Hapus siswa dari daftar absen jika disconnect
+    if (socket.userRole === 'Siswa' && onlineUsers[room]) {
+        onlineUsers[room].delete(nama);
+        io.to(room).emit('update-absen', Array.from(onlineUsers[room]));
+    }
+    console.log(`User ${nama || socket.id} Terputus`);
   });
 });
 
