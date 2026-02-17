@@ -96,12 +96,12 @@ const initDb = async () => {
         jawaban_user JSONB, -- Pilihan jawaban siswa per soal
         skor INTEGER DEFAULT 0, -- Nilai angka (0-100)
         status_selesai BOOLEAN DEFAULT FALSE,
+        umpan_balik_ai TEXT, -- Kolom baru untuk menyimpan evaluasi AI
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
     // 7. Tabel untuk Manajemen Kelas (BARU)
-    // Menyimpan daftar kelas yang dibuat oleh guru (Contoh: 1.1, 7-A, dsb)
     await client.query(`
       CREATE TABLE IF NOT EXISTS global_kelas (
         id SERIAL PRIMARY KEY,
@@ -129,8 +129,18 @@ const initDb = async () => {
     // Tambahan Sinkronisasi: Kolom skor di jawaban murid dipastikan berupa INTEGER untuk kalkulasi
     await client.query(`ALTER TABLE global_jawaban ALTER COLUMN skor TYPE INTEGER USING skor::integer;`);
 
+    // ============================================================
+    // ✨ PATCH UNTUK FITUR AI SCORER & SCOREBOARD (PENAMBAHAN)
+    // ============================================================
+
+    // 1. Menambahkan kolom umpan_balik_ai agar evaluasi AI tersimpan permanen
+    await client.query(`ALTER TABLE global_jawaban ADD COLUMN IF NOT EXISTS umpan_balik_ai TEXT;`);
+
+    // 2. Menambahkan kolom nama_kelas di jawaban untuk mempermudah filter Ranking per kelas
+    await client.query(`ALTER TABLE global_jawaban ADD COLUMN IF NOT EXISTS nama_kelas TEXT;`);
+
     client.release();
-    console.log("✅ Database Sinkron: Login, Chat, Kamera, Kuis AI, & Manajemen Kelas Siap!");
+    console.log("✅ Database Sinkron: Login, Chat, Kamera, Kuis AI, & Scoreboard AI Siap!");
   } catch (err) { 
     console.error("❌ DB Error:", err.message);
   }
