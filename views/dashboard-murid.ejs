@@ -51,6 +51,13 @@
 
     <div class="max-w-6xl mx-auto flex flex-col md:flex-row gap-8">
         <aside class="w-full md:w-80 space-y-6">
+            <div class="bubble-card p-6 bg-white border-pink-100">
+                <p class="text-[9px] font-black text-pink-400 uppercase tracking-widest mb-2 text-center">🏫 Ruang Kelas Kamu</p>
+                <select id="select-kelas-murid" onchange="muridPindahKelas()" class="w-full p-3 rounded-2xl border-2 border-pink-50 bg-pink-50/50 text-xs font-bold text-pink-600 outline-none focus:border-pink-300 transition-all">
+                    <option value="">-- Pilih Kelas --</option>
+                </select>
+            </div>
+
             <div class="bubble-card p-8 text-center bg-white relative">
                 <div id="cam-container" class="w-24 h-24 bg-pink-100 rounded-full mx-auto mb-4 flex items-center justify-center text-5xl border-4 border-pink-200 overflow-hidden">
                     <span id="placeholder-avatar">🐶</span>
@@ -83,7 +90,7 @@
                     <span class="text-7xl relative">☁️</span>
                 </div>
                 <h2 class="text-3xl font-black text-sky-400 uppercase">Tunggu Sebentar...</h2>
-                <p class="text-slate-400 mt-2 font-semibold">Gurumu lagi bikin materi yang super seru!</p>
+                <p id="status-materi-text" class="text-slate-400 mt-2 font-semibold">Pilih kelasmu dulu untuk melihat materi!</p>
             </div>
 
             <div id="materi-display" class="hidden animate-fun">
@@ -97,10 +104,58 @@
     <script>
         const socket = io();
         const namaSiswa = "<%= nama_siswa %>";
+        const emailSiswa = "<%= email_siswa %>"; // Email untuk update DB
         const kodeSekolah = "<%= kode_sekolah %>";
+        let kelasTersimpan = "<%= kelas_siswa %>"; // Dari DB
+        let currentRoom = kodeSekolah;
 
-        // --- 0. JOIN ROOM ---
-        socket.emit('join-room', kodeSekolah);
+        // --- LOGIKA KELAS OTOMATIS (BARU) ---
+        async function initKelasMurid() {
+            try {
+                const res = await fetch(`/api/kelas/${kodeSekolah}`);
+                const data = await res.json();
+                const select = document.getElementById('select-kelas-murid');
+                
+                data.forEach(k => {
+                    const isSelected = (k.nama_kelas === kelasTersimpan) ? 'selected' : '';
+                    select.innerHTML += `<option value="${k.nama_kelas}" ${isSelected}>${k.nama_kelas}</option>`;
+                });
+
+                if(kelasTersimpan && kelasTersimpan !== "null") {
+                    joinRoomSiswa(kelasTersimpan);
+                }
+            } catch (e) { console.error("Gagal memuat daftar kelas"); }
+        }
+
+        async function muridPindahKelas() {
+            const kelasBaru = document.getElementById('select-kelas-murid').value;
+            if(!kelasBaru) return;
+
+            // 1. Simpan permanen ke database via API
+            await fetch('/api/update-kelas-siswa', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email: emailSiswa, kelas: kelasBaru })
+            });
+
+            // 2. Berpindah Room Socket
+            joinRoomSiswa(kelasBaru);
+            showCuteAlert(`Kamu masuk ke kelas ${kelasBaru}!`, '🌈');
+        }
+
+        function joinRoomSiswa(namaKelas) {
+            const newRoom = `${kodeSekolah}-${namaKelas}`;
+            socket.emit('join-room', newRoom);
+            currentRoom = newRoom;
+            document.getElementById('status-materi-text').innerText = `Menunggu materi dari Guru di ${namaKelas}...`;
+            document.getElementById('chat-box').innerHTML = ''; // Reset chat saat ganti kelas
+        }
+
+        // --- LOAD AWAL ---
+        window.onload = () => {
+            initKelasMurid();
+            // startCamera(); // Opsional jika ingin langsung aktif
+        };
 
         function showCuteAlert(msg, icon = '🍓') {
             const alert = document.getElementById('cuteAlert');
@@ -131,11 +186,10 @@
         function sendChat() {
             const input = document.getElementById('chat-input');
             if(input.value.trim()) {
-                // Mengirim info role 'Siswa' agar guru tahu siapa yang chat
                 socket.emit('chat-message', { 
                     user: namaSiswa, 
                     msg: input.value, 
-                    room: kodeSekolah, 
+                    room: currentRoom, // Kirim ke room kelas aktif
                     role: 'Siswa' 
                 });
                 input.value = '';
@@ -144,12 +198,9 @@
 
         socket.on('chat-message', (data) => {
             const chatBox = document.getElementById('chat-box');
-            
-            // Logika untuk menampilkan nama guru jika role-nya 'Guru'
             if(data.role === 'Guru') {
                 document.getElementById('nama-guru-display').innerText = data.user;
             }
-
             const side = data.user === namaSiswa ? 'text-right' : 'text-left';
             const color = data.user === namaSiswa ? 'bg-pink-100' : 'bg-white';
             const labelColor = data.role === 'Guru' ? 'text-indigo-500 font-black' : 'text-gray-400';
@@ -183,10 +234,8 @@
             showCuteAlert('GURU MEMULAI KUIS! AYO JAWAB!', '🎯');
             const overlay = document.getElementById('quiz-overlay');
             const body = document.getElementById('quiz-body');
-            
             overlay.classList.remove('hidden');
             document.getElementById('quiz-title').innerText = "KUIS: " + data.judul;
-            
             body.innerHTML = data.soal.map((s, idx) => `
                 <div class="p-5 bg-sky-50 rounded-[2rem] border-4 border-sky-100 mb-4">
                     <p class="font-bold text-slate-700 mb-4 text-lg">${idx + 1}. ${s.q}</p>
@@ -206,7 +255,6 @@
             const parent = btn.parentElement;
             const buttons = parent.querySelectorAll('button');
             buttons.forEach(b => b.disabled = true);
-
             if(picked === correct) {
                 btn.classList.add('bg-green-500', 'text-white', 'border-green-200');
                 showCuteAlert('HEBAT! Jawaban Benar!', '🌟');
