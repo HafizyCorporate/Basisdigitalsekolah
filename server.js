@@ -8,7 +8,7 @@ const rateLimit = require('express-rate-limit');
 
 // Import module eksternal
 const { pool, initDb } = require('./db');
-const { processAI } = require('./ai'); 
+const { processAI, periksaUjian } = require('./ai'); // [UPDATE] Tambahkan periksaUjian
 const { sendMail } = require('./email');
 
 const app = express();
@@ -61,7 +61,6 @@ app.post('/auth/register', async (req, res) => {
       'INSERT INTO global_instansi (nama_instansi, kode_instansi, admin_email, password, otp) VALUES ($1,$2,$3,$4,$5)', 
       [nama, kode, email, hashed, otp]
     );
-    // Setup Schema & Tabel Sekolah
     await pool.query(`CREATE SCHEMA IF NOT EXISTS "${kode}"`);
     await pool.query(`CREATE TABLE IF NOT EXISTS "${kode}".penilaian (id SERIAL PRIMARY KEY, nama TEXT, email TEXT, kelas TEXT, tipe TEXT, skor INT, jawaban_essay TEXT, feedback_ai TEXT, materi TEXT, waktu TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
     
@@ -112,7 +111,6 @@ app.post('/auth/login-siswa', async (req, res) => {
 // 🤖 4. API (SINKRONISASI FRONTEND)
 // ==========================================
 
-// API Daftar Kelas untuk Dropdown Murid
 app.get('/api/kelas/:kode', async (req, res) => {
     try {
         const result = await pool.query('SELECT DISTINCT nama_kelas FROM global_jawaban WHERE nama_kelas IS NOT NULL');
@@ -120,7 +118,6 @@ app.get('/api/kelas/:kode', async (req, res) => {
     } catch (err) { res.status(500).json([]); }
 });
 
-// API Update Kelas Permanen Siswa
 app.post('/api/update-kelas-siswa', async (req, res) => {
     const { email, kelas } = req.body;
     try {
@@ -136,29 +133,23 @@ app.get('/api/riwayat-nilai/:kode', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// [PERUBAHAN 1] Mengubah skor_baru menjadi skor untuk sinkronisasi dengan dashboard.ejs
 app.post('/api/update-nilai-manual', async (req, res) => {
-    const { nama_siswa, materi, skor, feedback, kode_sekolah } = req.body; // Ganti skor_baru jadi skor
+    const { nama_siswa, materi, skor, feedback, kode_sekolah } = req.body; 
     try {
-        // Update tabel sekolah
         await pool.query(
             `UPDATE "${kode_sekolah}".penilaian SET skor = $1, feedback_ai = $2 WHERE nama = $3 AND materi = $4`,
             [skor, feedback, nama_siswa, materi]
         );
-        
-        // Update tabel global (opsional, untuk konsistensi)
         await pool.query(
              `UPDATE global_jawaban SET skor = $1, umpan_balik_ai = $2 WHERE nama_siswa = $3`,
              [skor, feedback, nama_siswa]
         );
-        
         io.to(kode_sekolah).emit('score-updated-live', {
             nama_siswa: nama_siswa,
             skor: skor,
             feedback: feedback,
             info: "Update Guru"
         });
-
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -202,16 +193,12 @@ io.on('connection', (socket) => {
       });
   });
 
-  // [PERUBAHAN 2] Memancarkan 'receive-frame' untuk Guru dan 'update-frame' untuk Murid
   socket.on('stream-frame', (data) => {
-      // Kirim ke Guru (Dashboard Guru mendengarkan 'receive-frame')
       socket.to(data.room).emit('receive-frame', { 
           image: data.image, 
           room: data.room,
-          name: socket.userName // Pastikan nama pengirim terkirim
+          name: socket.userName 
       });
-
-      // Kirim ke Murid lain (Dashboard Murid mendengarkan 'update-frame' untuk video Guru/Lainnya)
       socket.to(data.room).emit('update-frame', { 
           image: data.image, 
           room: data.room 
@@ -222,56 +209,55 @@ io.on('connection', (socket) => {
     io.to(data.room).emit('chat-message', data); 
   });
 
+  // [UPDATE KEAMANAN] Hapus kunci jawaban sebelum dikirim ke dashboard murid
   socket.on('start-quiz', (quizData) => {
-    socket.to(quizData.room).emit('start-quiz', quizData);
+    const soalAman = JSON.parse(JSON.stringify(quizData));
+    if(soalAman.soal_pg) soalAman.soal_pg.forEach(s => delete s.c);
+    if(soalAman.soal_quiz) soalAman.soal_quiz.forEach(s => delete s.jawaban_benar);
+    if(soalAman.soal_essay) soalAman.soal_essay.forEach(s => delete s.kriteria);
+    
+    socket.to(quizData.room).emit('start-quiz', soalAman);
   });
 
-  // [PERUBAHAN 3] Menambahkan CREATE TABLE IF NOT EXISTS untuk mencegah crash
-  socket.on('update-score-guru', async (data) => {
+  // [UPDATE LOGIC SENTRALISTIK] Murid mengirim jawaban mentah, AI yang menilai di server
+  socket.on('submit-jawaban-siswa', async (data) => {
     try {
-        const { name, score, feedback, kelas, room, time, email, materi_judul } = data;
+        const { name, email, kelas, room, jawabanMurid, soalAsli, materi_judul } = data;
+        
+        // 1. AI Memeriksa Jawaban di Sisi Server (Panggil ai.js)
+        const hasilAI = await periksaUjian(soalAsli, jawabanMurid);
 
-        // Ambil Kode Sekolah (SCH-XXXX) dari Nama Room (SCH-XXXX-KELAS)
         const kodeSekolah = room.split('-').slice(0, 2).join('-');
 
-        // --- SAFEGUARD: Pastikan Tabel Penilaian Sekolah Ada ---
+        // 2. Simpan hasil penilaian AI ke database
         await pool.query(`CREATE SCHEMA IF NOT EXISTS "${kodeSekolah}"`);
         await pool.query(`CREATE TABLE IF NOT EXISTS "${kodeSekolah}".penilaian (
-            id SERIAL PRIMARY KEY, 
-            nama TEXT, 
-            email TEXT, 
-            kelas TEXT, 
-            tipe TEXT, 
-            skor INT, 
-            jawaban_essay TEXT, 
-            feedback_ai TEXT, 
-            materi TEXT, 
-            waktu TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            id SERIAL PRIMARY KEY, nama TEXT, email TEXT, kelas TEXT, tipe TEXT, skor INT, jawaban_essay TEXT, feedback_ai TEXT, materi TEXT, waktu TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`);
-        // -------------------------------------------------------
 
-        // 1. Simpan ke Tabel Khusus Sekolah
         await pool.query(
-            `INSERT INTO "${kodeSekolah}".penilaian (nama, email, kelas, tipe, skor, feedback_ai, materi) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-            [name, email || '', kelas, 'Kuis AI', score, feedback, materi_judul || 'Kuis Live']
+            `INSERT INTO "${kodeSekolah}".penilaian (nama, email, kelas, tipe, skor, feedback_ai, materi, jawaban_essay) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [name, email || '', kelas, 'Kuis AI', hasilAI.skor_total, hasilAI.analisis, materi_judul, JSON.stringify(jawabanMurid.essay)]
         );
 
-        // 2. Simpan ke Tabel Global (Untuk Ranking Antar Sekolah)
         await pool.query(
             `INSERT INTO global_jawaban (nama_siswa, skor, umpan_balik_ai, nama_kelas, created_at) 
              VALUES ($1, $2, $3, $4, NOW())`,
-            [name, score, feedback, kelas]
+            [name, hasilAI.skor_total, hasilAI.analisis, kelas]
         );
 
-        // 3. Update Live Dashboard Guru
+        // 3. Update Live Dashboard Guru agar Guru bisa tekan tombol FIX
         io.to(room).emit('score-updated-live', {
             nama_siswa: name,
-            skor: score,
-            umpan_balik: feedback,
-            waktu: time || new Date().toLocaleTimeString()
+            skor: hasilAI.skor_total,
+            umpan_balik: hasilAI.analisis,
+            feedback_guru: hasilAI.feedback_guru,
+            waktu: new Date().toLocaleTimeString(),
+            status: "Waiting Review"
         });
-    } catch (err) { console.error("Socket Save Error:", err.message); }
+
+    } catch (err) { console.error("Submit Error:", err.message); }
   });
 
   socket.on('disconnect', () => {
