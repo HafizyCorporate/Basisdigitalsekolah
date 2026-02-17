@@ -99,6 +99,17 @@ const initDb = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // 7. Tabel untuk Manajemen Kelas (BARU)
+    // Menyimpan daftar kelas yang dibuat oleh guru (Contoh: 1.1, 7-A, dsb)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS global_kelas (
+        id SERIAL PRIMARY KEY,
+        kode_sekolah TEXT NOT NULL,
+        nama_kelas TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
     
     // ============================================================
     // 🛠️ MAINTENANCE & AUTO-PATCH COLUMNS (KODINGAN ASLI TETAP ADA)
@@ -109,6 +120,9 @@ const initDb = async () => {
     await client.query(`ALTER TABLE global_siswa ADD COLUMN IF NOT EXISTS otp TEXT;`);
     await client.query(`ALTER TABLE global_siswa ADD COLUMN IF NOT EXISTS kode_sekolah TEXT;`);
     
+    // Patch Baru: Menambahkan kolom kelas pada tabel siswa agar pilihan kelas tersimpan permanen
+    await client.query(`ALTER TABLE global_siswa ADD COLUMN IF NOT EXISTS kelas TEXT;`);
+    
     // Tambahan Sinkronisasi: Pastikan tabel materi punya kolom soal_json untuk AI Gemini
     await client.query(`ALTER TABLE global_materi ADD COLUMN IF NOT EXISTS soal_json JSONB;`);
     
@@ -116,7 +130,7 @@ const initDb = async () => {
     await client.query(`ALTER TABLE global_jawaban ALTER COLUMN skor TYPE INTEGER USING skor::integer;`);
 
     client.release();
-    console.log("✅ Database Sinkron: Login, Chat, Kamera, & Kuis AI Siap!");
+    console.log("✅ Database Sinkron: Login, Chat, Kamera, Kuis AI, & Manajemen Kelas Siap!");
   } catch (err) { 
     console.error("❌ DB Error:", err.message);
   }
