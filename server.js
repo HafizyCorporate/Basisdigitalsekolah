@@ -8,7 +8,7 @@ const rateLimit = require('express-rate-limit');
 
 // Import module eksternal
 const { pool, initDb } = require('./db');
-const { processAI, checkEssayAI } = require('./ai'); 
+const { processAI } = require('./ai'); 
 const { sendMail } = require('./email');
 
 const app = express();
@@ -112,7 +112,7 @@ app.post('/auth/login-siswa', async (req, res) => {
 // 🤖 4. API (SINKRONISASI FRONTEND)
 // ==========================================
 
-// FIXED: API Daftar Kelas untuk Dropdown Murid
+// API Daftar Kelas untuk Dropdown Murid
 app.get('/api/kelas/:kode', async (req, res) => {
     try {
         const result = await pool.query('SELECT DISTINCT nama_kelas FROM global_jawaban WHERE nama_kelas IS NOT NULL');
@@ -120,7 +120,7 @@ app.get('/api/kelas/:kode', async (req, res) => {
     } catch (err) { res.status(500).json([]); }
 });
 
-// FIXED: API Update Kelas Permanen Siswa
+// API Update Kelas Permanen Siswa
 app.post('/api/update-kelas-siswa', async (req, res) => {
     const { email, kelas } = req.body;
     try {
@@ -136,17 +136,26 @@ app.get('/api/riwayat-nilai/:kode', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// [PERUBAHAN 1] Mengubah skor_baru menjadi skor untuk sinkronisasi dengan dashboard.ejs
 app.post('/api/update-nilai-manual', async (req, res) => {
-    const { nama_siswa, materi, skor_baru, kode_sekolah } = req.body;
+    const { nama_siswa, materi, skor, feedback, kode_sekolah } = req.body; // Ganti skor_baru jadi skor
     try {
+        // Update tabel sekolah
         await pool.query(
-            `UPDATE "${kode_sekolah}".penilaian SET skor = $1 WHERE nama = $2 AND materi = $3`,
-            [skor_baru, nama_siswa, materi]
+            `UPDATE "${kode_sekolah}".penilaian SET skor = $1, feedback_ai = $2 WHERE nama = $3 AND materi = $4`,
+            [skor, feedback, nama_siswa, materi]
+        );
+        
+        // Update tabel global (opsional, untuk konsistensi)
+        await pool.query(
+             `UPDATE global_jawaban SET skor = $1, umpan_balik_ai = $2 WHERE nama_siswa = $3`,
+             [skor, feedback, nama_siswa]
         );
         
         io.to(kode_sekolah).emit('score-updated-live', {
             nama_siswa: nama_siswa,
-            skor: skor_baru,
+            skor: skor,
+            feedback: feedback,
             info: "Update Guru"
         });
 
@@ -193,8 +202,20 @@ io.on('connection', (socket) => {
       });
   });
 
+  // [PERUBAHAN 2] Memancarkan 'receive-frame' untuk Guru dan 'update-frame' untuk Murid
   socket.on('stream-frame', (data) => {
-      socket.to(data.room).emit('update-frame', { image: data.image, room: data.room });
+      // Kirim ke Guru (Dashboard Guru mendengarkan 'receive-frame')
+      socket.to(data.room).emit('receive-frame', { 
+          image: data.image, 
+          room: data.room,
+          name: socket.userName // Pastikan nama pengirim terkirim
+      });
+
+      // Kirim ke Murid lain (Dashboard Murid mendengarkan 'update-frame' untuk video Guru/Lainnya)
+      socket.to(data.room).emit('update-frame', { 
+          image: data.image, 
+          room: data.room 
+      });
   });
 
   socket.on('chat-message', (data) => {
@@ -205,13 +226,29 @@ io.on('connection', (socket) => {
     socket.to(quizData.room).emit('start-quiz', quizData);
   });
 
-  // FIXED: Penanganan Schema Sekolah & Penyimpanan Global
+  // [PERUBAHAN 3] Menambahkan CREATE TABLE IF NOT EXISTS untuk mencegah crash
   socket.on('update-score-guru', async (data) => {
     try {
         const { name, score, feedback, kelas, room, time, email, materi_judul } = data;
 
         // Ambil Kode Sekolah (SCH-XXXX) dari Nama Room (SCH-XXXX-KELAS)
         const kodeSekolah = room.split('-').slice(0, 2).join('-');
+
+        // --- SAFEGUARD: Pastikan Tabel Penilaian Sekolah Ada ---
+        await pool.query(`CREATE SCHEMA IF NOT EXISTS "${kodeSekolah}"`);
+        await pool.query(`CREATE TABLE IF NOT EXISTS "${kodeSekolah}".penilaian (
+            id SERIAL PRIMARY KEY, 
+            nama TEXT, 
+            email TEXT, 
+            kelas TEXT, 
+            tipe TEXT, 
+            skor INT, 
+            jawaban_essay TEXT, 
+            feedback_ai TEXT, 
+            materi TEXT, 
+            waktu TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
+        // -------------------------------------------------------
 
         // 1. Simpan ke Tabel Khusus Sekolah
         await pool.query(
