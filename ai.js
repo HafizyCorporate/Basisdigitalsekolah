@@ -7,62 +7,72 @@ const processAI = async (instruksi) => {
     throw new Error("GEMINI_API_KEY tidak ditemukan!");
   }
 
-  // Konfigurasi Model ke Gemini 2.5 Pro (Tetap dipertahankan sesuai permintaan)
+  // UPDATE MODEL: Langsung ke Gemini 3.0 Pro
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+  const model = genAI.getGenerativeModel({ 
+    model: "gemini-3.0-pro",
+    generationConfig: { responseMimeType: "application/json" } 
+  });
   
-  // LOGIKA BARU: Memperkuat Prompt untuk Kuis & Materi Profesional
-  const prompt = `Bertindaklah sebagai Guru SMK Internasional yang ahli dan komunikatif. 
-  Buatkan materi pelajaran yang mendalam, menarik, dan edukatif tentang: ${instruksi}. 
+  // LOGIKA: Prompt diperketat untuk Kunci Jawaban PG & Kriteria Essay
+  const prompt = `Bertindaklah sebagai Guru SMK Internasional yang ahli. 
+  Buatkan materi pelajaran tentang: "${instruksi}".
   
-  KETEENTUAN OUTPUT:
-  1. HTML: Gunakan class Tailwind CSS. Buat konten yang rapi dengan heading, list, dan penekanan teks (bold/italic).
-  2. SOAL: Buatkan minimal 5 soal pilihan ganda yang menantang berdasarkan materi tersebut.
-  3. FORMAT: Balas HANYA dengan format JSON murni. Jangan ada penjelasan di luar JSON.
+  TUGAS ANDA:
+  1. MATERI: Buat konten HTML rapi (Tailwind CSS) dengan heading, list, dan poin penting.
+  2. PG: 5 Soal Pilihan Ganda. Sertakan kunci jawaban (string yang sama dengan pilihan).
+  3. ESSAY: 3 Soal Essay. Sertakan 'kriteria' berupa daftar kata kunci untuk penilaian otomatis.
 
-  STRUKTUR JSON:
+  FORMAT JSON WAJIB:
   {
-    "judul": "Judul Materi yang Menarik",
-    "html": "Konten materi format HTML (gunakan tailwind)",
+    "judul": "Judul Materi",
+    "html": "Konten HTML Materi...",
     "soal": [
       {
-        "q": "Pertanyaan soal nomor 1?",
-        "a": ["Jawaban A", "Jawaban B", "Jawaban C", "Jawaban D"],
-        "c": "Jawaban A" 
-      },
-      ...dan seterusnya sampai minimal 5 soal
+        "q": "Pertanyaan PG...",
+        "a": ["Pilihan A", "Pilihan B", "Pilihan C", "Pilihan D"],
+        "c": "Pilihan A" 
+      }
+    ],
+    "essay": [
+      {
+        "q": "Pertanyaan Essay...",
+        "kriteria": ["keyword1", "keyword2", "poin penting"]
+      }
     ]
   }
   
-  PENTING: Nilai 'c' (kunci jawaban) harus sama persis dengan salah satu teks yang ada di dalam array 'a'.`;
+  PENTING: Jangan berikan teks apapun selain JSON.`;
 
   try {
     const result = await model.generateContent(prompt);
-    let text = result.response.text();
+    const text = result.response.text();
     
-    // Ektraksi JSON murni dari respon AI (mengantisipasi teks tambahan/markdown ```json)
+    // Ekstraksi JSON
     const startJson = text.indexOf('{');
     const endJson = text.lastIndexOf('}');
     
     if (startJson === -1 || endJson === -1) {
-      throw new Error("Format JSON tidak valid");
+      throw new Error("Format JSON tidak ditemukan");
     }
     
     const cleanJson = text.substring(startJson, endJson + 1);
     const parsedData = JSON.parse(cleanJson);
 
-    // Validasi sederhana agar dashboard guru/murid tidak error jika AI gagal membuat soal
+    // Default value jika data tidak lengkap
     if (!parsedData.soal) parsedData.soal = [];
+    if (!parsedData.essay) parsedData.essay = [];
     
     return parsedData;
 
   } catch (error) {
-    console.error("❌ ERROR AI (Gemini 2.5):", error.message);
-    // Kembalikan objek default agar aplikasi tetap berjalan (Fallback UI)
+    console.error("❌ ERROR AI (Gemini 3.0):", error.message);
+    
     return {
       judul: "Gagal Memuat Materi",
-      html: "<p class='text-red-500 font-bold'>Maaf Guru, Sistem AI sedang sibuk atau mencapai limit. Silakan coba beberapa saat lagi.</p>",
-      soal: []
+      html: "<p class='text-red-500'>Sistem AI sedang sibuk. Silakan coba lagi.</p>",
+      soal: [],
+      essay: []
     };
   }
 };
