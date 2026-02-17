@@ -12,37 +12,181 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f0f4f8; color: #1e293b; }
-        .sidebar { background: #0f172a; min-width: 280px; height: 100vh; position: sticky; top: 0; }
-        .card-elegant { background: white; border-radius: 2rem; border: 1px solid #e2e8f0; box-shadow: 0 15px 30px -5px rgba(0,0,0,0.05); }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f0f4f8; color: #1e293b; overflow-x: hidden; }
         
-        /* VIDEO STAGE */
-        #main-stage { height: 650px; background: #000; border-radius: 2.5rem; overflow: hidden; position: relative; border: 4px solid #1e293b; }
-        #teacher-cam, #guru-live-cam, #guru-pip-cam { transform: scaleX(-1); object-fit: cover; width: 100%; height: 100%; }
+        .wrapper { display: flex; flex-direction: column; min-height: 100vh; }
+        .sidebar { background: #0f172a; color: white; width: 100%; flex-shrink: 0; }
+        .main-content { flex: 1; height: auto; overflow-y: auto; }
+
+        @media (min-width: 1024px) {
+            .wrapper { flex-direction: row; height: 100vh; overflow: hidden; }
+            .sidebar { width: 280px; height: 100vh; overflow-y: auto; position: sticky; top: 0; }
+            .main-content { height: 100vh; overflow-y: auto; }
+        }
+
+        .card-elegant { background: white; border-radius: 1.5rem; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
         
-        /* LIVE INDICATOR */
-        .live-dot { width: 10px; height: 10px; background: #ff0000; border-radius: 50%; box-shadow: 0 0 10px #ff0000; animation: blink 1s infinite; }
+        #main-stage { 
+            background: #000; 
+            border-radius: 2rem; 
+            overflow: hidden; 
+            position: relative; 
+            aspect-ratio: 16/9; 
+            border: 4px solid #1e293b;
+            width: 100%;
+        }
+        
+        /* Kamera Utama Normal (Bukan Mirror) untuk murid */
+        #guru-live-cam { object-fit: cover; width: 100%; height: 100%; }
+        /* Kamera Kecil Mirror (untuk bapak ngaca saat presentasi) */
+        #guru-pip-cam { transform: scaleX(-1); object-fit: cover; width: 100%; height: 100%; }
+        
+        .live-dot { width: 10px; height: 10px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 10px #ef4444; animation: blink 1s infinite; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
-        /* MODAL */
-        .modal-overlay { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); display: none; z-index: 1000; }
+        .modal-overlay { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); display: none; z-index: 3000; }
         .modal-active { display: flex !important; animation: slideIn 0.3s ease-out; }
         @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        /* GRID */
-        .student-tile { background: #1e293b; aspect-ratio: 4/3; border-radius: 1rem; overflow: hidden; position: relative; border: 2px solid transparent; transition: 0.3s; cursor: pointer; }
+        .student-tile { background: #1e293b; aspect-ratio: 4/3; border-radius: 0.75rem; overflow: hidden; position: relative; border: 2px solid transparent; transition: 0.3s; cursor: pointer; }
         .student-tile:hover { border-color: #6366f1; transform: scale(1.05); z-index: 10; }
 
-        /* CUSTOM SCROLL */
-        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #6366f1; border-radius: 10px; }
     </style>
 </head>
-<body class="flex flex-wrapper">
+<body>
 
-    <div id="customAlert" class="fixed top-10 right-10 z-[2000] transform translate-x-[150%] transition-transform duration-500 bg-slate-900 text-white p-5 rounded-2xl border-l-8 border-indigo-500 shadow-2xl flex items-center gap-4">
-        <div class="text-2xl" id="alertIcon">💡</div>
-        <div class="font-bold" id="alertMsg"></div>
+    <div class="wrapper">
+        <aside class="sidebar p-8 flex flex-col">
+            <div class="mb-10">
+                <h1 class="text-2xl font-black text-indigo-400 italic tracking-tighter">GLOBAL AI</h1>
+                <p class="text-[9px] text-slate-500 font-bold tracking-[0.3em] uppercase">Teacher Command v2.0</p>
+            </div>
+
+            <div class="mb-8 p-5 bg-indigo-600/20 border border-indigo-500/30 rounded-2xl">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="live-dot"></div>
+                    <span class="text-[10px] font-black uppercase tracking-widest text-indigo-300">Sistem Aktif</span>
+                </div>
+                <p class="text-[11px] text-slate-400 leading-relaxed font-medium">Kamera utama sedang menyiarkan ke seluruh siswa.</p>
+            </div>
+
+            <div class="flex-1 flex flex-col min-h-0">
+                <div class="flex justify-between items-center mb-4">
+                    <p class="text-[10px] font-black text-emerald-400 uppercase">Hadir Online</p>
+                    <span id="count-absen" class="bg-emerald-500 px-2 py-0.5 rounded text-[10px] font-black text-white">0</span>
+                </div>
+                <div class="flex-1 bg-white/5 rounded-2xl p-4 overflow-y-auto border border-white/5 mb-6 custom-scroll">
+                    <ul id="list-absen" class="space-y-3 text-[11px] font-bold text-slate-400">
+                        <li class="text-center opacity-30 mt-4 italic">Belum ada siswa...</li>
+                    </ul>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="exportAbsensi('pdf')" class="p-3 bg-slate-800 rounded-xl text-[9px] font-black hover:bg-emerald-600 transition-all text-white">PDF ABSEN</button>
+                    <button onclick="exportAbsensi('excel')" class="p-3 bg-slate-800 rounded-xl text-[9px] font-black hover:bg-emerald-600 transition-all text-white">XLS ABSEN</button>
+                    <button onclick="exportAbsensi('word')" class="p-3 bg-slate-800 rounded-xl text-[9px] font-black hover:bg-emerald-600 transition-all text-white">DOC ABSEN</button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content p-6 lg:p-12">
+            <header class="flex flex-col lg:flex-row justify-between lg:items-end mb-12 gap-6">
+                <div>
+                    <h2 class="text-3xl lg:text-4xl font-black text-slate-800 tracking-tight">Halo, <%= nama_guru %>!</h2>
+                    <p class="text-slate-500 font-bold uppercase text-xs tracking-widest mt-2"><%= instansi %> • ID: <%= kode %></p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex-1">
+                        <p class="text-[8px] font-black text-indigo-500 uppercase px-2 mb-1">Ruang Kelas</p>
+                        <select id="select-kelas" onchange="pindahKelas()" class="w-full text-sm font-black text-slate-700 outline-none bg-transparent px-2 cursor-pointer"></select>
+                    </div>
+                    <button onclick="tambahKelas()" class="w-14 h-14 bg-indigo-600 text-white rounded-2xl shadow-xl text-2xl hover:scale-105 active:scale-95 transition-all">＋</button>
+                </div>
+            </header>
+
+            <section class="mb-16 bg-slate-900 p-4 lg:p-8 rounded-[2.5rem] lg:rounded-[3.5rem] shadow-2xl border-[8px] border-slate-800">
+                <div class="flex flex-wrap justify-between items-center mb-8 px-4 gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="live-dot"></div>
+                        <span class="text-white text-[11px] font-black tracking-widest uppercase">Live Room: <span id="current-room-label" class="text-indigo-400">Umum</span></span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="switchDisplayMode()" class="bg-indigo-600 text-white px-5 py-3 rounded-2xl text-[10px] font-black hover:bg-indigo-500 transition-all uppercase">Materi</button>
+                        <button onclick="muteAllStudents()" class="bg-rose-600 text-white px-5 py-3 rounded-2xl text-[10px] font-black hover:bg-rose-500 transition-all uppercase">Mute All</button>
+                        <button onclick="toggleCleanFullScreen()" class="bg-slate-700 text-white px-5 py-3 rounded-2xl text-[10px] font-black hover:bg-slate-600 transition-all uppercase">Fullscreen</button>
+                    </div>
+                </div>
+
+                <div id="main-stage" onclick="resetFokusVideo()" class="shadow-inner group cursor-pointer">
+                    <video id="guru-live-cam" autoplay playsinline muted></video>
+                    <img id="fokus-murid-view" class="hidden w-full h-full object-contain">
+                    
+                    <div id="presentation-stage" class="hidden absolute inset-0 bg-white p-10 lg:p-16 overflow-y-auto prose max-w-none">
+                        <h1 id="slide-judul" class="text-3xl lg:text-5xl font-black text-indigo-600 mb-8"></h1>
+                        <div id="slide-konten" class="text-lg lg:text-xl text-slate-700 leading-relaxed"></div>
+                    </div>
+
+                    <div id="mini-guru-cam" class="hidden absolute bottom-5 right-5 lg:bottom-10 lg:right-10 w-40 lg:w-56 aspect-video bg-black rounded-3xl border-4 border-indigo-500 overflow-hidden shadow-2xl z-30">
+                        <video id="guru-pip-cam" autoplay playsinline muted></video>
+                    </div>
+                </div>
+
+                <div class="mt-12">
+                    <div class="flex justify-between items-center mb-6 px-4">
+                        <h4 class="text-white font-black text-lg uppercase tracking-tight">Real-time Scoreboard</h4>
+                        <div class="flex gap-2">
+                            <button onclick="exportLaporan('word')" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[9px] font-black hover:bg-blue-500 transition-all">DOC NILAI</button>
+                            <button onclick="exportLaporan('excel')" class="bg-emerald-500 text-white px-4 py-2 rounded-xl text-[9px] font-black hover:bg-emerald-400 transition-all">XLS NILAI</button>
+                        </div>
+                    </div>
+                    <div class="overflow-hidden rounded-[2rem] border border-white/5 bg-white/5 overflow-x-auto">
+                        <table class="w-full text-left text-[12px] text-slate-300 min-w-[600px]">
+                            <thead class="bg-slate-950 text-slate-500 font-black uppercase text-[10px]">
+                                <tr><th class="p-6">Rank</th><th class="p-6">Murid</th><th class="p-6">Skor</th><th class="p-6">AI Feedback</th><th class="p-6 text-right">Opsi</th></tr>
+                            </thead>
+                            <tbody id="live-score-body" class="divide-y divide-white/5">
+                                <tr id="empty-score"><td colspan="5" class="p-16 text-center text-slate-500 italic">Menunggu partisipasi siswa...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="mt-12 pt-10 border-t border-white/10">
+                    <p class="text-slate-500 text-[9px] font-black uppercase tracking-[0.3em] mb-6">Monitoring Grid</p>
+                    <div id="students-live-grid" class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-10 gap-4"></div>
+                </div>
+            </section>
+
+            <section class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                <div class="lg:col-span-4">
+                    <div class="card-elegant p-10 sticky top-10">
+                        <h3 class="font-black text-xs text-slate-400 uppercase tracking-widest mb-8">Kendali Materi AI</h3>
+                        <textarea id="prompt" class="w-full h-40 bg-slate-50 border-2 border-slate-100 rounded-3xl p-6 text-sm outline-none focus:border-indigo-500 transition-all resize-none" placeholder="Tulis materi atau kuis..."></textarea>
+                        <button id="btnGen" onclick="generate()" class="w-full mt-8 bg-slate-900 text-white py-6 rounded-3xl font-black shadow-xl hover:bg-indigo-600 transition-all">BUAT SEKARANG</button>
+                    </div>
+                </div>
+                <div class="lg:col-span-8">
+                    <div id="preview-area" class="hidden">
+                        <div class="flex justify-between items-center mb-6 bg-white p-5 rounded-3xl border border-slate-100">
+                            <span class="text-[10px] font-black text-indigo-500 uppercase px-4">Preview Konten</span>
+                            <div class="flex gap-2">
+                                <button onclick="publishToStudents()" class="bg-indigo-600 text-white px-8 py-3 rounded-full text-[10px] font-black hover:bg-indigo-700 shadow-lg">SIARKAN</button>
+                                <button onclick="publishQuiz()" class="bg-amber-500 text-white px-8 py-3 rounded-full text-[10px] font-black hover:bg-amber-600 shadow-lg">MULAI KUIS</button>
+                            </div>
+                        </div>
+                        <div class="card-elegant p-12 border-t-[10px] border-indigo-600">
+                            <h1 id="res-judul" class="text-4xl font-black text-slate-800 mb-8"></h1>
+                            <div id="res-html" class="prose prose-indigo max-w-none"></div>
+                        </div>
+                    </div>
+                    <div id="empty-state" class="card-elegant h-full min-h-[400px] flex flex-col items-center justify-center opacity-40 border-dashed border-4 border-slate-200 text-center">
+                        <p class="text-4xl mb-4">✨</p>
+                        <p class="font-black text-xs uppercase tracking-widest">Gunakan panel kiri untuk membuat materi</p>
+                    </div>
+                </div>
+            </section>
+        </main>
     </div>
 
     <div id="modal-koreksi" class="fixed inset-0 modal-overlay items-center justify-center p-5">
@@ -51,192 +195,25 @@
             <p id="koreksi-nama" class="text-indigo-600 font-bold mb-8 uppercase tracking-widest text-sm"></p>
             <div class="space-y-6">
                 <div>
-                    <label class="text-[10px] font-black uppercase text-slate-400">Skor (0-100)</label>
+                    <label class="text-[10px] font-black uppercase text-slate-400">Skor Baru</label>
                     <input type="number" id="input-skor-baru" class="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-2xl text-2xl font-black focus:border-indigo-500 outline-none">
                 </div>
                 <div>
-                    <label class="text-[10px] font-black uppercase text-slate-400">Catatan/Alasan Perubahan</label>
+                    <label class="text-[10px] font-black uppercase text-slate-400">Feedback</label>
                     <textarea id="input-catatan-baru" class="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-2xl h-32 focus:border-indigo-500 outline-none resize-none"></textarea>
                 </div>
             </div>
             <div class="flex gap-4 mt-10">
                 <button onclick="tutupKoreksi()" class="flex-1 py-5 font-bold text-slate-400 hover:bg-slate-100 rounded-2xl transition-all">Batalkan</button>
-                <button onclick="simpanKoreksi()" class="flex-1 bg-indigo-600 text-white py-5 rounded-2xl font-black shadow-lg hover:bg-indigo-700 transition-all">Simpan ke DB</button>
+                <button onclick="simpanKoreksi()" class="flex-1 bg-indigo-600 text-white py-5 rounded-2xl font-black shadow-lg hover:bg-indigo-700 transition-all">Simpan</button>
             </div>
         </div>
     </div>
 
-    <aside class="sidebar p-8 flex flex-col shrink-0 text-white">
-        <div class="mb-10">
-            <h1 class="text-2xl font-black text-indigo-400 italic tracking-tighter">GLOBAL AI</h1>
-            <p class="text-[9px] text-slate-500 font-bold tracking-[0.3em] uppercase">Teacher Command v2.0</p>
-        </div>
-
-        <div class="mb-8 rounded-3xl overflow-hidden bg-slate-800 h-40 border border-white/10">
-            <video id="teacher-cam" autoplay playsinline></video>
-        </div>
-
-        <div class="flex-1 flex flex-col min-h-0">
-            <div class="flex justify-between items-center mb-4">
-                <p class="text-[10px] font-black text-emerald-400 uppercase">Hadir Sekarang</p>
-                <span id="count-absen" class="bg-emerald-500 px-2 py-0.5 rounded text-[10px] font-black">0</span>
-            </div>
-            <div class="flex-1 bg-white/5 rounded-2xl p-4 overflow-y-auto border border-white/5 mb-4">
-                <ul id="list-absen" class="space-y-3 text-[11px] font-bold text-slate-400">
-                    <li class="text-center opacity-30 mt-4 italic">Belum ada siswa...</li>
-                </ul>
-            </div>
-            <div class="grid grid-cols-3 gap-2">
-                <button onclick="exportLaporan('pdf')" class="p-3 bg-slate-800 rounded-xl text-[9px] font-black hover:bg-indigo-600 transition-all">PDF</button>
-                <button onclick="exportLaporan('excel')" class="p-3 bg-slate-800 rounded-xl text-[9px] font-black hover:bg-indigo-600 transition-all">XLS</button>
-                <button onclick="exportLaporan('word')" class="p-3 bg-slate-800 rounded-xl text-[9px] font-black hover:bg-indigo-600 transition-all">DOC</button>
-            </div>
-        </div>
-    </aside>
-
-    <main class="flex-1 p-10 lg:p-16 h-screen overflow-y-auto">
-        <header class="flex flex-col lg:row justify-between lg:items-end mb-12 gap-6">
-            <div>
-                <h2 class="text-4xl font-black text-slate-800 tracking-tight">Halo, <%= nama_guru %>!</h2>
-                <p class="text-slate-500 font-bold uppercase text-xs tracking-widest mt-2"><%= instansi %> • ID: <%= kode %></p>
-            </div>
-            <div class="flex items-center gap-4">
-                <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
-                    <p class="text-[8px] font-black text-indigo-500 uppercase px-2 mb-1">Ruang Kelas</p>
-                    <select id="select-kelas" onchange="pindahKelas()" class="text-sm font-black text-slate-700 outline-none bg-transparent px-2 cursor-pointer"></select>
-                </div>
-                <button onclick="tambahKelas()" class="w-14 h-14 bg-indigo-600 text-white rounded-2xl shadow-xl text-2xl hover:scale-105 active:scale-95 transition-all">＋</button>
-            </div>
-        </header>
-
-        <section class="mb-16 bg-slate-900 p-8 rounded-[3.5rem] shadow-2xl border-[8px] border-slate-800">
-            <div class="flex justify-between items-center mb-8 px-4">
-                <div class="flex items-center gap-4">
-                    <div class="live-dot"></div>
-                    <span class="text-white text-[11px] font-black tracking-widest uppercase">Streaming: <span id="current-room-label" class="text-indigo-400">Umum</span></span>
-                </div>
-                <div class="flex gap-3">
-                    <button onclick="switchDisplayMode()" class="bg-indigo-600 text-white px-6 py-3 rounded-2xl text-[10px] font-black hover:bg-indigo-500 transition-all uppercase">Switch Materi</button>
-                    <button onclick="muteAllStudents()" class="bg-rose-600 text-white px-6 py-3 rounded-2xl text-[10px] font-black hover:bg-rose-500 transition-all uppercase">Mute All</button>
-                    <button onclick="toggleFullScreen()" class="bg-slate-700 text-white px-6 py-3 rounded-2xl text-[10px] font-black hover:bg-slate-600 transition-all uppercase">Fullscreen</button>
-                </div>
-            </div>
-
-            <div id="main-stage" onclick="resetFokusVideo()" class="shadow-inner group cursor-pointer">
-                <video id="guru-live-cam" autoplay playsinline muted></video>
-                <img id="fokus-murid-view" class="hidden w-full h-full object-contain">
-                
-                <div id="presentation-stage" class="hidden absolute inset-0 bg-white p-16 overflow-y-auto prose max-w-none">
-                    <h1 id="slide-judul" class="text-5xl font-black text-indigo-600 mb-8"></h1>
-                    <div id="slide-konten" class="text-xl text-slate-700 leading-relaxed"></div>
-                </div>
-
-                <div id="mini-guru-cam" class="hidden absolute bottom-10 right-10 w-56 h-40 bg-black rounded-3xl border-4 border-indigo-500 overflow-hidden shadow-2xl z-30">
-                    <video id="guru-pip-cam" autoplay playsinline muted></video>
-                </div>
-                <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <p class="text-white font-black text-sm tracking-widest">KLIK UNTUK RESET TAMPILAN GURU</p>
-                </div>
-            </div>
-
-            <div class="mt-12">
-                <div class="flex justify-between items-center mb-6 px-4">
-                    <h4 class="text-white font-black text-lg uppercase tracking-tight">Papan Skor Real-time</h4>
-                    <button onclick="exportLaporan('excel')" class="bg-emerald-500 text-white px-4 py-2 rounded-xl text-[9px] font-black hover:bg-emerald-400 transition-all">EXPORT SKOR</button>
-                </div>
-                <div class="overflow-hidden rounded-[2rem] border border-white/5 bg-white/5">
-                    <table class="w-full text-left text-[12px] text-slate-300">
-                        <thead class="bg-slate-950 text-slate-500 font-black uppercase text-[10px]">
-                            <tr>
-                                <th class="p-6">Peringkat</th>
-                                <th class="p-6">Nama Peserta</th>
-                                <th class="p-6">Nilai AI</th>
-                                <th class="p-6">Analisis AI</th>
-                                <th class="p-6 text-right">Opsi Guru</th>
-                            </tr>
-                        </thead>
-                        <tbody id="live-score-body" class="divide-y divide-white/5">
-                            <tr id="empty-score"><td colspan="5" class="p-16 text-center text-slate-500 italic">Menunggu kuis dimulai...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="mt-12 pt-10 border-t border-white/10">
-                <p class="text-slate-500 text-[9px] font-black uppercase tracking-[0.3em] mb-6">Monitoring Grid Siswa (Klik untuk Fokus)</p>
-                <div id="students-live-grid" class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-10 gap-4"></div>
-            </div>
-        </section>
-
-        <section class="grid grid-cols-1 lg:grid-cols-12 gap-10">
-            <div class="lg:col-span-4">
-                <div class="card-elegant p-10 sticky top-10">
-                    <h3 class="font-black text-xs text-slate-400 uppercase tracking-widest mb-8 flex items-center gap-2">
-                        <span class="w-2 h-2 bg-indigo-600 rounded-full animate-pulse"></span> Kendali Materi AI
-                    </h3>
-                    <textarea id="prompt" class="w-full h-48 bg-slate-50 border-2 border-slate-100 rounded-3xl p-6 text-sm outline-none focus:border-indigo-500 transition-all" placeholder="Tulis materi: 'Buatkan kuis matematika dasar'..."></textarea>
-                    <button id="btnGen" onclick="generate()" class="w-full mt-8 bg-slate-900 text-white py-6 rounded-3xl font-black shadow-xl hover:bg-indigo-600 transition-all">PRODUKSI SEKARANG</button>
-                </div>
-            </div>
-            <div class="lg:col-span-8">
-                <div id="preview-area" class="hidden">
-                    <div class="flex justify-between items-center mb-6 bg-white p-5 rounded-3xl border border-slate-100">
-                        <span class="text-[10px] font-black text-indigo-500 uppercase px-4">Preview Konten</span>
-                        <div class="flex gap-2">
-                            <button onclick="publishToStudents()" class="bg-indigo-600 text-white px-8 py-3 rounded-full text-[10px] font-black hover:bg-indigo-700 shadow-lg">SIARKAN MATERI</button>
-                            <button onclick="publishQuiz()" class="bg-amber-500 text-white px-8 py-3 rounded-full text-[10px] font-black hover:bg-amber-600 shadow-lg">MULAI KUIS</button>
-                        </div>
-                    </div>
-                    <div class="card-elegant p-12 border-t-[10px] border-indigo-600">
-                        <h1 id="res-judul" class="text-4xl font-black text-slate-800 mb-8"></h1>
-                        <div id="res-html" class="prose prose-indigo max-w-none"></div>
-                    </div>
-                </div>
-                <div id="empty-state" class="card-elegant h-full min-h-[500px] flex flex-col items-center justify-center opacity-40 border-dashed border-4 border-slate-200">
-                    <p class="text-4xl mb-4">✍️</p>
-                    <p class="font-black text-xs uppercase tracking-widest">Input Instruksi Bapak untuk AI</p>
-                </div>
-            </div>
-        </section>
-
-        <section class="mt-24">
-            <div class="flex justify-between items-end mb-10">
-                <div>
-                    <h3 class="text-3xl font-black text-slate-800">Riwayat PostgreSQL</h3>
-                    <p class="text-indigo-500 text-xs font-bold uppercase mt-1">Status: Terhubung & Real-time</p>
-                </div>
-                <button onclick="muatRiwayat()" class="bg-slate-900 text-white px-8 py-4 rounded-2xl text-[10px] font-black hover:bg-indigo-600 transition-all">SINKRONISASI ULANG</button>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                <div class="card-elegant p-8 border-l-8 border-indigo-500"><p class="text-[9px] font-black text-slate-400 mb-2 uppercase">Rata Skor</p><h4 id="avg-score" class="text-4xl font-black">-</h4></div>
-                <div class="card-elegant p-8 border-l-8 border-emerald-500"><p class="text-[9px] font-black text-slate-400 mb-2 uppercase">Lulus KKM</p><h4 id="pass-count" class="text-4xl font-black">-</h4></div>
-                <div class="card-elegant p-8 border-l-8 border-amber-500"><p class="text-[9px] font-black text-slate-400 mb-2 uppercase">Sesi Kuis</p><h4 id="quiz-count" class="text-4xl font-black">-</h4></div>
-            </div>
-            <div class="card-elegant overflow-hidden">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-slate-50 text-[10px] font-black uppercase text-slate-400">
-                        <tr><th class="p-8">Murid</th><th class="p-8">Materi</th><th class="p-8">Skor</th><th class="p-8">Catatan AI</th><th class="p-8 text-right">Tanggal</th></tr>
-                    </thead>
-                    <tbody id="history-body" class="divide-y divide-slate-100 text-slate-600">
-                        <tr><td colspan="5" class="p-20 text-center italic text-slate-400">Belum ada data tersimpan...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <div id="chat-panel" class="hidden fixed bottom-28 right-10 w-96 bg-white border border-slate-200 rounded-[2.5rem] shadow-2xl z-[500] flex flex-col overflow-hidden">
-            <div class="p-6 bg-indigo-600 text-white font-black text-xs flex justify-between items-center">
-                <span>LIVE CHAT KELAS</span>
-                <button onclick="toggleChat()">✕</button>
-            </div>
-            <div id="chat-box" class="h-80 overflow-y-auto p-6 space-y-4 text-[12px] bg-slate-50"></div>
-            <div class="p-5 border-t flex gap-2">
-                <input id="chat-input" class="flex-1 bg-slate-100 p-4 rounded-2xl outline-none" placeholder="Ketik pesan..." onkeyup="if(event.key==='Enter') sendChat()">
-                <button onclick="sendChat()" class="bg-indigo-600 text-white w-14 h-14 rounded-2xl hover:bg-indigo-700 transition-all">🚀</button>
-            </div>
-        </div>
-        <button onclick="toggleChat()" class="fixed bottom-10 right-10 w-16 h-16 bg-indigo-600 text-white rounded-2xl shadow-2xl flex items-center justify-center text-2xl z-[500] hover:scale-110 transition-all">💬</button>
-    </main>
+    <div id="customAlert" class="fixed top-10 right-10 z-[2000] transform translate-x-[150%] transition-transform duration-500 bg-slate-900 text-white p-5 rounded-2xl border-l-8 border-indigo-500 shadow-2xl flex items-center gap-4">
+        <div class="text-2xl" id="alertIcon">💡</div>
+        <div class="font-bold" id="alertMsg"></div>
+    </div>
 
     <script>
         const socket = io();
@@ -249,11 +226,10 @@
         let isPresentationMode = false;
         let targetMuridKoreksi = "";
 
-        // 1. KAMERA & STREAMING
+        // 1. KAMERA (CLEAN: Hanya Utama & PIP)
         async function initCameras() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                document.getElementById('teacher-cam').srcObject = stream;
                 document.getElementById('guru-live-cam').srcObject = stream;
                 document.getElementById('guru-pip-cam').srcObject = stream;
                 
@@ -265,10 +241,81 @@
                     ctx.drawImage(document.getElementById('guru-live-cam'), 0, 0, canvas.width, canvas.height);
                     socket.emit('update-frame', { room: currentRoom, image: canvas.toDataURL('image/jpeg', 0.5) });
                 }, 150);
-            } catch (e) { showAlert("Kamera tidak terdeteksi", "❌"); }
+            } catch (e) { showAlert("Kamera Error", "❌"); }
         }
 
-        // 2. KELAS MANAGEMENT
+        // 2. EXPORT SYSTEM (NEW & FIXED)
+        // Export Absensi Saja (Tanpa Nilai)
+        function exportAbsensi(tipe) {
+            const listItems = document.querySelectorAll('#list-absen li span');
+            let data = [];
+            listItems.forEach(item => {
+                data.push({ "Nama Siswa": item.innerText, "Status": "Hadir", "Waktu": new Date().toLocaleTimeString() });
+            });
+
+            if (data.length === 0) return showAlert("Tidak ada siswa online", "⚠️");
+
+            const fileName = `Absensi_${currentRoom}_${new Date().toLocaleDateString()}`;
+
+            if (tipe === 'excel') {
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Daftar Hadir");
+                XLSX.writeFile(wb, `${fileName}.xlsx`);
+            } else if (tipe === 'pdf') {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                doc.text(`DAFTAR HADIR - ${currentRoom}`, 14, 20);
+                doc.autoTable({ startY: 30, head: [['Nama Siswa', 'Status', 'Waktu']], body: data.map(d => [d["Nama Siswa"], d.Status, d.Waktu]) });
+                doc.save(`${fileName}.pdf`);
+            } else if (tipe === 'word') {
+                const content = `<h3>Daftar Hadir ${currentRoom}</h3><table border="1">` + data.map(d => `<tr><td>${d["Nama Siswa"]}</td><td>${d.Status}</td></tr>`).join('') + `</table>`;
+                const blob = new Blob(['\ufeff', content], { type: 'application/msword' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = `${fileName}.doc`; a.click();
+            }
+            showAlert("Export Berhasil", "✅");
+        }
+
+        // Export Nilai (FIX WORD)
+        function exportLaporan(tipe) {
+            const rows = Array.from(document.querySelectorAll('#live-score-body tr'));
+            if (rows.length === 0 || rows[0].id === 'empty-score') return showAlert("Data nilai kosong", "⚠️");
+
+            const data = rows.map(r => {
+                const c = r.querySelectorAll('td');
+                return { Murid: c[1].innerText, Skor: c[2].innerText, Feedback: c[3].innerText };
+            });
+
+            const fileName = `Nilai_${currentRoom}_${new Date().toLocaleDateString()}`;
+
+            if (tipe === 'excel') {
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Hasil Nilai");
+                XLSX.writeFile(wb, `${fileName}.xlsx`);
+            } else if (tipe === 'word') {
+                const content = `<h3>Laporan Nilai - ${currentRoom}</h3><table border="1"><tr><th>Nama</th><th>Nilai</th></tr>` + data.map(d => `<tr><td>${d.Murid}</td><td>${d.Skor}</td></tr>`).join('') + `</table>`;
+                const blob = new Blob(['\ufeff', content], { type: 'application/msword' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = `${fileName}.doc`; a.click();
+            }
+            showAlert("Export Berhasil", "✅");
+        }
+
+        // 3. FULL SCREEN CLEAN
+        function toggleCleanFullScreen() {
+            const stage = document.getElementById('main-stage');
+            if (!document.fullscreenElement) {
+                stage.requestFullscreen().catch(err => {
+                    alert(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // 4. KELAS & SOCKET (LOGIKA ASLI DIPERTAHANKAN)
         async function loadKelas() {
             const res = await fetch(`/api/kelas/${kodeSekolah}`);
             const data = await res.json();
@@ -283,98 +330,26 @@
             socket.emit('switch-room', { oldRoom: currentRoom, newRoom: newRoom });
             currentRoom = newRoom;
             document.getElementById('current-room-label').innerText = k || "Umum";
-            allScores = []; renderScoreboard(); muatRiwayat();
-            showAlert(`Pindah ke Ruang ${k || 'Umum'}`, "📡");
+            allScores = []; renderScoreboard(); 
+            showAlert(`Pindah ke ${k || 'Umum'}`, "📡");
         }
 
         async function tambahKelas() {
-            const n = prompt("Masukkan Nama Kelas Baru:"); 
+            const n = prompt("Nama Kelas Baru:"); 
             if(!n) return;
             await fetch('/api/kelas', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ kode_sekolah: kodeSekolah, nama_kelas: n }) });
             loadKelas();
         }
 
-        // 3. DATABASE & KOREKSI
-        function bukaKoreksi(nama, skor, feedback) {
-            targetMuridKoreksi = nama;
-            document.getElementById('koreksi-nama').innerText = "Koreksi Nilai: " + nama;
-            document.getElementById('input-skor-baru').value = skor;
-            document.getElementById('input-catatan-baru').value = feedback || "";
-            document.getElementById('modal-koreksi').classList.add('modal-active');
-        }
-
-        function tutupKoreksi() { document.getElementById('modal-koreksi').classList.remove('modal-active'); }
-
-        async function simpanKoreksi() {
-            const s = document.getElementById('input-skor-baru').value;
-            const f = document.getElementById('input-catatan-baru').value;
-            
-            await fetch('/api/update-nilai-manual', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ 
-                    kode_sekolah: kodeSekolah, 
-                    nama_siswa: targetMuridKoreksi, 
-                    skor: s, 
-                    feedback: f, 
-                    materi: lastGeneratedData?.judul || "Kuis Live" 
-                })
-            });
-
-            socket.emit('manual-score-update', { room: currentRoom, name: targetMuridKoreksi, score: s, feedback: f });
-            const idx = allScores.findIndex(x => x.name === targetMuridKoreksi);
-            if(idx > -1) { allScores[idx].score = s; allScores[idx].feedback = f; }
-            
-            renderScoreboard(); muatRiwayat(); tutupKoreksi(); 
-            showAlert("Nilai diperbarui!", "✅");
-        }
-
-        async function muatRiwayat() {
-            const body = document.getElementById('history-body');
-            const btn = document.querySelector('button[onclick="muatRiwayat()"]');
-            btn.innerText = "SINKRONISASI...";
-            
-            try {
-                const res = await fetch(`/api/riwayat-nilai/${kodeSekolah}`);
-                const data = await res.json();
-                body.innerHTML = ""; let total = 0; let lulus = 0;
-                
-                const currentKelas = document.getElementById('select-kelas').value;
-                const filteredData = currentKelas ? data.filter(d => d.nama_kelas === currentKelas) : data;
-
-                if(filteredData.length === 0) {
-                    body.innerHTML = '<tr><td colspan="5" class="p-20 text-center italic opacity-40">Tidak ada riwayat untuk kelas ini</td></tr>';
-                } else {
-                    filteredData.forEach(d => {
-                        total += parseInt(d.skor); if(d.skor >= 75) lulus++;
-                        body.innerHTML += `
-                            <tr class="hover:bg-indigo-50/50 transition-all border-b border-slate-50">
-                                <td class="p-8 font-black text-slate-700">${d.nama_siswa}</td>
-                                <td class="p-8 font-medium">${d.materi}</td>
-                                <td class="p-8"><span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-lg font-black">${d.skor}</span></td>
-                                <td class="p-8 text-[11px] italic text-slate-400">${d.feedback || '-'}</td>
-                                <td class="p-8 text-right font-bold text-slate-300">${new Date(d.tanggal).toLocaleDateString()}</td>
-                            </tr>`;
-                    });
-                }
-                document.getElementById('avg-score').innerText = filteredData.length ? Math.round(total/filteredData.length) : "0";
-                document.getElementById('pass-count').innerText = lulus;
-                document.getElementById('quiz-count').innerText = new Set(filteredData.map(f => f.materi)).size;
-            } catch (e) { showAlert("DB Sync Error", "⚠️"); }
-            btn.innerText = "SINKRONISASI ULANG";
-        }
-
-        // 4. SOCKET & UI EVENTS
         socket.on('update-attendance', (listSiswa) => {
             const listUI = document.getElementById('list-absen');
             document.getElementById('count-absen').innerText = listSiswa.length;
-            listUI.innerHTML = "";
-            if(listSiswa.length === 0) listUI.innerHTML = '<li class="text-center opacity-30 mt-4">Belum ada siswa online</li>';
+            listUI.innerHTML = listSiswa.length === 0 ? '<li class="text-center opacity-30 mt-4">Belum ada siswa</li>' : "";
             listSiswa.forEach(s => {
-                listUI.innerHTML += `
-                    <li class="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/5">
-                        <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                        <span class="text-[11px]">${s.name}</span>
-                    </li>`;
+                listUI.innerHTML += `<li class="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/5">
+                    <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                    <span class="text-[11px]">${s.name}</span>
+                </li>`;
             });
         });
 
@@ -383,8 +358,7 @@
             const safeId = data.name.replace(/\s+/g, '-');
             if (!document.getElementById(`tile-${safeId}`)) {
                 const t = document.createElement('div');
-                t.id = `tile-${safeId}`;
-                t.className = "student-tile shadow-xl";
+                t.id = `tile-${safeId}`; t.className = "student-tile shadow-xl";
                 t.onclick = () => fokusKeMurid(data.image || '', data.name);
                 t.innerHTML = `<img id="img-tile-${safeId}" class="w-full h-full object-cover">
                                <div class="absolute bottom-1 left-1 bg-black/70 text-[7px] text-white px-2 py-0.5 rounded">${data.name}</div>`;
@@ -409,85 +383,19 @@
             allScores.sort((a,b) => b.score - a.score); 
             b.innerHTML = '';
             allScores.forEach((s, i) => {
-                b.innerHTML += `
-                    <tr class="border-t border-white/5 hover:bg-white/5 transition-all">
-                        <td class="p-6 font-black text-indigo-400">#${i+1}</td>
-                        <td class="p-6 font-bold text-white">${s.name}</td>
-                        <td class="p-6"><span class="bg-indigo-500/30 text-indigo-300 px-3 py-1 rounded-lg font-black">${s.score}</span></td>
-                        <td class="p-6 italic text-slate-500 text-[10px]">${s.feedback || 'Sedang menilai...'}</td>
-                        <td class="p-6 text-right"><button onclick="bukaKoreksi('${s.name}', ${s.score}, '${s.feedback}')" class="text-amber-500 font-black text-[10px] uppercase hover:underline">Koreksi</button></td>
-                    </tr>`;
+                b.innerHTML += `<tr class="border-t border-white/5 hover:bg-white/5 transition-all">
+                    <td class="p-6 font-black text-indigo-400">#${i+1}</td>
+                    <td class="p-6 font-bold text-white">${s.name}</td>
+                    <td class="p-6"><span class="bg-indigo-500/30 text-indigo-300 px-3 py-1 rounded-lg font-black">${s.score}</span></td>
+                    <td class="p-6 italic text-slate-500 text-[10px]">${s.feedback || '...'}</td>
+                    <td class="p-6 text-right"><button onclick="bukaKoreksi('${s.name}', ${s.score}, '${s.feedback}')" class="text-amber-500 font-black text-[10px] uppercase hover:underline">Koreksi</button></td>
+                </tr>`;
             });
         }
 
-        // 5. EXPORT SYSTEM (REFINED)
-        function exportLaporan(tipe) {
-            const tableBody = document.getElementById('history-body');
-            const rows = Array.from(tableBody.querySelectorAll('tr'));
-            
-            // Validasi data
-            if (rows.length === 0 || rows[0].innerText.includes("Belum ada")) {
-                return showAlert("Tidak ada data untuk di-export!", "⚠️");
-            }
-
-            // Mapping data tabel
-            const data = rows.map(r => {
-                const c = r.querySelectorAll('td');
-                return { 
-                    Murid: c[0]?.innerText || '', 
-                    Materi: c[1]?.innerText || '', 
-                    Skor: c[2]?.innerText || '', 
-                    Catatan: c[3]?.innerText || '', 
-                    Tanggal: c[4]?.innerText || '' 
-                };
-            });
-
-            const fileName = `Laporan_Nilai_${currentRoom}_${new Date().toLocaleDateString()}`;
-
-            if (tipe === 'excel') {
-                try {
-                    const ws = XLSX.utils.json_to_sheet(data);
-                    const wb = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(wb, ws, "Riwayat Nilai");
-                    XLSX.writeFile(wb, `${fileName}.xlsx`);
-                    showAlert("Excel berhasil diunduh", "📊");
-                } catch (e) {
-                    showAlert("Gagal export Excel", "❌");
-                }
-            } else if (tipe === 'pdf') {
-                try {
-                    const { jsPDF } = window.jspdf;
-                    const doc = new jsPDF();
-
-                    doc.setFontSize(18);
-                    doc.text("LAPORAN HASIL PENILAIAN SISWA", 14, 20);
-                    doc.setFontSize(10);
-                    doc.text(`Instansi: ${instansi} | Ruang: ${currentRoom}`, 14, 28);
-                    doc.text(`Dicetak pada: ${new Date().toLocaleString()}`, 14, 33);
-
-                    doc.autoTable({
-                        startY: 40,
-                        head: [['Nama Murid', 'Materi', 'Skor', 'Catatan AI', 'Tanggal']],
-                        body: data.map(d => [d.Murid, d.Materi, d.Skor, d.Catatan, d.Tanggal]),
-                        theme: 'grid',
-                        headStyles: { fillColor: [79, 70, 229] },
-                        styles: { fontSize: 8 }
-                    });
-
-                    doc.save(`${fileName}.pdf`);
-                    showAlert("PDF berhasil diunduh", "📄");
-                } catch (e) {
-                    showAlert("Gagal export PDF", "❌");
-                }
-            } else {
-                showAlert("Format Word segera hadir!", "ℹ️");
-            }
-        }
-
-        // 6. AI COMMANDS
         async function generate() {
             const btn = document.getElementById('btnGen');
-            btn.innerText = "SEDANG BERPIKIR..."; btn.disabled = true;
+            btn.innerText = "PROSES..."; btn.disabled = true;
             try {
                 const res = await fetch('/api/generate', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ instruksi: document.getElementById('prompt').value }) });
                 lastGeneratedData = await res.json();
@@ -495,54 +403,12 @@
                 document.getElementById('preview-area').classList.remove('hidden');
                 document.getElementById('res-judul').innerText = lastGeneratedData.judul;
                 document.getElementById('res-html').innerHTML = lastGeneratedData.html;
-            } catch (e) { showAlert("AI Error", "❌"); }
-            btn.innerText = "PRODUKSI SEKARANG"; btn.disabled = false;
+            } catch (e) { showAlert("Gagal Generate", "❌"); }
+            btn.innerText = "BUAT SEKARANG"; btn.disabled = false;
         }
 
-        function publishToStudents() { 
-            if(!lastGeneratedData) return;
-            socket.emit('new-materi', { ...lastGeneratedData, room: currentRoom }); 
-            showAlert("Materi disiarkan!", "🚀"); 
-        }
-
-        function publishQuiz() { 
-            if(!lastGeneratedData) return;
-            allScores = []; renderScoreboard(); 
-            socket.emit('start-quiz', { ...lastGeneratedData, room: currentRoom }); 
-            showAlert("Kuis dimulai!", "🎯"); 
-        }
-
-        // 7. UTILS
-        function showAlert(msg, icon = '💡') {
-            const a = document.getElementById('customAlert');
-            document.getElementById('alertMsg').innerText = msg;
-            document.getElementById('alertIcon').innerText = icon;
-            a.style.transform = "translateX(0)";
-            setTimeout(() => a.style.transform = "translateX(150%)", 3000);
-        }
-
-        function toggleChat() { document.getElementById('chat-panel').classList.toggle('hidden'); }
-
-        function sendChat() {
-            const inp = document.getElementById('chat-input');
-            if(!inp.value) return;
-            const d = { room: currentRoom, sender: namaGuru, msg: inp.value };
-            socket.emit('send-chat', d);
-            appendChat(d);
-            inp.value = '';
-        }
-
-        function appendChat(d) {
-            const b = document.getElementById('chat-box');
-            const isMe = d.sender === namaGuru;
-            b.innerHTML += `<div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
-                <div class="${isMe ? 'bg-indigo-600 text-white' : 'bg-white border'} p-4 rounded-2xl max-w-[85%] shadow-sm">
-                    <p class="text-[8px] opacity-60 font-black mb-1 uppercase">${d.sender}</p>
-                    <p class="font-bold leading-relaxed">${d.msg}</p>
-                </div>
-            </div>`;
-            b.scrollTop = b.scrollHeight;
-        }
+        function publishToStudents() { socket.emit('new-materi', { ...lastGeneratedData, room: currentRoom }); showAlert("Tersiar!", "🚀"); }
+        function publishQuiz() { allScores = []; renderScoreboard(); socket.emit('start-quiz', { ...lastGeneratedData, room: currentRoom }); showAlert("Kuis Dimulai!", "🎯"); }
 
         function switchDisplayMode() {
             if(!lastGeneratedData) return showAlert("Buat materi dulu!", "⚠️");
@@ -550,31 +416,13 @@
             const stage = document.getElementById('presentation-stage');
             const mainV = document.getElementById('guru-live-cam');
             const pip = document.getElementById('mini-guru-cam');
-            
             if(isPresentationMode) {
-                stage.classList.remove('hidden');
-                mainV.classList.add('opacity-0');
-                pip.classList.remove('hidden');
+                stage.classList.remove('hidden'); mainV.classList.add('opacity-0'); pip.classList.remove('hidden');
                 document.getElementById('slide-judul').innerText = lastGeneratedData.judul;
                 document.getElementById('slide-konten').innerHTML = lastGeneratedData.html;
             } else {
-                stage.classList.add('hidden');
-                mainV.classList.remove('opacity-0');
-                pip.classList.add('hidden');
+                stage.classList.add('hidden'); mainV.classList.remove('opacity-0'); pip.classList.add('hidden');
             }
-        }
-
-        function muteAllStudents() { socket.emit('mute-all', { room: currentRoom }); showAlert("Muted All Students", "🔇"); }
-        function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
-
-        function fokusKeMurid(img, nama) {
-            const mv = document.getElementById('fokus-murid-view');
-            const gv = document.getElementById('guru-live-cam');
-            document.getElementById('presentation-stage').classList.add('hidden');
-            gv.classList.add('hidden');
-            mv.src = img;
-            mv.classList.remove('hidden');
-            showAlert(`Fokus ke: ${nama}`, "👤");
         }
 
         function resetFokusVideo() {
@@ -583,12 +431,27 @@
             if(isPresentationMode) document.getElementById('presentation-stage').classList.remove('hidden');
         }
 
-        window.onload = () => {
-            initCameras();
-            loadKelas();
-            socket.emit('join-room', kodeSekolah);
-            muatRiwayat();
-        };
+        function fokusKeMurid(img, nama) {
+            const mv = document.getElementById('fokus-murid-view');
+            const gv = document.getElementById('guru-live-cam');
+            document.getElementById('presentation-stage').classList.add('hidden');
+            gv.classList.add('hidden'); mv.src = img; mv.classList.remove('hidden');
+            showAlert(`Fokus: ${nama}`, "👤");
+        }
+
+        function showAlert(msg, icon = '💡') {
+            const a = document.getElementById('customAlert');
+            document.getElementById('alertMsg').innerText = msg;
+            document.getElementById('alertIcon').innerText = icon;
+            a.style.transform = "translateX(0)";
+            setTimeout(() => a.style.transform = "translateX(150%)", 3000);
+        }
+
+        function muteAllStudents() { socket.emit('mute-all', { room: currentRoom }); showAlert("Semua Muted", "🔇"); }
+        function bukaKoreksi(n, s, f) { targetMuridKoreksi = n; document.getElementById('koreksi-nama').innerText = n; document.getElementById('input-skor-baru').value = s; document.getElementById('input-catatan-baru').value = f; document.getElementById('modal-koreksi').classList.add('modal-active'); }
+        function tutupKoreksi() { document.getElementById('modal-koreksi').classList.remove('modal-active'); }
+
+        window.onload = () => { initCameras(); loadKelas(); socket.emit('join-room', kodeSekolah); };
     </script>
 </body>
 </html>
