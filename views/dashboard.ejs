@@ -65,7 +65,7 @@
         
         /* Mode PiP (Picture in Picture - Saat Share Materi/Grid) */
         .video-wrapper.pip-mode {
-            position: absolute; bottom: 140px; right: 20px;
+            position: absolute; bottom: 160px; right: 20px;
             width: 180px; height: 135px; z-index: 60;
             border-radius: 16px; 
             box-shadow: 0 10px 40px rgba(0,0,0,0.6);
@@ -112,10 +112,10 @@
         }
         .start-overlay.hidden { opacity: 0; pointer-events: none; }
 
-        /* Control Bar (Bottom) - DINAIKKAN & DIRAPIHKAN */
+        /* Control Bar (Bottom) - DIGESER NAIK AGAR TIDAK KE-TRIGGER GESTURE HP */
         .control-bar {
             position: absolute; 
-            bottom: 50px; /* Dinaikkan agar tidak terlalu bawah */
+            bottom: 60px; /* Desktop */
             left: 50%; transform: translateX(-50%);
             background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(20px);
             padding: 10px 16px; border-radius: 20px; 
@@ -143,7 +143,7 @@
 
         /* Floating Chat */
         .floating-chat-btn {
-            position: fixed; bottom: 120px; right: 25px; z-index: 90;
+            position: fixed; bottom: 140px; right: 25px; z-index: 90;
             width: 56px; height: 56px; border-radius: 50%;
             background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; 
             box-shadow: 0 8px 25px rgba(37, 99, 235, 0.5); border: 2px solid rgba(255,255,255,0.2);
@@ -154,7 +154,7 @@
         
         /* Chat Panel */
         .chat-panel-float {
-            position: fixed; bottom: 190px; right: 25px; width: 320px; height: 400px;
+            position: fixed; bottom: 210px; right: 25px; width: 320px; height: 400px;
             background: white; border-radius: 20px; z-index: 89;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3); border: 1px solid #e2e8f0;
             display: none; flex-direction: column; transform-origin: bottom right; 
@@ -163,6 +163,16 @@
         .chat-panel-float.active { display: flex; }
         @keyframes popUp { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
 
+        /* AI Quiz Controller (Hidden by default) */
+        #quiz-controller {
+            display: none; /* Muncul setelah generate */
+            margin-top: 15px;
+            padding: 10px;
+            background: #f1f5f9;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
         /* Responsive */
         @media (max-width: 1024px) {
             .app-layout { grid-template-columns: 1fr; }
@@ -170,7 +180,8 @@
             .sidebar.open { transform: translateX(0); }
             body.sidebar-closed .app-layout { grid-template-columns: 1fr; }
             
-            .control-bar { padding: 8px 12px; bottom: 40px; width: 95%; max-width: 450px; justify-content: space-around; gap: 2px;}
+            /* Control Bar di Mobile lebih naik lagi */
+            .control-bar { padding: 8px 12px; bottom: 80px; width: 95%; max-width: 450px; justify-content: space-around; gap: 2px;}
             .ctrl-btn { width: 48px; height: 48px; }
             .ctrl-label { font-size: 8px; }
             
@@ -182,16 +193,19 @@
 <body class="sidebar-closed"> 
 
     <div class="floating-chat-btn" onclick="toggleChat()" title="Buka Chat">
-        <i class="fa-solid fa-envelope text-xl"></i>
+        <i class="fa-solid fa-comments text-2xl"></i>
     </div>
 
     <div id="chat-panel" class="chat-panel-float">
         <div class="bg-slate-50 p-4 border-b border-slate-100 flex justify-between items-center rounded-t-2xl">
             <div class="flex items-center gap-2">
-                <i class="fa-solid fa-envelope-open-text text-brand-600"></i>
+                <i class="fa-solid fa-comment-dots text-brand-600"></i>
                 <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Live Chat</span>
             </div>
-            <button onclick="toggleChat()" class="text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div class="flex gap-2">
+                <button onclick="togglePinChat()" id="btn-pin" class="text-slate-400 hover:text-brand-500 transition" title="Pin Pesan"><i class="fa-solid fa-thumbtack"></i></button>
+                <button onclick="toggleChat()" class="text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
         </div>
         <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-3 bg-white text-sm text-slate-800 scrollbar-hide">
             <div class="text-center text-[10px] text-slate-400 italic py-10">Belum ada pesan masuk.</div>
@@ -223,6 +237,13 @@
 
             <div class="flex-1 overflow-y-auto p-5 space-y-6">
                 
+                <div class="bg-yellow-50 border border-yellow-200 p-3 rounded-xl">
+                    <label class="text-[10px] font-bold text-yellow-700 block mb-1">Silahkan masukan nama kelas disini</label>
+                    <input type="text" id="nama-kelas" class="w-full bg-white border border-yellow-300 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Contoh: 1 Umar bin Khattab">
+                </div>
+
+                <div class="border-t border-slate-100"></div>
+
                 <div class="space-y-3">
                     <div class="flex items-center gap-2">
                         <i class="fa-solid fa-wand-magic-sparkles text-brand-500 text-xs"></i>
@@ -232,42 +253,60 @@
                         <textarea id="prompt" class="w-full bg-transparent border-none p-3 text-xs text-slate-700 h-20 resize-none outline-none placeholder:text-slate-400" placeholder="Topik materi (cth: Perang Dunia II)..."></textarea>
                     </div>
                     <button onclick="generate()" id="btnGen" class="w-full py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-brand-600 hover:shadow-lg transition flex items-center justify-center gap-2">
-                        <span>Buat Materi</span> <i class="fa-solid fa-bolt"></i>
+                        <span>Buat Materi & Soal</span> <i class="fa-solid fa-bolt"></i>
                     </button>
+
+                    <div id="quiz-controller">
+                        <label class="text-[9px] font-bold text-slate-500 uppercase block mb-2 text-center">Distribusi Soal ke Siswa</label>
+                        <div class="grid grid-cols-1 gap-2">
+                            <button onclick="distributeQuiz('PG')" class="py-2 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-200 transition text-left px-3 flex justify-between items-center">
+                                <span><i class="fa-solid fa-list-check mr-2"></i>Kirim 15 Soal PG</span>
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                            <button onclick="distributeQuiz('ESSAY')" class="py-2 bg-purple-100 text-purple-700 rounded-lg text-xs font-bold hover:bg-purple-200 transition text-left px-3 flex justify-between items-center">
+                                <span><i class="fa-solid fa-pen-nib mr-2"></i>Kirim 5 Soal Essay</span>
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                            <button onclick="distributeQuiz('QUIZ')" class="py-2 bg-orange-100 text-orange-700 rounded-lg text-xs font-bold hover:bg-orange-200 transition text-left px-3 flex justify-between items-center">
+                                <span><i class="fa-solid fa-stopwatch mr-2"></i>Kirim 10 Flash Quiz</span>
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="border-t border-slate-100"></div>
 
                 <div class="space-y-3">
                     <div class="flex items-center gap-2 mb-2">
-                        <i class="fa-solid fa-file-export text-orange-500 text-xs"></i>
+                        <i class="fa-solid fa-file-export text-green-600 text-xs"></i>
                         <label class="text-[11px] font-bold text-slate-700 uppercase tracking-wide">Pusat Unduhan</label>
                     </div>
 
                     <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
                         <div class="text-[10px] font-bold text-slate-500 mb-2">Materi Pelajaran</div>
                         <div class="flex gap-2">
-                            <button onclick="exportData('Materi', 'PDF')" class="flex-1 py-1.5 bg-red-100 text-red-600 rounded-lg text-xs hover:bg-red-200 transition"><i class="fa-solid fa-file-pdf"></i> PDF</button>
-                            <button onclick="exportData('Materi', 'Word')" class="flex-1 py-1.5 bg-blue-100 text-blue-600 rounded-lg text-xs hover:bg-blue-200 transition"><i class="fa-solid fa-file-word"></i> Doc</button>
-                            <button onclick="exportData('Materi', 'Excel')" class="flex-1 py-1.5 bg-green-100 text-green-600 rounded-lg text-xs hover:bg-green-200 transition"><i class="fa-solid fa-file-excel"></i> Xls</button>
+                            <button onclick="exportData('Materi', 'PDF')" class="flex-1 py-1.5 bg-red-50 text-red-600 border border-red-100 rounded-lg text-xs hover:bg-red-100 transition"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                            <button onclick="exportData('Materi', 'Word')" class="flex-1 py-1.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-lg text-xs hover:bg-blue-100 transition"><i class="fa-solid fa-file-word"></i> Word</button>
+                            <button onclick="exportData('Materi', 'Excel')" class="flex-1 py-1.5 bg-green-50 text-green-600 border border-green-100 rounded-lg text-xs hover:bg-green-100 transition"><i class="fa-solid fa-file-excel"></i> Excel</button>
                         </div>
                     </div>
 
                     <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
                         <div class="text-[10px] font-bold text-slate-500 mb-2">Nilai / Live Score</div>
                         <div class="flex gap-2">
-                            <button onclick="exportData('Nilai', 'PDF')" class="flex-1 py-1.5 bg-red-100 text-red-600 rounded-lg text-xs hover:bg-red-200 transition"><i class="fa-solid fa-file-pdf"></i> PDF</button>
-                            <button onclick="exportData('Nilai', 'Word')" class="flex-1 py-1.5 bg-blue-100 text-blue-600 rounded-lg text-xs hover:bg-blue-200 transition"><i class="fa-solid fa-file-word"></i> Doc</button>
-                            <button onclick="exportData('Nilai', 'Excel')" class="flex-1 py-1.5 bg-green-100 text-green-600 rounded-lg text-xs hover:bg-green-200 transition"><i class="fa-solid fa-file-excel"></i> Xls</button>
+                            <button onclick="exportData('Nilai', 'PDF')" class="flex-1 py-1.5 bg-red-50 text-red-600 border border-red-100 rounded-lg text-xs hover:bg-red-100 transition"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                            <button onclick="exportData('Nilai', 'Word')" class="flex-1 py-1.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-lg text-xs hover:bg-blue-100 transition"><i class="fa-solid fa-file-word"></i> Word</button>
+                            <button onclick="exportData('Nilai', 'Excel')" class="flex-1 py-1.5 bg-green-50 text-green-600 border border-green-100 rounded-lg text-xs hover:bg-green-100 transition"><i class="fa-solid fa-file-excel"></i> Excel</button>
                         </div>
                     </div>
 
                     <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
                         <div class="text-[10px] font-bold text-slate-500 mb-2">Absensi Kehadiran</div>
                         <div class="flex gap-2">
-                            <button onclick="exportData('Absen', 'PDF')" class="flex-1 py-1.5 bg-red-100 text-red-600 rounded-lg text-xs hover:bg-red-200 transition"><i class="fa-solid fa-file-pdf"></i> PDF</button>
-                            <button onclick="exportData('Absen', 'Word')" class="flex-1 py-1.5 bg-blue-100 text-blue-600 rounded-lg text-xs hover:bg-blue-200 transition"><i class="fa-solid fa-file-word"></i> Doc</button>
-                            <button onclick="exportData('Absen', 'Excel')" class="flex-1 py-1.5 bg-green-100 text-green-600 rounded-lg text-xs hover:bg-green-200 transition"><i class="fa-solid fa-file-excel"></i> Xls</button>
+                            <button onclick="exportData('Absen', 'PDF')" class="flex-1 py-1.5 bg-red-50 text-red-600 border border-red-100 rounded-lg text-xs hover:bg-red-100 transition"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                            <button onclick="exportData('Absen', 'Word')" class="flex-1 py-1.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-lg text-xs hover:bg-blue-100 transition"><i class="fa-solid fa-file-word"></i> Word</button>
+                            <button onclick="exportData('Absen', 'Excel')" class="flex-1 py-1.5 bg-green-50 text-green-600 border border-green-100 rounded-lg text-xs hover:bg-green-100 transition"><i class="fa-solid fa-file-excel"></i> Excel</button>
                         </div>
                     </div>
                 </div>
@@ -289,12 +328,12 @@
 
                 <div class="mt-4 pt-4 border-t border-slate-100">
                     <button class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition text-left group">
-                        <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 group-hover:bg-brand-500 group-hover:text-white transition">
-                            <i class="fa-solid fa-gear"></i>
+                        <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-white transition">
+                            <i class="fa-solid fa-user-gear"></i>
                         </div>
                         <div>
-                            <div class="text-xs font-bold text-slate-700">Pengaturan Kelas</div>
-                            <div class="text-[10px] text-slate-400">Audio, Video & Profil</div>
+                            <div class="text-xs font-bold text-slate-700">Profil Guru</div>
+                            <div class="text-[10px] text-slate-400">Akun & Keamanan</div>
                         </div>
                         <i class="fa-solid fa-chevron-right ml-auto text-xs text-slate-300"></i>
                     </button>
@@ -338,8 +377,13 @@
 
             <div id="student-grid-view" class="stage-overlay"></div>
             <div id="presentation-stage" class="stage-overlay prose max-w-none">
-                <h1 id="slide-judul" class="text-3xl font-black mb-6 text-brand-600">Judul Materi</h1>
-                <div id="slide-konten" class="text-lg leading-relaxed text-slate-700">Konten materi...</div>
+                <div class="flex justify-between items-center mb-4 border-b pb-4">
+                    <h1 id="slide-judul" class="text-3xl font-black text-brand-600 m-0">Judul Materi</h1>
+                    <span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded border border-yellow-200">Mode Review</span>
+                </div>
+                <div id="slide-konten" class="text-lg leading-relaxed text-slate-700">
+                    Konten materi akan muncul di sini setelah Anda generate...
+                </div>
             </div>
 
             <div class="control-bar">
@@ -371,9 +415,9 @@
                     <i class="fa-solid fa-table-cells ctrl-icon"></i>
                     <span class="ctrl-label">Grid</span>
                 </div>
-                <div class="ctrl-btn" onclick="toggleMateriView()" id="btn-grid-materi" title="Tampilkan Materi">
-                    <i class="fa-solid fa-file-powerpoint ctrl-icon"></i>
-                    <span class="ctrl-label">Materi</span>
+                <div class="ctrl-btn" onclick="toggleMateriView()" id="btn-grid-materi" title="Review Materi">
+                    <i class="fa-solid fa-book-open ctrl-icon"></i>
+                    <span class="ctrl-label">Review</span>
                 </div>
 
                 <div class="divider"></div>
@@ -402,11 +446,12 @@
         let isLive = false;
         let isMutedSelf = false;
         let isCamSelfOff = false;
-        let isFullScreen = false; // State untuk ukuran layar
+        let isFullScreen = false; 
         let activeView = 'normal'; 
-        let lastGeneratedData = null;
+        let lastGeneratedData = null; // Menyimpan Materi, PG, Essay, Quiz
+        let isChatPinned = false;
 
-        // --- CORE LOGIC ---
+        // --- CORE UI LOGIC ---
 
         function toggleSidebar() {
             const body = document.body;
@@ -415,24 +460,20 @@
             else { body.classList.toggle('sidebar-closed'); }
         }
 
-        // --- SCREEN SIZE TOGGLE ---
         function toggleScreenSize() {
             const wrapper = document.getElementById('guru-video-wrapper');
             const btn = document.getElementById('btn-screen');
             const icon = btn.querySelector('i');
             const label = btn.querySelector('span');
-
             isFullScreen = !isFullScreen;
 
             if (isFullScreen) {
-                // Masuk Full Screen
                 wrapper.classList.remove('default-mode');
                 wrapper.classList.add('full-mode');
                 icon.className = "fa-solid fa-compress ctrl-icon";
                 label.innerText = "Kecilkan";
                 btn.classList.add('active');
             } else {
-                // Kembali ke 3/4
                 wrapper.classList.remove('full-mode');
                 wrapper.classList.add('default-mode');
                 icon.className = "fa-solid fa-expand ctrl-icon";
@@ -441,18 +482,63 @@
             }
         }
 
-        // --- EXPORT FUNCTION ---
+        // --- EXPORT FUNCTIONALITY (REAL DOWNLOAD) ---
         function exportData(tipe, format) {
-            // Simulasi Export
-            let icon = "📄";
-            if(format === 'Excel') icon = "📊";
-            if(format === 'Word') icon = "📝";
+            const fileName = `${tipe}_Kelas_${document.getElementById('nama-kelas').value || 'Umum'}_${new Date().toLocaleDateString()}`;
             
-            // Disini nanti logika backend (window.location.href = /download...)
-            showAlert(`Mengunduh ${tipe} (${format})...`, icon);
+            // SIMULASI DATA UNTUK DEMO (Nanti diganti data real dari DB/Memory)
+            let content = "";
+            let mimeType = "";
+            let extension = "";
+
+            if (tipe === 'Materi' && lastGeneratedData) {
+                content = `<h1>${lastGeneratedData.judul}</h1>${lastGeneratedData.html}`;
+            } else if (tipe === 'Nilai') {
+                content = `
+                    <table border="1">
+                        <tr><th>Nama Siswa</th><th>Skor</th><th>Komentar AI</th></tr>
+                        <tr><td>Siswa A</td><td>85</td><td>Bagus</td></tr>
+                    </table>`;
+            } else if (tipe === 'Absen') {
+                const listItems = document.getElementById('mini-list-siswa').innerHTML;
+                content = `<h3>Absensi</h3><ul>${listItems}</ul>`;
+            } else {
+                return showAlert("Data belum tersedia untuk diekspor!", "⚠️");
+            }
+
+            // LOGIKA EXPORT
+            if (format === 'Word') {
+                mimeType = 'application/msword';
+                extension = 'doc';
+                content = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${tipe}</title></head><body>${content}</body></html>`;
+            } else if (format === 'Excel') {
+                mimeType = 'application/vnd.ms-excel';
+                extension = 'xls';
+                // Pastikan format tabel untuk Excel
+                if(!content.includes('<table')) content = `<table><tr><td>${content}</td></tr></table>`;
+            } else if (format === 'PDF') {
+                // Trik simpel print PDF tanpa library berat di klien
+                const win = window.open('', '', 'height=700,width=700');
+                win.document.write('<html><head><title>Cetak PDF</title>');
+                win.document.write('</head><body>');
+                win.document.write(content);
+                win.document.write('</body></html>');
+                win.document.close();
+                win.print();
+                return; // Keluar function karena Print handle sendiri
+            }
+
+            // Download Trigger
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const downloadLink = document.createElement("a");
+            document.body.appendChild(downloadLink);
+            downloadLink.href = url;
+            downloadLink.download = `${fileName}.${extension}`;
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
             
-            // Console log simulation
-            console.log(`Action: Export ${tipe} to ${format}`);
+            showAlert(`${tipe} berhasil diunduh (${format})`, "📥");
         }
 
         // --- 1. LIVE CONTROL ---
@@ -522,13 +608,12 @@
             }
         }
 
-        // --- 3. VIEW MODES ---
+        // --- 3. VIEW MODES & QUIZ DISTRIBUTION ---
         function resetViews() {
             document.getElementById('student-grid-view').classList.remove('active');
             document.getElementById('presentation-stage').classList.remove('active');
             document.getElementById('guru-video-wrapper').classList.remove('pip-mode');
             
-            // Jika reset, kembalikan ke mode default atau full sesuai state terakhir
             const wrapper = document.getElementById('guru-video-wrapper');
             if(isFullScreen) {
                 wrapper.classList.add('full-mode');
@@ -549,12 +634,9 @@
             } else {
                 resetViews();
                 document.getElementById('student-grid-view').classList.add('active');
-                
-                // Masuk PiP Mode (Kecil di pojok)
                 const wrapper = document.getElementById('guru-video-wrapper');
-                wrapper.classList.remove('default-mode', 'full-mode'); // Hapus mode layar utama
+                wrapper.classList.remove('default-mode', 'full-mode'); 
                 wrapper.classList.add('pip-mode'); 
-                
                 document.getElementById('btn-grid-murid').classList.add('active');
                 activeView = 'grid';
                 showAlert("Mode Grid Siswa", "👥");
@@ -562,7 +644,7 @@
         }
 
         function toggleMateriView() {
-            if(!lastGeneratedData) return showAlert("Belum ada materi!", "⚠️");
+            if(!lastGeneratedData) return showAlert("Belum ada materi untuk direview!", "⚠️");
 
             if (activeView === 'materi') {
                 resetViews();
@@ -570,19 +652,73 @@
             } else {
                 resetViews();
                 document.getElementById('presentation-stage').classList.add('active');
-                
-                // Masuk PiP Mode
                 const wrapper = document.getElementById('guru-video-wrapper');
                 wrapper.classList.remove('default-mode', 'full-mode');
                 wrapper.classList.add('pip-mode');
 
                 document.getElementById('btn-grid-materi').classList.add('active');
                 activeView = 'materi';
-                showAlert("Mode Presentasi", "📊");
+                showAlert("Mode Review Materi", "📖");
             }
         }
 
-        // --- 4. ADMIN & CHAT ---
+        function distributeQuiz(type) {
+            if (!lastGeneratedData) return showAlert("Generate materi dulu!", "⚠️");
+            
+            const namaKelas = document.getElementById('nama-kelas').value;
+            if(!namaKelas) return showAlert("Masukan Nama Kelas dulu di atas!", "🏫");
+
+            let dataToSend = {
+                room: room,
+                type: type,
+                materi_judul: lastGeneratedData.judul
+            };
+
+            if (type === 'PG') {
+                dataToSend.soal_pg = lastGeneratedData.soal_pg;
+                showAlert("Mengirim 15 Soal PG...", "🚀");
+            } else if (type === 'ESSAY') {
+                dataToSend.soal_essay = lastGeneratedData.soal_essay;
+                showAlert("Mengirim 5 Soal Essay...", "🚀");
+            } else if (type === 'QUIZ') {
+                dataToSend.soal_quiz = lastGeneratedData.soal_quiz;
+                showAlert("Mengirim 10 Quiz...", "🚀");
+            }
+
+            socket.emit('start-quiz', dataToSend);
+        }
+
+        // --- 4. AI GENERATOR ---
+        async function generate() {
+            const btn = document.getElementById('btnGen');
+            const prompt = document.getElementById('prompt').value;
+            if(!prompt) return showAlert("Masukkan topik materi", "✍️");
+
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Memproses...'; btn.disabled = true;
+            try {
+                const res = await fetch('/api/generate', { 
+                    method: 'POST', headers: {'Content-Type':'application/json'}, 
+                    body: JSON.stringify({instruksi: prompt}) 
+                });
+                lastGeneratedData = await res.json();
+                
+                // Tampilkan Konten Materi
+                document.getElementById('slide-judul').innerText = lastGeneratedData.judul;
+                document.getElementById('slide-konten').innerHTML = lastGeneratedData.html;
+                
+                // Tampilkan Tombol Quiz
+                document.getElementById('quiz-controller').style.display = 'block';
+
+                showAlert("Materi Siap! Silakan Review.", "✨");
+                
+                // Auto switch ke mode review
+                if(activeView !== 'materi') toggleMateriView();
+                
+            } catch (e) { showAlert("Gagal Generate", "❌"); }
+            btn.innerHTML = '<span>Buat Materi & Soal</span> <i class="fa-solid fa-bolt"></i>'; btn.disabled = false;
+        }
+
+        // --- 5. CHAT & ADMIN ---
         function muteAllStudents() {
             socket.emit('mute-all', { room: room });
             showAlert("Semua Siswa Di-mute", "🔇");
@@ -594,6 +730,48 @@
             panel.classList.toggle('active');
             if(panel.classList.contains('active')) input.focus();
         }
+
+        function togglePinChat() {
+            isChatPinned = !isChatPinned;
+            const btn = document.getElementById('btn-pin');
+            if(isChatPinned) {
+                btn.classList.add('text-brand-600');
+                showAlert("Pesan Penting di-Pin", "📌");
+            } else {
+                btn.classList.remove('text-brand-600');
+            }
+        }
+
+        function kirimChat(e) {
+            e.preventDefault();
+            const inp = document.getElementById('chat-input');
+            const msg = inp.value.trim();
+            if(!msg) return;
+            socket.emit('chat-message', { 
+                room: room, 
+                user: namaGuru, 
+                msg: msg, 
+                role: 'Guru',
+                isPinned: isChatPinned
+            });
+            inp.value = '';
+        }
+
+        socket.on('chat-message', (data) => {
+            const c = document.getElementById('chat-container');
+            const isMe = data.user === namaGuru;
+            if(c.innerText.includes('Belum ada pesan')) c.innerHTML = '';
+            
+            let bgClass = isMe ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-700';
+            if(data.isPinned) bgClass = 'bg-yellow-100 text-yellow-800 border border-yellow-300';
+
+            c.innerHTML += `
+                <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} animate-[fadeIn_0.3s_ease-out]">
+                    <span class="text-[9px] text-slate-400 mb-1 ml-1 font-bold uppercase tracking-wider">${data.user} ${data.isPinned ? '<i class="fa-solid fa-thumbtack text-xs ml-1"></i>' : ''}</span>
+                    <div class="${bgClass} px-4 py-2 rounded-2xl ${isMe ? 'rounded-tr-none' : 'rounded-tl-none'} max-w-[85%] text-xs shadow-sm leading-relaxed">${data.msg}</div>
+                </div>`;
+            c.scrollTop = c.scrollHeight;
+        });
 
         // --- CAMERA UTILS ---
         async function startCamera() {
@@ -623,31 +801,9 @@
             canvas.width = 320; canvas.height = 240;
             if (video.videoWidth) {
                 canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-                socket.emit('update-frame', { room: room, image: canvas.toDataURL('image/jpeg', 0.4) });
+                socket.emit('stream-frame', { room: room, image: canvas.toDataURL('image/jpeg', 0.4) });
             }
             requestAnimationFrame(broadcastFrame);
-        }
-
-        // --- AI & SOCKETS ---
-        async function generate() {
-            const btn = document.getElementById('btnGen');
-            const prompt = document.getElementById('prompt').value;
-            if(!prompt) return showAlert("Masukkan topik materi", "✍️");
-
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Sedang Membuat...'; btn.disabled = true;
-            try {
-                const res = await fetch('/api/generate', { 
-                    method: 'POST', headers: {'Content-Type':'application/json'}, 
-                    body: JSON.stringify({instruksi: prompt}) 
-                });
-                lastGeneratedData = await res.json();
-                document.getElementById('slide-judul').innerText = lastGeneratedData.judul;
-                document.getElementById('slide-konten').innerHTML = lastGeneratedData.html;
-                
-                showAlert("Materi Berhasil Dibuat!", "✨");
-                if(activeView !== 'materi') toggleMateriView();
-            } catch (e) { showAlert("Gagal Membuat Materi", "❌"); }
-            btn.innerHTML = '<span>Buat Materi</span> <i class="fa-solid fa-bolt"></i>'; btn.disabled = false;
         }
 
         socket.on('connect', () => { socket.emit('join-room', { room: room, nama: namaGuru, role: 'Guru' }); });
@@ -688,27 +844,6 @@
         socket.on('receive-frame', (data) => {
             const img = document.getElementById(`img-${data.name.replace(/\s+/g, '-')}`);
             if(img) img.src = data.image;
-        });
-
-        function kirimChat(e) {
-            e.preventDefault();
-            const inp = document.getElementById('chat-input');
-            const msg = inp.value.trim();
-            if(!msg) return;
-            socket.emit('chat-message', { room: room, user: namaGuru, msg: msg, role: 'Guru' });
-            inp.value = '';
-        }
-
-        socket.on('chat-message', (data) => {
-            const c = document.getElementById('chat-container');
-            const isMe = data.user === namaGuru;
-            if(c.innerText.includes('Belum ada pesan')) c.innerHTML = '';
-            c.innerHTML += `
-                <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} animate-[fadeIn_0.3s_ease-out]">
-                    <span class="text-[9px] text-slate-400 mb-1 ml-1 font-bold uppercase tracking-wider">${data.user}</span>
-                    <div class="${isMe ? 'bg-brand-600 text-white shadow-brand-500/20' : 'bg-slate-100 text-slate-700'} px-4 py-2 rounded-2xl ${isMe ? 'rounded-tr-none' : 'rounded-tl-none'} max-w-[85%] text-xs shadow-sm leading-relaxed">${data.msg}</div>
-                </div>`;
-            c.scrollTop = c.scrollHeight;
         });
 
         function showAlert(msg, icon) {
