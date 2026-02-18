@@ -689,20 +689,35 @@
             socket.emit('start-quiz', dataToSend);
         }
 
-        // --- 4. AI GENERATOR ---
+               // --- 4. AI GENERATOR (SUDAH DIPERBAIKI) ---
         async function generate() {
             const btn = document.getElementById('btnGen');
             const prompt = document.getElementById('prompt').value;
             if(!prompt) return showAlert("Masukkan topik materi", "✍️");
 
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Memproses...'; btn.disabled = true;
+            // UI Loading state
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Memproses...'; 
+            btn.disabled = true;
 
             try {
                 const res = await fetch('/api/generate', { 
-                    method: 'POST', headers: {'Content-Type':'application/json'}, 
+                    method: 'POST', 
+                    headers: {'Content-Type':'application/json'}, 
                     body: JSON.stringify({instruksi: prompt}) 
                 });
-                lastGeneratedData = await res.json();
+                
+                // Cek jika server/koneksi bermasalah (misal 404, 500)
+                if (!res.ok) throw new Error("Koneksi ke backend gagal!");
+
+                const data = await res.json();
+                
+                // Antisipasi format payload dari server { data: {...} } atau raw
+                lastGeneratedData = data.data || data.result || data;
+
+                // Cek jika AI mengembalikan fallback "Gagal Memuat" karena error dari ai.js
+                if (lastGeneratedData.judul === "Gagal Memuat") {
+                    throw new Error("Sistem AI menolak request. Periksa API key atau Model!");
+                }
                 
                 // Tampilkan Konten Materi
                 document.getElementById('slide-judul').innerText = lastGeneratedData.judul;
@@ -714,10 +729,17 @@
                 
                 // Auto switch ke mode review
                 if(activeView !== 'materi') toggleMateriView();
-            } catch (e) { showAlert("Gagal Generate", "❌"); }
+
+            } catch (e) { 
+                console.error("Error Detail:", e);
+                showAlert("Gagal: " + e.message, "❌"); 
+            }
+
+            // Kembalikan status tombol
             btn.innerHTML = '<span>Buat Materi & Soal</span> <i class="fa-solid fa-bolt"></i>';
             btn.disabled = false;
         }
+
 
         // --- 5. CHAT & ADMIN ---
         function muteAllStudents() {
