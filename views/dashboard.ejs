@@ -42,48 +42,30 @@
 
         /* --- FITUR VIDEO & PIP --- */
         .video-wrapper { 
-            position: relative; 
-            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); 
-            overflow: hidden;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            background: #000;
+            position: relative; transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); 
+            overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); background: #000;
         }
 
         /* Mode Default (3/4 Layar) */
-        .video-wrapper.default-mode {
-            width: 85%; height: 75%; 
-            border-radius: 24px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
+        .video-wrapper.default-mode { width: 85%; height: 75%; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); }
 
         /* Mode Full Screen */
-        .video-wrapper.full-mode {
-            width: 100%; height: 100%;
-            border-radius: 0;
-            border: none;
-        }
+        .video-wrapper.full-mode { width: 100%; height: 100%; border-radius: 0; border: none; }
         
         /* Mode PiP (Picture in Picture - Saat Share Materi/Grid) */
         .video-wrapper.pip-mode {
             position: absolute; bottom: 160px; right: 20px;
-            width: 180px; height: 135px; z-index: 60;
-            border-radius: 16px; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-            border: 2px solid rgba(255,255,255,0.2);
+            width: 180px; height: 135px; z-index: 60; border-radius: 16px; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.2);
         }
 
         /* Overlays (Grid & Materi) */
-        .stage-overlay {
-            position: absolute; inset: 0; z-index: 40; background: #0f172a;
-            display: none; opacity: 0; transition: opacity 0.3s;
-        }
+        .stage-overlay { position: absolute; inset: 0; z-index: 40; background: #0f172a; display: none; opacity: 0; transition: opacity 0.3s; }
         .stage-overlay.active { display: block; opacity: 1; }
         
         #student-grid-view {
-            display: none;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px; padding: 20px; align-content: center;
-            overflow-y: auto;
+            display: none; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px; padding: 20px; align-content: center; overflow-y: auto;
         }
         #student-grid-view.active { display: grid; }
         #presentation-stage { padding: 40px; overflow-y: auto; background: white; color: #1e293b; }
@@ -93,8 +75,7 @@
         /* Top Bar Controls */
         .top-controls {
             position: absolute; top: 20px; left: 20px; right: 20px; z-index: 70;
-            display: flex; justify-content: space-between; align-items: flex-start;
-            pointer-events: none; 
+            display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none;
         }
 
         .hamburger-btn { 
@@ -114,22 +95,16 @@
 
         /* Control Bar (Bottom) - DIGESER NAIK AGAR TIDAK KE-TRIGGER GESTURE HP */
         .control-bar {
-            position: absolute; 
-            bottom: 60px; /* Desktop */
-            left: 50%; transform: translateX(-50%);
-            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(20px);
-            padding: 10px 16px; border-radius: 20px; 
-            border: 1px solid rgba(255,255,255,0.15);
-            display: flex; align-items: center; gap: 8px; z-index: 70;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-            white-space: nowrap;
+            position: absolute; bottom: 60px; /* Desktop */
+            left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(20px);
+            padding: 10px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15);
+            display: flex; align-items: center; gap: 8px; z-index: 70; box-shadow: 0 20px 50px rgba(0,0,0,0.6); white-space: nowrap;
         }
 
         .ctrl-btn {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            width: 54px; height: 54px; border-radius: 12px; color: #94a3b8;
-            cursor: pointer; transition: all 0.2s; gap: 4px;
-            background: transparent;
+            width: 54px; height: 54px; border-radius: 12px; color: #94a3b8; cursor: pointer; transition: all 0.2s;
+            gap: 4px; background: transparent;
         }
         .ctrl-btn:hover { background: rgba(255,255,255,0.08); color: white; transform: translateY(-2px); }
         .ctrl-btn.active { background: #2563eb; color: white; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4); }
@@ -145,33 +120,24 @@
         .floating-chat-btn {
             position: fixed; bottom: 140px; right: 25px; z-index: 90;
             width: 56px; height: 56px; border-radius: 50%;
-            background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; 
+            background: linear-gradient(135deg, #3b82f6, #2563eb); color: white;
             box-shadow: 0 8px 25px rgba(37, 99, 235, 0.5); border: 2px solid rgba(255,255,255,0.2);
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-            transition: transform 0.2s;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s;
         }
         .floating-chat-btn:hover { transform: scale(1.1) rotate(-5deg); }
         
         /* Chat Panel */
         .chat-panel-float {
             position: fixed; bottom: 210px; right: 25px; width: 320px; height: 400px;
-            background: white; border-radius: 20px; z-index: 89;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3); border: 1px solid #e2e8f0;
-            display: none; flex-direction: column; transform-origin: bottom right; 
+            background: white; border-radius: 20px; z-index: 89; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            border: 1px solid #e2e8f0; display: none; flex-direction: column; transform-origin: bottom right; 
             animation: popUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         .chat-panel-float.active { display: flex; }
         @keyframes popUp { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
 
         /* AI Quiz Controller (Hidden by default) */
-        #quiz-controller {
-            display: none; /* Muncul setelah generate */
-            margin-top: 15px;
-            padding: 10px;
-            background: #f1f5f9;
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
-        }
+        #quiz-controller { display: none; margin-top: 15px; padding: 10px; background: #f1f5f9; border-radius: 12px; border: 1px solid #e2e8f0; }
 
         /* Responsive */
         @media (max-width: 1024px) {
@@ -294,10 +260,14 @@
 
                     <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
                         <div class="text-[10px] font-bold text-slate-500 mb-2">Nilai / Live Score</div>
-                        <div class="flex gap-2">
-                            <button onclick="exportData('Nilai', 'PDF')" class="flex-1 py-1.5 bg-red-50 text-red-600 border border-red-100 rounded-lg text-xs hover:bg-red-100 transition"><i class="fa-solid fa-file-pdf"></i> PDF</button>
-                            <button onclick="exportData('Nilai', 'Word')" class="flex-1 py-1.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-lg text-xs hover:bg-blue-100 transition"><i class="fa-solid fa-file-word"></i> Word</button>
-                            <button onclick="exportData('Nilai', 'Excel')" class="flex-1 py-1.5 bg-green-50 text-green-600 border border-green-100 rounded-lg text-xs hover:bg-green-100 transition"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                        <div class="flex flex-col gap-2">
+                            <div class="flex gap-2">
+                                <button onclick="exportData('Nilai', 'PDF')" class="flex-1 py-1.5 bg-red-50 text-red-600 border border-red-100 rounded-lg text-xs hover:bg-red-100 transition"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                                <button onclick="exportData('Nilai', 'Excel')" class="flex-1 py-1.5 bg-green-50 text-green-600 border border-green-100 rounded-lg text-xs hover:bg-green-100 transition"><i class="fa-solid fa-file-excel"></i> XLSX</button>
+                            </div>
+                            <button onclick="toggleHistoryModal()" class="w-full py-2 bg-slate-800 text-white border border-slate-900 rounded-lg text-xs font-bold hover:bg-slate-700 transition flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-clock-rotate-left"></i> Lihat Log & Riwayat
+                            </button>
                         </div>
                     </div>
 
@@ -438,6 +408,43 @@
         <span id="alertMsg" class="font-bold text-xs uppercase tracking-wide text-slate-800"></span>
     </div>
 
+    <div id="history-modal" class="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-white w-full max-w-4xl h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden transform scale-95 transition-transform duration-300" id="history-content">
+            
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-trophy text-yellow-500 mr-2"></i>Live Scoreboard & Riwayat</h2>
+                    <p class="text-xs text-slate-500 mt-1">Mencatat nilai yang masuk secara real-time sesi ini.</p>
+                </div>
+                <button onclick="toggleHistoryModal()" class="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-auto p-0">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-50 sticky top-0 z-10">
+                        <tr>
+                            <th class="p-4 text-[10px] font-black uppercase text-slate-400 tracking-wider">Waktu Submit</th>
+                            <th class="p-4 text-[10px] font-black uppercase text-slate-400 tracking-wider">Nama Siswa</th>
+                            <th class="p-4 text-[10px] font-black uppercase text-slate-400 tracking-wider">Skor</th>
+                            <th class="p-4 text-[10px] font-black uppercase text-slate-400 tracking-wider">Analisis AI</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body" class="text-sm text-slate-700 divide-y divide-slate-100">
+                        <tr id="empty-history">
+                            <td colspan="4" class="p-10 text-center text-slate-400 italic text-xs">Belum ada data nilai masuk sesi ini.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="p-4 border-t border-slate-100 bg-slate-50 text-right">
+                <button onclick="toggleHistoryModal()" class="px-6 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800">Tutup</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const socket = io();
         const namaGuru = "<%= nama_guru %>";
@@ -452,7 +459,6 @@
         let isChatPinned = false;
 
         // --- CORE UI LOGIC ---
-
         function toggleSidebar() {
             const body = document.body;
             const sidebar = document.getElementById('sidebar');
@@ -466,7 +472,6 @@
             const icon = btn.querySelector('i');
             const label = btn.querySelector('span');
             isFullScreen = !isFullScreen;
-
             if (isFullScreen) {
                 wrapper.classList.remove('default-mode');
                 wrapper.classList.add('full-mode');
@@ -537,7 +542,6 @@
             downloadLink.download = `${fileName}.${extension}`;
             downloadLink.click();
             document.body.removeChild(downloadLink);
-            
             showAlert(`${tipe} berhasil diunduh (${format})`, "📥");
         }
 
@@ -557,7 +561,6 @@
                 
                 statusDot.className = "w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.6)]";
                 statusText.innerText = "LIVE ON AIR";
-                
                 iconStart.className = "fa-solid fa-pause ctrl-icon";
                 labelStart.innerText = "Pause";
                 btnStart.classList.add('active');
@@ -645,7 +648,6 @@
 
         function toggleMateriView() {
             if(!lastGeneratedData) return showAlert("Belum ada materi untuk direview!", "⚠️");
-
             if (activeView === 'materi') {
                 resetViews();
                 activeView = 'normal';
@@ -664,7 +666,6 @@
 
         function distributeQuiz(type) {
             if (!lastGeneratedData) return showAlert("Generate materi dulu!", "⚠️");
-            
             const namaKelas = document.getElementById('nama-kelas').value;
             if(!namaKelas) return showAlert("Masukan Nama Kelas dulu di atas!", "🏫");
 
@@ -695,6 +696,7 @@
             if(!prompt) return showAlert("Masukkan topik materi", "✍️");
 
             btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Memproses...'; btn.disabled = true;
+
             try {
                 const res = await fetch('/api/generate', { 
                     method: 'POST', headers: {'Content-Type':'application/json'}, 
@@ -708,14 +710,13 @@
                 
                 // Tampilkan Tombol Quiz
                 document.getElementById('quiz-controller').style.display = 'block';
-
                 showAlert("Materi Siap! Silakan Review.", "✨");
                 
                 // Auto switch ke mode review
                 if(activeView !== 'materi') toggleMateriView();
-                
             } catch (e) { showAlert("Gagal Generate", "❌"); }
-            btn.innerHTML = '<span>Buat Materi & Soal</span> <i class="fa-solid fa-bolt"></i>'; btn.disabled = false;
+            btn.innerHTML = '<span>Buat Materi & Soal</span> <i class="fa-solid fa-bolt"></i>';
+            btn.disabled = false;
         }
 
         // --- 5. CHAT & ADMIN ---
@@ -747,6 +748,7 @@
             const inp = document.getElementById('chat-input');
             const msg = inp.value.trim();
             if(!msg) return;
+
             socket.emit('chat-message', { 
                 room: room, 
                 user: namaGuru, 
@@ -799,6 +801,7 @@
             const video = document.getElementById('guru-cam');
             const canvas = document.createElement('canvas');
             canvas.width = 320; canvas.height = 240;
+
             if (video.videoWidth) {
                 canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
                 socket.emit('stream-frame', { room: room, image: canvas.toDataURL('image/jpeg', 0.4) });
@@ -807,7 +810,7 @@
         }
 
         socket.on('connect', () => { socket.emit('join-room', { room: room, nama: namaGuru, role: 'Guru' }); });
-
+        
         socket.on('join-live', (data) => {
             const list = document.getElementById('mini-list-siswa');
             if(list.innerText.includes('Menunggu')) list.innerHTML = '';
@@ -826,6 +829,7 @@
 
             const grid = document.getElementById('student-grid-view');
             const safeId = data.name.replace(/\s+/g, '-');
+            
             if(!document.getElementById(`tile-${safeId}`)) {
                 const div = document.createElement('div');
                 div.id = `tile-${safeId}`;
@@ -854,6 +858,34 @@
             setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translate(-50%, -20px)'; }, 3000);
         }
 
+        // --- FITUR BARU: LIVE SCORE & RIWAYAT ---
+
+        // 1. Toggle Modal
+        function toggleHistoryModal() {
+            const modal = document.getElementById('history-modal');
+            const content = document.getElementById('history-content');
+            
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                // Sedikit delay untuk animasi
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    content.classList.remove('scale-95');
+                    content.classList.add('scale-100');
+                }, 10);
+            } else {
+                modal.classList.add('opacity-0');
+                content.classList.remove('scale-100');
+                content.classList.add('scale-95');
+                // Menyembunyikan div kembali setelah transisi selesai
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
+        }
+        
+        // Letakkan sisa kode Socket untuk penerimaan skor milikmu di bawah ini:
+        
     </script>
 </body>
 </html>
