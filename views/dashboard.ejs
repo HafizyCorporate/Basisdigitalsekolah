@@ -967,7 +967,48 @@
                 }
             };
         });
+
+// --- FITUR MANAJEMEN KELAS ---
+
+// 1. Ambil daftar kelas yang sudah ada saat halaman dibuka
+async function muatDaftarKelas() {
+    try {
+        const res = await fetch('/api/kelas/<%= kode %>');
+        const data = await res.json();
+        const datalist = document.getElementById('list-kelas-guru');
+        datalist.innerHTML = data.map(k => `<option value="${k.nama_kelas}">`).join('');
+    } catch (e) { console.error("Gagal muat kelas", e); }
+}
+
+// 2. Simpan kelas baru ke database
+async function simpanKelasBaru() {
+    const namaKelas = document.getElementById('nama-kelas').value.trim();
+    if (!namaKelas) return showAlert("Ketik nama kelas dulu!", "⚠️");
+
+    try {
+        const res = await fetch('/api/tambah-kelas', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ kode_sekolah: "<%= kode %>", nama_kelas: namaKelas })
+        });
+        const hasil = await res.json();
+        if(hasil.status === 'ok') {
+            showAlert("Kelas Tersimpan! Murid bisa memilih sekarang.", "✅");
+            muatDaftarKelas(); // Refresh list
+            
+            // Otomatis join room kelas tersebut
+            const targetRoom = `<%= kode %>-${namaKelas}`;
+            socket.emit('join-room', { roomID: targetRoom, userName: namaGuru, role: 'Guru' });
+        }
+    } catch (e) {
+        showAlert("Gagal simpan kelas", "❌");
+    }
+}
+
+// Panggil fungsi muat kelas saat start
+muatDaftarKelas();
+
         
-    </script>
+</script>
 </body>
 </html>
