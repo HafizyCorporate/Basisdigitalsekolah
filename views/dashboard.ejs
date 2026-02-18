@@ -204,18 +204,18 @@
             <div class="flex-1 overflow-y-auto p-5 space-y-6">
                 
                 <div class="bg-yellow-50 border border-yellow-200 p-3 rounded-xl">
-    <label class="text-[10px] font-bold text-yellow-700 block mb-1">Buat atau Pilih Kelas</label>
-    <div class="flex gap-2">
-        <input type="text" id="nama-kelas" list="list-kelas-guru" 
-               class="flex-1 bg-white border border-yellow-300 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-yellow-400" 
-               placeholder="Nama kelas baru...">
-        <button onclick="simpanKelasBaru()" class="bg-yellow-500 text-white px-3 py-2 rounded-lg hover:bg-yellow-600 transition shadow-sm" title="Simpan Kelas ke Database">
-            <i class="fa-solid fa-cloud-arrow-up"></i>
-        </button>
-    </div>
-    <datalist id="list-kelas-guru"></datalist>
-    <p class="text-[9px] text-yellow-600 mt-1">*Klik simpan agar muncul di HP Murid</p>
-</div>
+                    <label class="text-[10px] font-bold text-yellow-700 block mb-1">Buat atau Pilih Kelas</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="nama-kelas" list="list-kelas-guru" 
+                            class="flex-1 bg-white border border-yellow-300 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-yellow-400" 
+                            placeholder="Nama kelas baru...">
+                        <button onclick="simpanKelasBaru()" class="bg-yellow-500 text-white px-3 py-2 rounded-lg hover:bg-yellow-600 transition shadow-sm" title="Simpan Kelas ke Database">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                        </button>
+                    </div>
+                    <datalist id="list-kelas-guru"></datalist>
+                    <p class="text-[9px] text-yellow-600 mt-1">*Klik simpan agar muncul di HP Murid</p>
+                </div>
 
 
                 <div class="border-t border-slate-100"></div>
@@ -830,25 +830,22 @@
             }
         }
         
-        // broadcastFrame removed (WebRTC handles stream)
+        // Listener saat koneksi socket tersambung
+        socket.on('connect', () => { 
+            // Mengambil nama kelas dari input box secara otomatis
+            const namaKelas = document.getElementById('nama-kelas').value.trim();
+            
+            // Jika guru sudah isi nama kelas, gabungkan KodeSekolah-NamaKelas (cth: SCH001-10IPA1)
+            // Jika belum isi, masuk ke room umum (KodeSekolah saja)
+            const finalRoom = namaKelas ? `${room}-${namaKelas}` : room;
 
-// Listener saat koneksi socket tersambung
-socket.on('connect', () => { 
-    // Mengambil nama kelas dari input box secara otomatis
-    const namaKelas = document.getElementById('nama-kelas').value.trim();
-    
-    // Jika guru sudah isi nama kelas, gabungkan KodeSekolah-NamaKelas (cth: SCH001-10IPA1)
-    // Jika belum isi, masuk ke room umum (KodeSekolah saja)
-    const finalRoom = namaKelas ? `${room}-${namaKelas}` : room;
-
-    socket.emit('join-room', { 
-        roomID: finalRoom,   // Sesuai dengan server.js (roomID)
-        userName: namaGuru,  // Sesuai dengan server.js (userName)
-        role: 'Guru' 
-    }); 
-    console.log("Berhasil join ke room: " + finalRoom);
-});
-
+            socket.emit('join-room', { 
+                roomID: finalRoom,   // Sesuai dengan server.js (roomID)
+                userName: namaGuru,  // Sesuai dengan server.js (userName)
+                role: 'Guru' 
+            }); 
+            console.log("Berhasil join ke room: " + finalRoom);
+        });
 
         socket.on('join-live', (data) => {
             const list = document.getElementById('mini-list-siswa');
@@ -984,47 +981,46 @@ socket.on('connect', () => {
             };
         });
 
-// --- FITUR MANAJEMEN KELAS ---
+        // --- FITUR MANAJEMEN KELAS ---
 
-// 1. Ambil daftar kelas yang sudah ada saat halaman dibuka
-async function muatDaftarKelas() {
-    try {
-        const res = await fetch('/api/kelas/<%= kode %>');
-        const data = await res.json();
-        const datalist = document.getElementById('list-kelas-guru');
-        datalist.innerHTML = data.map(k => `<option value="${k.nama_kelas}">`).join('');
-    } catch (e) { console.error("Gagal muat kelas", e); }
-}
-
-// 2. Simpan kelas baru ke database
-async function simpanKelasBaru() {
-    const namaKelas = document.getElementById('nama-kelas').value.trim();
-    if (!namaKelas) return showAlert("Ketik nama kelas dulu!", "⚠️");
-
-    try {
-        const res = await fetch('/api/tambah-kelas', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ kode_sekolah: "<%= kode %>", nama_kelas: namaKelas })
-        });
-        const hasil = await res.json();
-        if(hasil.status === 'ok') {
-            showAlert("Kelas Tersimpan! Murid bisa memilih sekarang.", "✅");
-            muatDaftarKelas(); // Refresh list
-            
-            // Otomatis join room kelas tersebut
-            const targetRoom = `<%= kode %>-${namaKelas}`;
-            socket.emit('join-room', { roomID: targetRoom, userName: namaGuru, role: 'Guru' });
+        // 1. Ambil daftar kelas yang sudah ada saat halaman dibuka
+        async function muatDaftarKelas() {
+            try {
+                const res = await fetch('/api/kelas/<%= kode %>');
+                const data = await res.json();
+                const datalist = document.getElementById('list-kelas-guru');
+                datalist.innerHTML = data.map(k => `<option value="${k.nama_kelas}">`).join('');
+            } catch (e) { console.error("Gagal muat kelas", e); }
         }
-    } catch (e) {
-        showAlert("Gagal simpan kelas", "❌");
-    }
-}
 
-// Panggil fungsi muat kelas saat start
-muatDaftarKelas();
+        // 2. Simpan kelas baru ke database
+        async function simpanKelasBaru() {
+            const namaKelas = document.getElementById('nama-kelas').value.trim();
+            if (!namaKelas) return showAlert("Ketik nama kelas dulu!", "⚠️");
 
+            try {
+                const res = await fetch('/api/tambah-kelas', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ kode_sekolah: "<%= kode %>", nama_kelas: namaKelas })
+                });
+                const hasil = await res.json();
+                if(hasil.status === 'ok') {
+                    showAlert("Kelas Tersimpan! Murid bisa memilih sekarang.", "✅");
+                    muatDaftarKelas(); // Refresh list
+                    
+                    // Otomatis join room kelas tersebut
+                    const targetRoom = `<%= kode %>-${namaKelas}`;
+                    socket.emit('join-room', { roomID: targetRoom, userName: namaGuru, role: 'Guru' });
+                }
+            } catch (e) {
+                showAlert("Gagal simpan kelas", "❌");
+            }
+        }
+
+        // Panggil fungsi muat kelas saat start
+        muatDaftarKelas();
         
-</script>
+    </script>
 </body>
 </html>
