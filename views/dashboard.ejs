@@ -68,7 +68,17 @@
             gap: 12px; padding: 20px; align-content: center; overflow-y: auto;
         }
         #student-grid-view.active { display: grid; }
-        #presentation-stage { padding: 40px; overflow-y: auto; background: white; color: #1e293b; }
+        
+        /* --- UPDATE TAMPILAN PRESENTATION STAGE (SLIDER) --- */
+        #presentation-stage { 
+            padding: 0; /* Reset padding */
+            overflow: hidden; 
+            background: white; 
+            color: #1e293b; 
+            display: none;
+            flex-direction: column;
+        }
+        #presentation-stage.active { display: flex; }
 
         /* --- CONTROLS & UI --- */
 
@@ -356,13 +366,28 @@
             </div>
 
             <div id="student-grid-view" class="stage-overlay"></div>
-            <div id="presentation-stage" class="stage-overlay prose max-w-none">
-                <div class="flex justify-between items-center mb-4 border-b pb-4">
-                    <h1 id="slide-judul" class="text-3xl font-black text-brand-600 m-0">Judul Materi</h1>
-                    <span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded border border-yellow-200">Mode Review</span>
+            
+            <div id="presentation-stage" class="stage-overlay flex flex-col h-full bg-white text-slate-800 p-0 overflow-hidden">
+                <div class="bg-yellow-400 p-4 flex justify-between items-center shadow-md z-10">
+                    <h1 id="slide-judul-besar" class="text-lg font-black text-white drop-shadow-md uppercase tracking-wide truncate max-w-[50%]">Judul Materi</h1>
+                    <div class="flex gap-2 items-center">
+                        <button onclick="prevSlide()" class="w-8 h-8 bg-white text-yellow-600 rounded-full flex items-center justify-center hover:scale-110 transition shadow"><i class="fa-solid fa-chevron-left"></i></button>
+                        <span id="page-indicator" class="bg-white/20 text-white px-3 py-1 rounded-full font-bold text-xs">1 / 1</span>
+                        <button onclick="nextSlide()" class="w-8 h-8 bg-white text-yellow-600 rounded-full flex items-center justify-center hover:scale-110 transition shadow"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
                 </div>
-                <div id="slide-konten" class="text-lg leading-relaxed text-slate-700">
-                    Konten materi akan muncul di sini setelah Anda generate...
+
+                <div class="flex-1 overflow-y-auto p-6 md:p-10 relative scrollbar-hide">
+                    <div class="mb-6 rounded-2xl overflow-hidden h-48 md:h-64 bg-slate-100 relative group border-4 border-yellow-100 shadow-sm">
+                        <img id="slide-img" src="https://placehold.co/800x400?text=Menunggu+Nano+Banana..." class="w-full h-full object-cover transition duration-700 group-hover:scale-105">
+                        <div class="absolute bottom-0 left-0 right-0 bg-black/60 p-2 text-center">
+                            <p id="slide-keyword" class="text-white text-[10px] uppercase font-bold tracking-widest">Visual: ...</p>
+                        </div>
+                    </div>
+
+                    <h2 id="slide-subjudul" class="text-2xl font-black text-slate-800 mb-4">Sub Judul</h2>
+                    <div id="slide-konten" class="prose prose-sm md:prose-lg prose-yellow max-w-none text-slate-600 leading-relaxed">
+                        </div>
                 </div>
             </div>
 
@@ -468,6 +493,10 @@
         let lastGeneratedData = null; 
         let isChatPinned = false;
         let peerConnections = {}; 
+        
+        // --- VARIABLE SLIDER BARU ---
+        let currentSlides = []; 
+        let currentSlideIndex = 0;
 
         // --- NEW: SECURITY HELPER (Anti XSS) ---
         function escapeHtml(text) {
@@ -518,7 +547,16 @@
             let extension = "";
 
             if (tipe === 'Materi' && lastGeneratedData) {
-                content = `<h1>${lastGeneratedData.judul}</h1>${lastGeneratedData.html}`;
+                // UPDATE: Handle struktur slide
+                if (lastGeneratedData.slides && lastGeneratedData.slides.length > 0) {
+                    content = `<h1>${lastGeneratedData.judul_besar}</h1>`;
+                    lastGeneratedData.slides.forEach(slide => {
+                        content += `<h2>${slide.judul_slide}</h2>${slide.konten_html}<hr>`;
+                    });
+                } else {
+                    // Fallback jika format lama
+                    content = `<h1>${lastGeneratedData.judul || 'Materi'}</h1>${lastGeneratedData.html || ''}`;
+                }
             } else if (tipe === 'Nilai') {
                 content = `
                     <table border="1">
@@ -692,7 +730,7 @@
             let dataToSend = {
                 room: targetRoom, 
                 type: type,
-                materi_judul: lastGeneratedData.judul
+                materi_judul: lastGeneratedData.judul_besar || lastGeneratedData.judul
             };
 
             if (type === 'PG') dataToSend.soal_pg = lastGeneratedData.soal_pg;
@@ -704,13 +742,13 @@
         }
 
 
-        // --- 4. AI GENERATOR (OPTIMIZED WITH TIMEOUT & ERROR HANDLING) ---
+        // --- 4. AI GENERATOR (OPTIMIZED WITH SLIDER SUPPORT) ---
         async function generate() {
             const btn = document.getElementById('btnGen');
             const prompt = document.getElementById('prompt').value;
             if(!prompt) return showAlert("Masukkan topik materi", "✍️");
 
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Memproses...'; 
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Nano Banana Bekerja...'; 
             btn.disabled = true;
 
             // Tambahan: AbortController untuk timeout
@@ -730,17 +768,23 @@
                 if (!res.ok) throw new Error(`Server Error (${res.status})`);
 
                 const data = await res.json();
-                lastGeneratedData = data.data || data.result || data;
+                lastGeneratedData = data; // Simpan data global
 
-                if (lastGeneratedData.judul === "Gagal Memuat") {
-                    throw new Error("Sistem AI menolak request. Periksa API key atau Model!");
+                // CEK JIKA DATA MENGANDUNG SLIDES
+                if (!data.slides || data.slides.length === 0) {
+                    throw new Error("AI tidak menghasilkan slide yang valid.");
                 }
-                
-                document.getElementById('slide-judul').innerText = lastGeneratedData.judul;
-                document.getElementById('slide-konten').innerHTML = lastGeneratedData.html;
+
+                // SIMPAN SLIDE KE VARIABEL & RESET
+                currentSlides = data.slides;
+                currentSlideIndex = 0; 
+                document.getElementById('slide-judul-besar').innerText = data.judul_besar;
+
+                // RENDER SLIDE PERTAMA
+                renderSlide();
                 
                 document.getElementById('quiz-controller').style.display = 'block';
-                showAlert("Materi Siap! Silakan Review.", "✨");
+                showAlert("Materi Siap! Geser slide untuk melihat.", "🍌");
                 
                 if(activeView !== 'materi') toggleMateriView();
 
@@ -753,6 +797,56 @@
 
             btn.innerHTML = '<span>Buat Materi & Soal</span> <i class="fa-solid fa-bolt"></i>';
             btn.disabled = false;
+        }
+
+        // --- FUNGSI NAVIGASI SLIDE & VISUALISASI ---
+        function renderSlide() {
+            if(currentSlides.length === 0) return;
+
+            const slide = currentSlides[currentSlideIndex];
+            
+            // 1. Update Teks
+            document.getElementById('slide-subjudul').innerText = slide.judul_slide;
+            document.getElementById('slide-konten').innerHTML = slide.konten_html;
+            document.getElementById('page-indicator').innerText = `${currentSlideIndex + 1} / ${currentSlides.length}`;
+
+            // 2. Visualisasi Nano Banana (Image Prompt)
+            const keyword = slide.keyword_gambar || 'education';
+            document.getElementById('slide-keyword').innerText = `Visual: ${keyword}`;
+            
+            // 3. Generate Gambar Otomatis (via Pollinations)
+            const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(keyword)}?width=800&height=400&nologo=true`;
+            document.getElementById('slide-img').src = imgUrl;
+        }
+
+        function nextSlide() {
+            if (currentSlideIndex < currentSlides.length - 1) {
+                currentSlideIndex++;
+                renderSlide();
+                
+                // Sinkronisasi ke Murid (Jika ada di room)
+                const namaKelas = document.getElementById('nama-kelas').value;
+                if(namaKelas) {
+                    const targetRoom = `${room}-${namaKelas}`;
+                    socket.emit('change-slide', { room: targetRoom, slideIndex: currentSlideIndex });
+                }
+            } else {
+                showAlert("Ini slide terakhir bos!", "end");
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlideIndex > 0) {
+                currentSlideIndex--;
+                renderSlide();
+
+                // Sinkronisasi ke Murid
+                const namaKelas = document.getElementById('nama-kelas').value;
+                if(namaKelas) {
+                    const targetRoom = `${room}-${namaKelas}`;
+                    socket.emit('change-slide', { room: targetRoom, slideIndex: currentSlideIndex });
+                }
+            }
         }
 
 
