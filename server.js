@@ -16,7 +16,7 @@ app.set('trust proxy', 1);
 
 const server = http.createServer(app);
 const io = new Server(server, {
-    maxHttpBufferSize: 1e8, // 100MB untuk stream video
+    maxHttpBufferSize: 1e8,
     cors: { origin: "*" }
 });
 
@@ -37,145 +37,175 @@ app.use(express.urlencoded({ extended: true }));
 initDb();
 
 // ==========================================
-// 🧠 MEMORY STORAGE (STATE MANAGEMENT)
+// 🧠 MEMORY STORAGE
 // ==========================================
 let activeQuizzes = {}; 
 let onlineUsers = {}; 
 
 // ==========================================
-// 🎯 1. ROUTES (AUTH & API)
+// 🎯 ROUTES
 // ==========================================
 
-// --- TAMPILAN (GET) ---
 app.get('/', (req, res) => res.render('landing'));
 app.get('/login', (req, res) => res.render('login', { msg: null }));
 app.get('/login-siswa', (req, res) => res.render('login_siswa', { msg: null }));
 
-// Route Register Baru (Menampilkan File EJS Anda)
-app.get('/register', (req, res) => res.render('register', { msg: null }));           // Instansi
-app.get('/register-guru', (req, res) => res.render('register-guru', { msg: null })); // Guru
-app.get('/register-siswa', (req, res) => res.render('register_siswa', { msg: null })); // Siswa
+app.get('/register', (req, res) => res.render('register', { msg: null }));
+app.get('/register-guru', (req, res) => res.render('register-guru', { msg: null }));
+app.get('/register-siswa', (req, res) => res.render('register_siswa', { msg: null }));
 app.get('/verify-guru', (req, res) => res.render('verify-guru', { msg: null, email: req.query.email || "" }));
-
-// --- LOGIKA PENDAFTARAN (POST) ---
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// 1. Register Instansi & Buat Schema
+// REGISTER INSTANSI
 app.post('/auth/register', async (req, res) => {
   const { nama, email, pass } = req.body;
   const kode = "SCH-" + Math.random().toString(36).substring(2, 7).toUpperCase();
   const otp = generateOTP(); 
+
   try {
     const hashed = await bcrypt.hash(pass, 10);
+
     await pool.query(
       'INSERT INTO global_instansi (nama_instansi, kode_instansi, admin_email, password, otp) VALUES ($1,$2,$3,$4,$5)', 
       [nama, kode, email, hashed, otp]
     );
+
     await pool.query(`CREATE SCHEMA IF NOT EXISTS "${kode}"`);
-    await pool.query(`CREATE TABLE IF NOT EXISTS "${kode}".penilaian (id SERIAL PRIMARY KEY, nama TEXT, email TEXT, kelas TEXT, tipe TEXT, skor INT, jawaban_essay TEXT, feedback_ai TEXT, materi TEXT, waktu TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "${kode}".penilaian (
+        id SERIAL PRIMARY KEY,
+        nama TEXT,
+        email TEXT,
+        kelas TEXT,
+        tipe TEXT,
+        skor INT,
+        jawaban_essay TEXT,
+        feedback_ai TEXT,
+        materi TEXT,
+        waktu TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    );
     
     await sendMail(email, "Kode Verifikasi", `OTP: ${otp}, Kode Sekolah: ${kode}`);
-    res.render('verify-guru', { msg: `Masukkan OTP untuk: ${email}`, email: email });
-  } catch (err) { res.status(500).send("Error: " + err.message); }
+    res.render('verify-guru', { msg: `Masukkan OTP untuk: ${email}`, email });
+
+  } catch (err) {
+    res.status(500).send("Error: " + err.message);
+  }
 });
 
-// 2. Register Guru
+// REGISTER GURU
 app.post('/auth/register-guru', async (req, res) => {
     const { nama, email, pass, kode_sekolah } = req.body;
     try {
         const hashed = await bcrypt.hash(pass, 10);
         await pool.query(
-            'INSERT INTO global_guru (nama_guru, email, password, kode_sekolah) VALUES ($1, $2, $3, $4)',
+            'INSERT INTO global_guru (nama_guru, email, password, kode_sekolah) VALUES ($1,$2,$3,$4)',
             [nama, email, hashed, kode_sekolah]
         );
         res.render('login', { msg: "Pendaftaran Guru Berhasil! Silakan Login." });
-    } catch (err) { res.render('register-guru', { msg: "Email sudah terdaftar atau kode salah." }); }
+    } catch {
+        res.render('register-guru', { msg: "Email sudah terdaftar atau kode salah." });
+    }
 });
 
-// 3. Register Siswa
+// REGISTER SISWA
 app.post('/auth/register-siswa', async (req, res) => {
     const { nama, email, pass, kode_sekolah, kelas } = req.body;
     try {
         const hashed = await bcrypt.hash(pass, 10);
         await pool.query(
-            'INSERT INTO global_siswa (nama_siswa, email, password, kode_sekolah, kelas) VALUES ($1, $2, $3, $4, $5)',
+            'INSERT INTO global_siswa (nama_siswa, email, password, kode_sekolah, kelas) VALUES ($1,$2,$3,$4,$5)',
             [nama, email, hashed, kode_sekolah, kelas]
         );
         res.render('login_siswa', { msg: "Pendaftaran Siswa Berhasil! Silakan Login." });
-    } catch (err) { res.render('register_siswa', { msg: "Gagal mendaftar siswa." }); }
+    } catch {
+        res.render('register_siswa', { msg: "Gagal mendaftar siswa." });
+    }
 });
 
-// --- LOGIKA LOGIN (POST) ---
-
+// LOGIN GURU
 app.post('/auth/login-guru', async (req, res) => {
   const { email, pass } = req.body;
+
   try {
     const result = await pool.query('SELECT * FROM global_guru WHERE email = $1', [email]);
-    if (result.rows.length === 0) return res.render('login', { msg: "Akun tidak ditemukan!" });
-    if (!(await bcrypt.compare(pass, result.rows[0].password))) return res.render('login', { msg: "Password salah!" });
+    if (!result.rows.length) return res.render('login', { msg: "Akun tidak ditemukan!" });
+    if (!(await bcrypt.compare(pass, result.rows[0].password)))
+        return res.render('login', { msg: "Password salah!" });
 
-    const infoSekolah = await pool.query('SELECT nama_instansi FROM global_instansi WHERE kode_instansi = $1', [result.rows[0].kode_sekolah]);
+    const infoSekolah = await pool.query(
+        'SELECT nama_instansi FROM global_instansi WHERE kode_instansi = $1',
+        [result.rows[0].kode_sekolah]
+    );
+
     res.render('dashboard', { 
-        instansi: infoSekolah.rows[0]?.nama_instansi || "Global School", 
+        instansi: infoSekolah.rows[0]?.nama_instansi || "Global School",
         kode: result.rows[0].kode_sekolah,
         nama_guru: result.rows[0].nama_guru 
     });
-  } catch (err) { res.render('login', { msg: "Kesalahan sistem login." }); }
+
+  } catch {
+    res.render('login', { msg: "Kesalahan sistem login." });
+  }
 });
 
+// LOGIN SISWA
 app.post('/auth/login-siswa', async (req, res) => {
     const { email, pass } = req.body;
     try {
       const result = await pool.query('SELECT * FROM global_siswa WHERE email = $1', [email]);
-      if (result.rows.length === 0) return res.render('login_siswa', { msg: "Email tidak ditemukan!" });
-      if (!(await bcrypt.compare(pass, result.rows[0].password))) return res.render('login_siswa', { msg: "Password salah!" });
-      
+      if (!result.rows.length) return res.render('login_siswa', { msg: "Email tidak ditemukan!" });
+      if (!(await bcrypt.compare(pass, result.rows[0].password)))
+          return res.render('login_siswa', { msg: "Password salah!" });
+
       res.render('dashboard-murid', { 
-          nama_siswa: result.rows[0].nama_siswa, 
+          nama_siswa: result.rows[0].nama_siswa,
           email_siswa: result.rows[0].email,
           kode_sekolah: result.rows[0].kode_sekolah,
           kelas_siswa: result.rows[0].kelas 
       });
-    } catch (err) { res.send(err.message); }
+
+    } catch (err) {
+      res.send(err.message);
+    }
 });
 
+// API AI
 app.post('/api/generate', async (req, res) => {
   try {
     const data = await processAI(req.body.instruksi);
     res.json(data);
-  } catch (err) { res.status(500).json({ error: "AI Sedang sibuk." }); }
+  } catch {
+    res.status(500).json({ error: "AI Sedang sibuk." });
+  }
 });
 
-// --- [BARU] UPDATE KELAS SISWA ---
+// UPDATE KELAS
 app.post('/api/update-kelas-siswa', async (req, res) => {
     const { email, kelas } = req.body;
     try {
         await pool.query('UPDATE global_siswa SET kelas = $1 WHERE email = $2', [kelas, email]);
         res.json({ status: 'ok', message: 'Kelas berhasil diperbarui' });
-    } catch (err) {
-        console.error(err);
+    } catch {
         res.status(500).json({ error: "Gagal update kelas." });
     }
 });
-// ---------------------------------
-
 
 // ==========================================
-// 🚀 2. SOCKET.IO (MODERN COLLABORATION)
+// 🚀 SOCKET.IO (FIXED STRUCTURE)
 // ==========================================
-  io.on("connection", (socket) => {
+
+io.on("connection", (socket) => {
 
   socket.on("join-room", ({ roomID, userName, role }) => {
     socket.join(roomID);
     socket.userName = userName;
     socket.role = role;
     socket.roomID = roomID;
-
     socket.to(roomID).emit("user-joined", { name: userName, role });
   });
-
-  /* ================= LIVE CAMERA ================= */
 
   socket.on("stream-frame", (data) => {
     socket.to(data.room).emit("stream-frame", {
@@ -185,8 +215,6 @@ app.post('/api/update-kelas-siswa', async (req, res) => {
     });
   });
 
-  /* ================= CHAT ================= */
-
   socket.on("send-chat-message", (data) => {
     io.to(data.room).emit("chat-message", {
       name: socket.userName,
@@ -195,113 +223,57 @@ app.post('/api/update-kelas-siswa', async (req, res) => {
     });
   });
 
-  /* ================= MATERI ================= */
-
   socket.on("new-materi", (data) => {
     socket.to(data.room).emit("new-materi", data);
   });
-
-  /* ================= QUIZ ================= */
-
-  socket.on("start-quiz", (data) => {
-    io.to(data.room).emit("start-quiz", data);
-  });
-
-  socket.on("submit-jawaban-siswa", (data) => {
-    io.to(data.room).emit("update-score", data);
-  });
-
-  /* ================= VIEW MODE ================= */
 
   socket.on("change-view-mode", (data) => {
     socket.to(data.room).emit("change-view-mode", data);
   });
 
-  /* ================= MUTE ================= */
-
   socket.on("mute-all", (data) => {
     socket.to(data.room).emit("mute-all");
   });
 
-  socket.on("disconnect", () => {
-    if (socket.roomID) {
-      socket.to(socket.roomID).emit("user-left", {
-        name: socket.userName
-      });
-    }
-  });
-});
-
-  // --- [UPDATE] LOGIKA KUIS AMAN (PERBAIKAN SINKRONISASI) ---
+  // QUIZ START (AMAN)
   socket.on('start-quiz', (payload) => {
-    const { room, type, materi_judul } = payload;
-    
-    // 1. Simpan Master Soal (Data penuh berisi Kunci Jawaban) di Server Memory
-    activeQuizzes[room] = payload; 
+    const { room } = payload;
 
-    console.log(`[QUIZ START] Room: ${room}, Tipe: ${type}`);
+    activeQuizzes[room] = payload;
 
-    // 2. Buat Salinan Bersih (Sensor Kunci Jawaban) agar Murid tidak bisa intip di Console
     const cleanData = JSON.parse(JSON.stringify(payload));
-    
-    // Hapus kunci jawaban berdasarkan tipe data yang ada
-    if(cleanData.soal_pg) {
-        cleanData.soal_pg.forEach(s => delete s.c); // Hapus 'c' (correct answer)
-    }
-    if(cleanData.soal_quiz) {
-        cleanData.soal_quiz.forEach(s => delete s.jawaban_benar);
-    }
-    if(cleanData.soal_essay) {
-        cleanData.soal_essay.forEach(s => delete s.kriteria);
-    }
-    
-    // 3. Kirim soal "Aman" ke semua murid di room
+    if(cleanData.soal_pg) cleanData.soal_pg.forEach(s => delete s.c);
+    if(cleanData.soal_quiz) cleanData.soal_quiz.forEach(s => delete s.jawaban_benar);
+    if(cleanData.soal_essay) cleanData.soal_essay.forEach(s => delete s.kriteria);
+
     socket.to(room).emit('start-quiz', cleanData);
   });
 
-  // --- [UPDATE] PENILAIAN AI SENTRALISTIK (PERBAIKAN LOGIKA) ---
+  // SUBMIT JAWABAN
   socket.on('submit-jawaban-siswa', async (data) => {
     try {
         const { name, email, kelas, room, jawabanMurid } = data;
-        
-        // 1. Ambil Kunci Jawaban Asli dari Server Memory
         const dataSoal = activeQuizzes[room];
-        
-        if (!dataSoal) {
-            console.error(`❌ Quiz Error: Data soal untuk room ${room} tidak ditemukan.`);
-            return;
-        }
+        if (!dataSoal) return;
 
-        const materi_judul = dataSoal.materi_judul || "Kuis Live";
-
-        // 2. Siapkan data spesifik untuk dikirim ke AI (Biar AI tidak bingung)
-        let soalUntukDinilai = {};
-        if (dataSoal.type === 'PG') soalUntukDinilai = { soal_pg: dataSoal.soal_pg };
-        else if (dataSoal.type === 'ESSAY') soalUntukDinilai = { soal_essay: dataSoal.soal_essay };
-        else if (dataSoal.type === 'QUIZ') soalUntukDinilai = { soal_quiz: dataSoal.soal_quiz };
-        else soalUntukDinilai = dataSoal; // Fallback jika format lama
-
-        // 3. Proses Penilaian AI (server-side processing)
-        const hasilAI = await periksaUjian(soalUntukDinilai, jawabanMurid);
-        
+        const hasilAI = await periksaUjian(dataSoal, jawabanMurid);
         const kodeSekolah = room.includes('-') ? room.split('-')[0] : room;
 
-        // 4. Simpan ke Database (Schema Sekolah & Global)
-        // Simpan ke detail penilaian per sekolah
         await pool.query(
-            `INSERT INTO "${kodeSekolah}".penilaian (nama, email, kelas, tipe, skor, feedback_ai, materi, jawaban_essay) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-            [name, email, kelas, dataSoal.type, hasilAI.skor_total, hasilAI.analisis, materi_judul, JSON.stringify(jawabanMurid.essay)]
+            `INSERT INTO "${kodeSekolah}".penilaian
+             (nama,email,kelas,tipe,skor,feedback_ai,materi,jawaban_essay)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+            [name,email,kelas,dataSoal.type,hasilAI.skor_total,hasilAI.analisis,
+             dataSoal.materi_judul || "Kuis Live",
+             JSON.stringify(jawabanMurid.essay)]
         );
 
-        // Simpan ke global scoreboard (untuk dashboard guru)
         await pool.query(
-            `INSERT INTO global_jawaban (nama_siswa, skor, umpan_balik_ai, nama_kelas) 
-             VALUES ($1, $2, $3, $4)`,
-            [name, hasilAI.skor_total, hasilAI.analisis, kelas]
+            `INSERT INTO global_jawaban (nama_siswa,skor,umpan_balik_ai,nama_kelas)
+             VALUES ($1,$2,$3,$4)`,
+            [name,hasilAI.skor_total,hasilAI.analisis,kelas]
         );
 
-        // 5. Update Dashboard Guru Secara Live (Real-time Scoreboard)
         io.to(room).emit('score-updated-live', {
             nama_siswa: name,
             skor: hasilAI.skor_total,
@@ -310,25 +282,31 @@ app.post('/api/update-kelas-siswa', async (req, res) => {
             waktu: new Date().toLocaleTimeString()
         });
 
-        // 6. Beri Notifikasi Skor Balik ke Murid
         socket.emit('score-updated-live', {
             nama_siswa: name,
             skor: hasilAI.skor_total,
             umpan_balik: hasilAI.analisis
         });
 
-    } catch (err) { console.error("Evaluation Error:", err.message); }
+    } catch (err) {
+        console.error("Evaluation Error:", err.message);
+    }
   });
 
-  // Handle Disconnect & Pembersihan List Online
   socket.on('disconnect', () => {
-    const room = socket.userRoom;
+    const room = socket.roomID;
     const name = socket.userName;
+
     if (onlineUsers[room]) {
         onlineUsers[room] = onlineUsers[room].filter(u => u.name !== name);
         io.to(room).emit('update-attendance', onlineUsers[room]);
     }
+
+    if (room) {
+        socket.to(room).emit("user-left", { name });
+    }
   });
+
 });
 
 const PORT = process.env.PORT || 8080; 
