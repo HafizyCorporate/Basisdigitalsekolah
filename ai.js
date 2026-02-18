@@ -9,9 +9,9 @@ const processAI = async (instruksi) => {
   if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY tidak ditemukan!");
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   
-  // Menggunakan Gemini 3.0 Flash dengan konfigurasi JSON Mode
+  // UPDATE: Menggunakan Gemini 3 Flash sesuai request
   const model = genAI.getGenerativeModel({ 
-    model: "gemini-3.0-flash",
+    model: "gemini-3-flash", // <--- PERUBAHAN DISINI
     generationConfig: { responseMimeType: "application/json" }
   });
   
@@ -38,28 +38,34 @@ const processAI = async (instruksi) => {
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     
-    // Safety check menggunakan regex untuk memastikan hanya objek JSON yang diambil
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("Format JSON tidak ditemukan.");
-    
-    return JSON.parse(jsonMatch[0]);
+    try {
+        return JSON.parse(text);
+    } catch(e) {
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("Format JSON tidak ditemukan.");
+        return JSON.parse(jsonMatch[0]);
+    }
+
   } catch (error) {
     console.error("❌ ERROR GENERATOR:", error.message);
-    return { judul: "Gagal Memuat", html: "<p>Gagal menyusun materi. Silakan coba instruksi lain.</p>", soal_pg: [], soal_essay: [], soal_quiz: [] };
+    return { 
+        judul: "Gagal Memuat", 
+        html: `<p class="text-red-500 font-bold">Gagal menyusun materi: ${error.message}</p><p>Pastikan Model Gemini 3 Flash tersedia di API Key Anda.</p>`, 
+        soal_pg: [], soal_essay: [], soal_quiz: [] 
+    };
   }
 };
 
 /**
  * 2. FUNGSI PEMERIKSA (LOGIKA SENTRALISTIK)
- * Inilah yang akan dipanggil Server saat Murid menekan tombol 'Kirim'
  */
 const periksaUjian = async (soalAsli, jawabanMurid) => {
   if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY tidak ditemukan!");
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   
-  // Menggunakan Gemini 3.0 Flash dengan konfigurasi JSON Mode
+  // UPDATE: Menggunakan Gemini 3 Flash untuk penilaian juga
   const model = genAI.getGenerativeModel({ 
-    model: "gemini-3.0-flash",
+    model: "gemini-3-flash", // <--- PERUBAHAN DISINI
     generationConfig: { responseMimeType: "application/json" }
   });
 
@@ -90,10 +96,13 @@ const periksaUjian = async (soalAsli, jawabanMurid) => {
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("Format JSON penilaian tidak ditemukan.");
-    
-    return JSON.parse(jsonMatch[0]);
+    try {
+        return JSON.parse(text);
+    } catch(e) {
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("Format JSON penilaian tidak ditemukan.");
+        return JSON.parse(jsonMatch[0]);
+    }
   } catch (error) {
     console.error("❌ ERROR PEMERIKSA:", error.message);
     return { skor_total: 0, analisis: "Gagal memproses penilaian secara otomatis.", feedback_guru: "Periksa Manual karena kendala teknis AI." };
