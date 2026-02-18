@@ -2,1128 +2,555 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Teacher Studio - Pro Live</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Space - Pro Connection</title>
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script src="/socket.io/socket.io.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
-                    colors: {
-                        brand: { 500: '#3b82f6', 600: '#2563eb', 900: '#1e3a8a' },
-                        dark: { 800: '#0f172a', 900: '#020617' }
-                    }
-                }
-            }
-        }
-    </script>
-
+    
     <style>
-        body { background: #020617; overflow: hidden; height: 100vh; touch-action: none; color: white; }
+        body { font-family: 'Quicksand', sans-serif; background: #0f172a; color: #e2e8f0; height: 100vh; overflow: hidden; }
         
         /* Layout Grid */
-        .app-layout { display: grid; grid-template-columns: 340px 1fr; height: 100vh; width: 100vw; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-        body.sidebar-closed .app-layout { grid-template-columns: 0px 1fr; }
+        .main-grid { display: grid; grid-template-columns: 3fr 1fr; height: calc(100vh - 70px); gap: 1rem; padding: 1rem; }
         
-        /* Sidebar Styles */
-        .sidebar { 
-            background: #ffffff; border-right: 1px solid #e2e8f0; 
-            display: flex; flex-direction: column; overflow: hidden; 
-            white-space: nowrap; position: relative; z-index: 50;
+        @media (max-width: 1024px) {
+            .main-grid { grid-template-columns: 1fr; overflow-y: auto; }
+            #sidebar-col { height: 500px; }
         }
 
-        /* Main Stage */
-        .main-stage { position: relative; background: #0f172a; display: flex; align-items: center; justify-content: center; overflow: hidden; width: 100%; height: 100%; }
-
-        /* --- FITUR VIDEO & PIP --- */
-        .video-wrapper { 
-            position: relative; transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); 
-            overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); background: #000;
+        /* Video Stage */
+        #main-stage { 
+            position: relative; background: #000; border-radius: 1.5rem; 
+            overflow: hidden; border: 1px solid #334155; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            display: flex; flex-direction: column; justify-content: center;
         }
-
-        /* Mode Default (3/4 Layar) */
-        .video-wrapper.default-mode { width: 85%; height: 75%; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); }
-
-        /* Mode Full Screen */
-        .video-wrapper.full-mode { width: 100%; height: 100%; border-radius: 0; border: none; }
         
-        /* Mode PiP (Picture in Picture - Saat Share Materi/Grid) */
-        .video-wrapper.pip-mode {
-            position: absolute; bottom: 160px; right: 20px;
-            width: 180px; height: 135px; z-index: 60; border-radius: 16px; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.2);
-        }
-
-        /* Overlays (Grid & Materi) */
-        .stage-overlay { position: absolute; inset: 0; z-index: 40; background: #0f172a; display: none; opacity: 0; transition: opacity 0.3s; }
-        .stage-overlay.active { display: block; opacity: 1; }
+        /* Teacher Stream */
+        #teacher-video-stream { width: 100%; height: 100%; object-fit: contain; background: #000; }
         
-        #student-grid-view {
-            display: none; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px; padding: 20px; align-content: center; overflow-y: auto;
+        /* Student PIP (Picture in Picture) */
+        #student-pip-wrapper {
+            position: absolute; bottom: 5rem; right: 1rem; width: 200px; aspect-ratio: 4/3;
+            border-radius: 1rem; overflow: hidden; border: 3px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.8); z-index: 20; background: #1e293b;
+            transition: all 0.3s ease;
         }
-        #student-grid-view.active { display: grid; }
-        
-        /* --- UPDATE TAMPILAN PRESENTATION STAGE (SLIDER) --- */
-        #presentation-stage { 
-            padding: 0; /* Reset padding */
-            overflow: hidden; 
-            background: white; 
-            color: #1e293b; 
-            display: none;
-            flex-direction: column;
-        }
-        #presentation-stage.active { display: flex; }
+        #video-element { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* --- CONTROLS & UI --- */
-
-        /* Top Bar Controls */
-        .top-controls {
-            position: absolute; top: 20px; left: 20px; right: 20px; z-index: 70;
-            display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none;
-        }
-
-        .hamburger-btn { 
-            pointer-events: auto; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.1); 
-            color: white; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; 
-            transition: 0.2s; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-        .hamburger-btn:hover { background: rgba(0,0,0,0.6); transform: scale(1.05); }
-
-        /* Start Overlay */
-        .start-overlay {
-            position: absolute; inset: 0; background: rgba(0,0,0,0.9); z-index: 80;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            backdrop-filter: blur(10px); transition: opacity 0.4s;
-        }
-        .start-overlay.hidden { opacity: 0; pointer-events: none; }
-
-        /* Control Bar (Bottom) - DIGESER NAIK AGAR TIDAK KE-TRIGGER GESTURE HP */
-        .control-bar {
-            position: absolute; bottom: 60px; /* Desktop */
-            left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(20px);
-            padding: 10px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15);
-            display: flex; align-items: center; gap: 8px; z-index: 70; box-shadow: 0 20px 50px rgba(0,0,0,0.6); white-space: nowrap;
+        /* Control Bar - Fixed & Visible */
+        .video-controls {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 1.5rem; padding-bottom: 1rem;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+            display: flex; align-items: center; gap: 1.5rem; z-index: 30;
         }
 
         .ctrl-btn {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            width: 54px; height: 54px; border-radius: 12px; color: #94a3b8; cursor: pointer; transition: all 0.2s;
-            gap: 4px; background: transparent;
+            width: 45px; height: 45px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; transition: all 0.2s; cursor: pointer;
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1);
         }
-        .ctrl-btn:hover { background: rgba(255,255,255,0.08); color: white; transform: translateY(-2px); }
-        .ctrl-btn.active { background: #2563eb; color: white; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4); }
-        .ctrl-btn.danger { color: #f87171; }
-        .ctrl-btn.danger.active { background: #ef4444; color: white; }
-        
-        .ctrl-icon { font-size: 18px; margin-bottom: 2px; }
-        .ctrl-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-        
-        .divider { width: 1px; height: 32px; background: rgba(255,255,255,0.1); margin: 0 4px; }
+        .ctrl-btn:hover { background: rgba(255, 255, 255, 0.3); transform: scale(1.1); }
+        .ctrl-btn.active-red { background: #ef4444; border-color: #ef4444; color: white; }
+        .ctrl-btn.active-green { background: #10b981; border-color: #10b981; color: white; }
 
-        /* Floating Chat */
-        .floating-chat-btn {
-            position: fixed; bottom: 140px; right: 25px; z-index: 90;
-            width: 56px; height: 56px; border-radius: 50%;
-            background: linear-gradient(135deg, #3b82f6, #2563eb); color: white;
-            box-shadow: 0 8px 25px rgba(37, 99, 235, 0.5); border: 2px solid rgba(255,255,255,0.2);
-            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s;
-        }
-        .floating-chat-btn:hover { transform: scale(1.1) rotate(-5deg); }
+        /* Sidebar Styling */
+        .glass-panel { background: #1e293b; border-radius: 1.5rem; border: 1px solid #334155; overflow: hidden; display: flex; flex-direction: column; }
         
-        /* Chat Panel */
-        .chat-panel-float {
-            position: fixed; bottom: 210px; right: 25px; width: 320px; height: 400px;
-            background: white; border-radius: 20px; z-index: 89; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            border: 1px solid #e2e8f0; display: none; flex-direction: column; transform-origin: bottom right; 
-            animation: popUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        /* Notifikasi Alert */
+        #cuteAlert {
+            position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
+            background: #ec4899; color: white; padding: 0.75rem 2rem;
+            border-radius: 50px; font-weight: 700; border: 2px solid #fce7f3;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); z-index: 5000; transition: top 0.5s;
+            display: flex; align-items: center; gap: 10px;
         }
-        .chat-panel-float.active { display: flex; }
-        @keyframes popUp { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+        .alert-active { top: 30px !important; }
 
-        /* AI Quiz Controller (Hidden by default) */
-        #quiz-controller { display: none; margin-top: 15px; padding: 10px; background: #f1f5f9; border-radius: 12px; border: 1px solid #e2e8f0; }
+        /* Quiz Overlay */
+        #quiz-overlay { z-index: 9999; }
+        .option-selected { background: #ec4899 !important; color: white !important; border-color: #ec4899 !important; }
 
-        /* Responsive */
-        @media (max-width: 1024px) {
-            .app-layout { grid-template-columns: 1fr; }
-            .sidebar { position: fixed; inset: 0; width: 100%; transform: translateX(-100%); transition: transform 0.3s; z-index: 100;}
-            .sidebar.open { transform: translateX(0); }
-            body.sidebar-closed .app-layout { grid-template-columns: 1fr; }
-            
-            /* Control Bar di Mobile lebih naik lagi */
-            .control-bar { padding: 8px 12px; bottom: 80px; width: 95%; max-width: 450px; justify-content: space-around; gap: 2px;}
-            .ctrl-btn { width: 48px; height: 48px; }
-            .ctrl-label { font-size: 8px; }
-            
-            /* Pada Mobile, video default lebih lebar dikit */
-            .video-wrapper.default-mode { width: 92%; height: 60%; }
-        }
     </style>
 </head>
-<body class="sidebar-closed"> 
+<body>
 
-    <div class="floating-chat-btn" onclick="toggleChat()" title="Buka Chat">
-        <i class="fa-solid fa-comments text-2xl"></i>
-    </div>
-
-    <div id="chat-panel" class="chat-panel-float">
-        <div class="bg-slate-50 p-4 border-b border-slate-100 flex justify-between items-center rounded-t-2xl">
-            <div class="flex items-center gap-2">
-                <i class="fa-solid fa-comment-dots text-brand-600"></i>
-                <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Live Chat</span>
+    <nav class="h-[60px] flex justify-between items-center px-6 bg-slate-900 border-b border-slate-800">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-pink-500 flex items-center justify-center text-white font-bold text-sm">
+                <i class="fa-solid fa-graduation-cap"></i>
             </div>
-            <div class="flex gap-2">
-                <button onclick="togglePinChat()" id="btn-pin" class="text-slate-400 hover:text-brand-500 transition" title="Pin Pesan"><i class="fa-solid fa-thumbtack"></i></button>
-                <button onclick="toggleChat()" class="text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div>
+                <h1 class="font-bold text-slate-100 text-sm md:text-base">Student Space</h1>
             </div>
         </div>
-        <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-3 bg-white text-sm text-slate-800 scrollbar-hide">
-            <div class="text-center text-[10px] text-slate-400 italic py-10">Belum ada pesan masuk.</div>
+        
+        <div class="flex items-center gap-3">
+            <select id="select-kelas-murid" onchange="muridPindahKelas()" class="bg-slate-800 border border-slate-700 text-white text-xs rounded-full p-2 px-4 outline-none focus:border-pink-500">
+                <option value="">-- Pilih Kelas --</option>
+            </select>
+            <div id="status-live-indicator" class="hidden px-3 py-1 bg-red-900/50 text-red-400 rounded-full text-[10px] font-bold border border-red-900 flex items-center gap-2">
+                <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> LIVE
+            </div>
         </div>
-        <div class="p-3 bg-white border-t border-slate-100 rounded-b-2xl">
-            <form onsubmit="kirimChat(event)" class="flex gap-2">
-                <input type="text" id="chat-input" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-slate-800 placeholder-slate-400 transition" placeholder="Tulis pesan..." autocomplete="off">
-                <button type="submit" class="bg-brand-600 text-white rounded-xl w-10 h-9 flex items-center justify-center hover:bg-brand-700 shadow-md transition transform active:scale-95"><i class="fa-solid fa-paper-plane text-xs"></i></button>
-            </form>
-        </div>
+    </nav>
+
+    <div id="cuteAlert">
+        <span id="cuteIcon" class="text-xl">🍓</span>
+        <span id="cuteMsg" class="text-sm">Halo!</span>
     </div>
 
-    <div class="app-layout">
-        <aside id="sidebar" class="sidebar shadow-2xl">
-            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-brand-100 text-brand-600 flex items-center justify-center font-bold">
-                        <i class="fa-solid fa-chalkboard-user"></i>
-                    </div>
-                    <div>
-                        <h1 class="font-bold text-slate-800 text-sm leading-tight">Teacher Studio</h1>
-                        <p class="text-[10px] text-slate-500 font-medium"><%= nama_guru %></p>
-                    </div>
+    <div class="main-grid">
+
+        <div id="main-stage">
+            
+            <img id="teacher-video-stream" src="" alt="Guru belum menyalakan kamera">
+            
+            <div id="video-placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-950 z-0">
+                <i class="fa-solid fa-satellite-dish text-6xl mb-4 opacity-50"></i>
+                <p class="font-bold text-lg">Menunggu Sinyal Guru...</p>
+                <p class="text-xs mt-2 opacity-60">Pastikan kamu sudah memilih kelas yang benar.</p>
+            </div>
+
+            <div id="student-pip-wrapper">
+                <div id="cam-container" class="w-full h-full bg-slate-800 flex items-center justify-center">
+                    <span class="text-[10px] text-slate-400">Kamera Mati</span>
                 </div>
-                <button onclick="toggleSidebar()" class="w-8 h-8 rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:bg-red-50 hover:text-red-500 hover:border-red-100 flex items-center justify-center transition" title="Tutup / Kembali">
-                    <i class="fa-solid fa-arrow-left"></i>
+            </div>
+
+            <div class="video-controls text-white">
+                
+                <button id="btn-mic" onclick="toggleMic()" class="ctrl-btn bg-slate-700 hover:bg-slate-600" title="Matikan/Nyalakan Suara Saya">
+                    <i id="icon-mic" class="fa-solid fa-microphone-slash"></i>
+                </button>
+
+                <button id="btn-cam" onclick="toggleCamera()" class="ctrl-btn bg-slate-700 hover:bg-slate-600" title="Matikan/Nyalakan Kamera Saya">
+                    <i id="icon-cam" class="fa-solid fa-video-slash"></i>
+                </button>
+
+                <div class="h-8 w-[1px] bg-white/20 mx-2"></div>
+
+                <div class="flex-1 text-xs font-semibold opacity-80">
+                    <span id="my-status-text">Kamu Offline</span>
+                </div>
+
+                <button onclick="toggleFullscreen()" class="ctrl-btn" title="Layar Penuh">
+                    <i id="icon-fullscreen" class="fa-solid fa-expand"></i>
                 </button>
             </div>
+        </div>
 
-            <div class="flex-1 overflow-y-auto p-5 space-y-6">
+        <div id="sidebar-col" class="flex flex-col gap-4">
+            
+            <div id="quiz-alert-box" class="hidden bg-gradient-to-br from-pink-600 to-rose-600 rounded-2xl p-4 text-white shadow-lg animate-bounce cursor-pointer" onclick="openQuizModal()">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="font-black text-sm uppercase tracking-wider">⚡ Kuis Aktif!</span>
+                    <i class="fa-solid fa-pen-to-square"></i>
+                </div>
+                <p class="text-xs mb-3 opacity-90">Guru baru saja membagikan soal. Kerjakan sekarang.</p>
+                <button class="w-full bg-white text-pink-600 py-2 rounded-lg text-xs font-bold uppercase shadow">Buka Soal</button>
+            </div>
+
+            <div class="glass-panel flex-1">
+                <div class="p-3 bg-slate-800 border-b border-slate-700 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-300 text-xs uppercase">
+                        <i class="fa-regular fa-comments mr-2"></i> Chat Kelas
+                    </h3>
+                    <div class="text-[10px] text-green-400 flex items-center gap-1">
+                        <div class="w-1.5 h-1.5 bg-green-500 rounded-full"></div> Online
+                    </div>
+                </div>
                 
-                <div class="bg-yellow-50 border border-yellow-200 p-3 rounded-xl">
-                    <label class="text-[10px] font-bold text-yellow-700 block mb-1">Buat atau Pilih Kelas</label>
+                <div id="chat-box" class="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-900 text-xs text-slate-300">
+                    </div>
+
+                <div class="p-3 bg-slate-800 border-t border-slate-700">
                     <div class="flex gap-2">
-                        <input type="text" id="nama-kelas" list="list-kelas-guru" 
-                            class="flex-1 bg-white border border-yellow-300 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-yellow-400" 
-                            placeholder="Nama kelas baru...">
-                        <button onclick="simpanKelasBaru()" class="bg-yellow-500 text-white px-3 py-2 rounded-lg hover:bg-yellow-600 transition shadow-sm" title="Simpan Kelas ke Database">
-                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <input id="chat-input" type="text" placeholder="Tanya Guru..." class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-pink-500 outline-none">
+                        <button onclick="sendChat()" class="bg-pink-600 text-white p-2 rounded-lg hover:bg-pink-500 transition-all">
+                            <i class="fa-solid fa-paper-plane text-xs"></i>
                         </button>
                     </div>
-                    <datalist id="list-kelas-guru"></datalist>
-                    <p class="text-[9px] text-yellow-600 mt-1">*Klik simpan agar muncul di HP Murid</p>
-                </div>
-
-
-                <div class="border-t border-slate-100"></div>
-
-                <div class="space-y-3">
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-wand-magic-sparkles text-brand-500 text-xs"></i>
-                        <label class="text-[11px] font-bold text-slate-700 uppercase tracking-wide">AI Materi Generator</label>
-                    </div>
-                    <div class="bg-slate-50 p-1 rounded-2xl border border-slate-200 focus-within:ring-2 focus-within:ring-brand-100 transition">
-                        <textarea id="prompt" class="w-full bg-transparent border-none p-3 text-xs text-slate-700 h-20 resize-none outline-none placeholder:text-slate-400" placeholder="Topik materi (cth: Perang Dunia II)..."></textarea>
-                    </div>
-                    <button onclick="generate()" id="btnGen" class="w-full py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-brand-600 hover:shadow-lg transition flex items-center justify-center gap-2">
-                        <span>Buat Materi & Soal</span> <i class="fa-solid fa-bolt"></i>
-                    </button>
-
-                    <div id="quiz-controller">
-                        <label class="text-[9px] font-bold text-slate-500 uppercase block mb-2 text-center">Distribusi Soal ke Siswa</label>
-                        <div class="grid grid-cols-1 gap-2">
-                            <button onclick="distributeQuiz('PG')" class="py-2 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-200 transition text-left px-3 flex justify-between items-center">
-                                <span><i class="fa-solid fa-list-check mr-2"></i>Kirim 15 Soal PG</span>
-                                <i class="fa-solid fa-paper-plane"></i>
-                            </button>
-                            <button onclick="distributeQuiz('ESSAY')" class="py-2 bg-purple-100 text-purple-700 rounded-lg text-xs font-bold hover:bg-purple-200 transition text-left px-3 flex justify-between items-center">
-                                <span><i class="fa-solid fa-pen-nib mr-2"></i>Kirim 5 Soal Essay</span>
-                                <i class="fa-solid fa-paper-plane"></i>
-                            </button>
-                            <button onclick="distributeQuiz('QUIZ')" class="py-2 bg-orange-100 text-orange-700 rounded-lg text-xs font-bold hover:bg-orange-200 transition text-left px-3 flex justify-between items-center">
-                                <span><i class="fa-solid fa-stopwatch mr-2"></i>Kirim 10 Flash Quiz</span>
-                                <i class="fa-solid fa-paper-plane"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="border-t border-slate-100"></div>
-
-                <div class="space-y-3">
-                    <div class="flex items-center gap-2 mb-2">
-                        <i class="fa-solid fa-file-export text-green-600 text-xs"></i>
-                        <label class="text-[11px] font-bold text-slate-700 uppercase tracking-wide">Pusat Unduhan</label>
-                    </div>
-
-                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                        <div class="text-[10px] font-bold text-slate-500 mb-2">Materi Pelajaran</div>
-                        <div class="flex gap-2">
-                            <button onclick="exportData('Materi', 'PDF')" class="flex-1 py-1.5 bg-red-50 text-red-600 border border-red-100 rounded-lg text-xs hover:bg-red-100 transition"><i class="fa-solid fa-file-pdf"></i> PDF</button>
-                            <button onclick="exportData('Materi', 'Word')" class="flex-1 py-1.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-lg text-xs hover:bg-blue-100 transition"><i class="fa-solid fa-file-word"></i> Word</button>
-                            <button onclick="exportData('Materi', 'Excel')" class="flex-1 py-1.5 bg-green-50 text-green-600 border border-green-100 rounded-lg text-xs hover:bg-green-100 transition"><i class="fa-solid fa-file-excel"></i> Excel</button>
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                        <div class="text-[10px] font-bold text-slate-500 mb-2">Nilai / Live Score</div>
-                        <div class="flex flex-col gap-2">
-                            <div class="flex gap-2">
-                                <button onclick="exportData('Nilai', 'PDF')" class="flex-1 py-1.5 bg-red-50 text-red-600 border border-red-100 rounded-lg text-xs hover:bg-red-100 transition"><i class="fa-solid fa-file-pdf"></i> PDF</button>
-                                <button onclick="exportData('Nilai', 'Excel')" class="flex-1 py-1.5 bg-green-50 text-green-600 border border-green-100 rounded-lg text-xs hover:bg-green-100 transition"><i class="fa-solid fa-file-excel"></i> XLSX</button>
-                            </div>
-                            <button onclick="toggleHistoryModal()" class="w-full py-2 bg-slate-800 text-white border border-slate-900 rounded-lg text-xs font-bold hover:bg-slate-700 transition flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-clock-rotate-left"></i> Lihat Log & Riwayat
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                        <div class="text-[10px] font-bold text-slate-500 mb-2">Absensi Kehadiran</div>
-                        <div class="flex gap-2">
-                            <button onclick="exportData('Absen', 'PDF')" class="flex-1 py-1.5 bg-red-50 text-red-600 border border-red-100 rounded-lg text-xs hover:bg-red-100 transition"><i class="fa-solid fa-file-pdf"></i> PDF</button>
-                            <button onclick="exportData('Absen', 'Word')" class="flex-1 py-1.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-lg text-xs hover:bg-blue-100 transition"><i class="fa-solid fa-file-word"></i> Word</button>
-                            <button onclick="exportData('Absen', 'Excel')" class="flex-1 py-1.5 bg-green-50 text-green-600 border border-green-100 rounded-lg text-xs hover:bg-green-100 transition"><i class="fa-solid fa-file-excel"></i> Excel</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="border-t border-slate-100"></div>
-
-                <div>
-                    <div class="flex justify-between items-center mb-2">
-                        <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-users text-slate-400 text-xs"></i>
-                            <label class="text-[11px] font-bold text-slate-700 uppercase tracking-wide">Siswa Online</label>
-                        </div>
-                        <span id="count-badge" class="bg-green-100 text-green-700 px-2 py-0.5 rounded-md text-[9px] font-bold">0</span>
-                    </div>
-                    <ul id="mini-list-siswa" class="space-y-1">
-                        <li class="text-[11px] text-slate-400 italic text-center py-4 bg-slate-50 rounded-lg">Menunggu siswa...</li>
-                    </ul>
-                </div>
-
-                <div class="mt-4 pt-4 border-t border-slate-100">
-                    <button class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition text-left group">
-                        <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-white transition">
-                            <i class="fa-solid fa-user-gear"></i>
-                        </div>
-                        <div>
-                            <div class="text-xs font-bold text-slate-700">Profil Guru</div>
-                            <div class="text-[10px] text-slate-400">Akun & Keamanan</div>
-                        </div>
-                        <i class="fa-solid fa-chevron-right ml-auto text-xs text-slate-300"></i>
-                    </button>
-                 </div>
-            </div>
-        </aside>
-
-        <main class="main-stage">
-            
-            <div class="top-controls">
-                <div class="bg-black/60 backdrop-blur-md border border-white/10 pl-3 pr-4 py-1.5 rounded-full flex items-center gap-2 pointer-events-auto shadow-lg">
-                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]"></div>
-                    <span id="status-text" class="text-[10px] font-bold tracking-widest text-white/90">STANDBY</span>
-                </div>
-
-                <button onclick="toggleSidebar()" class="hamburger-btn" title="Buka Menu Sidebar">
-                    <i class="fa-solid fa-bars text-lg"></i>
-                </button>
-            </div>
-
-            <div id="start-overlay" class="start-overlay">
-                <div class="text-center scale-95 animate-[fadeInUp_0.4s_ease-out_forwards]">
-                    <div class="w-24 h-24 bg-gradient-to-tr from-brand-600 to-indigo-600 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-brand-500/30 mb-6 mx-auto border border-white/10 relative">
-                        <i class="fa-solid fa-video text-4xl text-white"></i>
-                    </div>
-                    <h2 class="text-2xl font-bold text-white mb-2">Teacher Studio</h2>
-                    <p class="text-slate-300 text-sm mb-8">Klik mulai untuk mengajar</p>
-                    
-                    <button onclick="toggleLive()" class="px-8 py-3 bg-white text-slate-900 rounded-full font-bold shadow-xl hover:scale-105 transition flex items-center gap-2 mx-auto">
-                        <i class="fa-solid fa-play text-brand-600"></i> MULAI LIVE
-                    </button>
                 </div>
             </div>
 
-            <div id="guru-video-wrapper" class="video-wrapper default-mode">
-                <video id="guru-cam" class="w-full h-full object-cover" autoplay playsinline muted></video>
-                <div class="absolute bottom-4 left-4 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full text-white text-[10px] font-semibold border border-white/10 flex items-center gap-2">
-                    <i class="fa-solid fa-user-tie text-brand-400"></i> <%= nama_guru %>
+            <div class="glass-panel p-3 flex flex-row items-center gap-3 bg-slate-800">
+                <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center border border-slate-600">
+                    <i class="fa-solid fa-user text-slate-400 text-xs"></i>
+                </div>
+                <div class="flex-1">
+                    <h2 class="font-bold text-xs text-slate-200 truncate"><%= nama_siswa %></h2>
+                    <p class="text-[10px] text-slate-500">Skor: <span id="sidebar-score" class="text-pink-400 font-bold">0</span></p>
                 </div>
             </div>
 
-            <div id="student-grid-view" class="stage-overlay"></div>
-            
-            <div id="presentation-stage" class="stage-overlay flex flex-col h-full bg-white text-slate-800 p-0 overflow-hidden">
-                <div class="bg-yellow-400 p-4 flex justify-between items-center shadow-md z-10">
-                    <h1 id="slide-judul-besar" class="text-lg font-black text-white drop-shadow-md uppercase tracking-wide truncate max-w-[50%]">Judul Materi</h1>
-                    <div class="flex gap-2 items-center">
-                        <button onclick="prevSlide()" class="w-8 h-8 bg-white text-yellow-600 rounded-full flex items-center justify-center hover:scale-110 transition shadow"><i class="fa-solid fa-chevron-left"></i></button>
-                        <span id="page-indicator" class="bg-white/20 text-white px-3 py-1 rounded-full font-bold text-xs">1 / 1</span>
-                        <button onclick="nextSlide()" class="w-8 h-8 bg-white text-yellow-600 rounded-full flex items-center justify-center hover:scale-110 transition shadow"><i class="fa-solid fa-chevron-right"></i></button>
-                    </div>
-                </div>
-
-                <div class="flex-1 overflow-y-auto p-6 md:p-10 relative scrollbar-hide">
-                    <div class="mb-6 rounded-2xl overflow-hidden h-48 md:h-64 bg-slate-100 relative group border-4 border-yellow-100 shadow-sm">
-                        <img id="slide-img" src="https://placehold.co/800x400?text=Menunggu+Nano+Banana..." class="w-full h-full object-cover transition duration-700 group-hover:scale-105">
-                        <div class="absolute bottom-0 left-0 right-0 bg-black/60 p-2 text-center">
-                            <p id="slide-keyword" class="text-white text-[10px] uppercase font-bold tracking-widest">Visual: ...</p>
-                        </div>
-                    </div>
-
-                    <h2 id="slide-subjudul" class="text-2xl font-black text-slate-800 mb-4">Sub Judul</h2>
-                    <div id="slide-konten" class="prose prose-sm md:prose-lg prose-yellow max-w-none text-slate-600 leading-relaxed">
-                        </div>
-                </div>
-            </div>
-
-            <div class="control-bar">
-                
-                <div class="ctrl-btn" onclick="toggleLive()" id="btn-start" title="Mulai / Jeda Live">
-                    <i class="fa-solid fa-play ctrl-icon"></i>
-                    <span class="ctrl-label">Start</span>
-                </div>
-                
-                <div class="divider"></div>
-
-                <div class="ctrl-btn" onclick="toggleMuteSelf()" id="btn-mic" title="Matikan/Hidupkan Mic">
-                    <i class="fa-solid fa-microphone ctrl-icon"></i>
-                    <span class="ctrl-label">Mic</span>
-                </div>
-                <div class="ctrl-btn" onclick="toggleCamSelf()" id="btn-cam" title="Matikan/Hidupkan Kamera">
-                    <i class="fa-solid fa-video ctrl-icon"></i>
-                    <span class="ctrl-label">Cam</span>
-                </div>
-
-                <div class="ctrl-btn" onclick="toggleScreenSize()" id="btn-screen" title="Ubah Ukuran Layar">
-                    <i class="fa-solid fa-expand ctrl-icon"></i>
-                    <span class="ctrl-label">Full Scr</span>
-                </div>
-
-                <div class="divider"></div>
-
-                <div class="ctrl-btn" onclick="toggleGridView()" id="btn-grid-murid" title="Tampilkan Semua Siswa">
-                    <i class="fa-solid fa-table-cells ctrl-icon"></i>
-                    <span class="ctrl-label">Grid</span>
-                </div>
-                <div class="ctrl-btn" onclick="toggleMateriView()" id="btn-grid-materi" title="Review Materi">
-                    <i class="fa-solid fa-book-open ctrl-icon"></i>
-                    <span class="ctrl-label">Review</span>
-                </div>
-
-                <div class="divider"></div>
-
-                <div class="ctrl-btn danger" onclick="muteAllStudents()" title="Bisukan Semua Siswa">
-                    <i class="fa-solid fa-volume-xmark ctrl-icon"></i>
-                    <span class="ctrl-label">Mute All</span>
-                </div>
-
-            </div>
-
-        </main>
+        </div>
     </div>
 
-    <div id="customAlert" class="fixed top-24 left-1/2 -translate-x-1/2 z-[100] bg-white text-slate-900 px-6 py-3 rounded-full shadow-2xl flex items-center gap-4 transition-all duration-300 opacity-0 pointer-events-none translate-y-[-20px] border border-slate-100 ring-4 ring-black/5">
-        <span id="alertIcon" class="text-xl"></span>
-        <div class="h-6 w-[1px] bg-slate-200"></div>
-        <span id="alertMsg" class="font-bold text-xs uppercase tracking-wide text-slate-800"></span>
-    </div>
-
-    <div id="history-modal" class="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
-        <div class="bg-white w-full max-w-4xl h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden transform scale-95 transition-transform duration-300" id="history-content">
-            
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <div>
-                    <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-trophy text-yellow-500 mr-2"></i>Live Scoreboard & Riwayat</h2>
-                    <p class="text-xs text-slate-500 mt-1">Mencatat nilai yang masuk secara real-time sesi ini.</p>
-                </div>
-                <button onclick="toggleHistoryModal()" class="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
+    <div id="quiz-overlay" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-4xl h-[85vh] rounded-2xl flex flex-col overflow-hidden">
+            <div class="bg-pink-600 p-4 flex justify-between items-center text-white">
+                <h2 id="quiz-title" class="text-lg font-bold">Lembar Jawaban</h2>
+                <button onclick="closeQuiz()" class="hover:text-pink-200"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
-
-            <div class="flex-1 overflow-auto p-0">
-                <table class="w-full text-left border-collapse">
-                    <thead class="bg-slate-50 sticky top-0 z-10">
-                        <tr>
-                            <th class="p-4 text-[10px] font-black uppercase text-slate-400 tracking-wider">Waktu Submit</th>
-                            <th class="p-4 text-[10px] font-black uppercase text-slate-400 tracking-wider">Nama Siswa</th>
-                            <th class="p-4 text-[10px] font-black uppercase text-slate-400 tracking-wider">Skor</th>
-                            <th class="p-4 text-[10px] font-black uppercase text-slate-400 tracking-wider">Analisis AI</th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-table-body" class="text-sm text-slate-700 divide-y divide-slate-100">
-                        <tr id="empty-history">
-                            <td colspan="4" class="p-10 text-center text-slate-400 italic text-xs">Belum ada data nilai masuk sesi ini.</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div id="quiz-content" class="flex-1 overflow-y-auto p-6 bg-slate-50">
+                <div id="quiz-body" class="space-y-6"></div>
             </div>
-
-            <div class="p-4 border-t border-slate-100 bg-slate-50 text-right">
-                <button onclick="toggleHistoryModal()" class="px-6 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800">Tutup</button>
+            <div id="quiz-result" class="hidden flex-1 flex flex-col items-center justify-center p-10 text-center">
+                <div class="text-6xl mb-4">🏆</div>
+                <h3 class="text-2xl font-bold text-slate-800">Nilai Kamu</h3>
+                <div class="text-5xl font-black text-pink-600 my-4" id="final-score-val">0</div>
+                <p id="ai-feedback" class="text-sm text-slate-500 max-w-md bg-slate-100 p-4 rounded-xl">Analisis...</p>
+                <button onclick="closeQuiz()" class="mt-6 text-pink-600 font-bold text-sm underline">Tutup</button>
+            </div>
+            <div id="quiz-footer" class="p-4 border-t bg-slate-100 flex justify-end">
+                <button onclick="finishQuiz()" class="bg-pink-600 text-white px-6 py-3 rounded-lg font-bold shadow hover:bg-pink-500">Kirim Jawaban 🚀</button>
             </div>
         </div>
     </div>
+
+    <canvas id="hidden-canvas" class="hidden" width="240" height="180"></canvas>
 
     <script>
         const socket = io();
-        const namaGuru = "<%= nama_guru %>";
-        const room = "<%= kode %>";
+        const namaSiswa = "<%= nama_siswa %>";
+        const emailSiswa = "<%= email_siswa %>"; 
+        const kodeSekolah = "<%= kode_sekolah %>";
+        let kelasTersimpan = "<%= kelas_siswa %>"; 
+        let currentRoom = kodeSekolah;
+        let myStream = null;
+        let currentQuizData = null; 
         
-        let isLive = false;
-        let isMutedSelf = false;
-        let isCamSelfOff = false;
-        let isFullScreen = false; 
-        let activeView = 'normal'; 
-        let lastGeneratedData = null; 
-        let isChatPinned = false;
-        let peerConnections = {}; 
-        
-        // --- VARIABLE SLIDER BARU ---
-        let currentSlides = []; 
-        let currentSlideIndex = 0;
+        // Status Lirik
+        let isCameraOn = false;
+        let isMicOn = false;
 
-        // --- NEW: SECURITY HELPER (Anti XSS) ---
-        function escapeHtml(text) {
-            if (!text) return text;
-            return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
+        // --- 1. LOGIKA UTAMA (KONEKSI) ---
 
-        // --- CORE UI LOGIC ---
-        function toggleSidebar() {
-            const body = document.body;
-            const sidebar = document.getElementById('sidebar');
-            if (window.innerWidth <= 1024) { sidebar.classList.toggle('open'); } 
-            else { body.classList.toggle('sidebar-closed'); }
-        }
-
-        function toggleScreenSize() {
-            const wrapper = document.getElementById('guru-video-wrapper');
-            const btn = document.getElementById('btn-screen');
-            const icon = btn.querySelector('i');
-            const label = btn.querySelector('span');
-            isFullScreen = !isFullScreen;
-            if (isFullScreen) {
-                wrapper.classList.remove('default-mode');
-                wrapper.classList.add('full-mode');
-                icon.className = "fa-solid fa-compress ctrl-icon";
-                label.innerText = "Kecilkan";
-                btn.classList.add('active');
-            } else {
-                wrapper.classList.remove('full-mode');
-                wrapper.classList.add('default-mode');
-                icon.className = "fa-solid fa-expand ctrl-icon";
-                label.innerText = "Full Scr";
-                btn.classList.remove('active');
-            }
-        }
-
-        // --- EXPORT FUNCTIONALITY ---
-        function exportData(tipe, format) {
-            const fileName = `${tipe}_Kelas_${document.getElementById('nama-kelas').value || 'Umum'}_${new Date().toLocaleDateString()}`;
-            
-            let content = "";
-            let mimeType = "";
-            let extension = "";
-
-            if (tipe === 'Materi' && lastGeneratedData) {
-                // UPDATE: Handle struktur slide
-                if (lastGeneratedData.slides && lastGeneratedData.slides.length > 0) {
-                    content = `<h1>${lastGeneratedData.judul_besar}</h1>`;
-                    lastGeneratedData.slides.forEach(slide => {
-                        content += `<h2>${slide.judul_slide}</h2>${slide.konten_html}<hr>`;
-                    });
-                } else {
-                    // Fallback jika format lama
-                    content = `<h1>${lastGeneratedData.judul || 'Materi'}</h1>${lastGeneratedData.html || ''}`;
-                }
-            } else if (tipe === 'Nilai') {
-                content = `
-                    <table border="1">
-                        <tr><th>Nama Siswa</th><th>Skor</th><th>Komentar AI</th></tr>
-                        <tr><td>Siswa A</td><td>85</td><td>Bagus</td></tr>
-                    </table>`;
-            } else if (tipe === 'Absen') {
-                const listItems = document.getElementById('mini-list-siswa').innerHTML;
-                content = `<h3>Absensi</h3><ul>${listItems}</ul>`;
-            } else {
-                return showAlert("Data belum tersedia untuk diekspor!", "⚠️");
-            }
-
-            if (format === 'Word') {
-                mimeType = 'application/msword';
-                extension = 'doc';
-                content = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${tipe}</title></head><body>${content}</body></html>`;
-            } else if (format === 'Excel') {
-                mimeType = 'application/vnd.ms-excel';
-                extension = 'xls';
-                if(!content.includes('<table')) content = `<table><tr><td>${content}</td></tr></table>`;
-            } else if (format === 'PDF') {
-                const win = window.open('', '', 'height=700,width=700');
-                win.document.write('<html><head><title>Cetak PDF</title>');
-                win.document.write('</head><body>');
-                win.document.write(content);
-                win.document.write('</body></html>');
-                win.document.close();
-                win.print();
-                return; 
-            }
-
-            const blob = new Blob([content], { type: mimeType });
-            const url = URL.createObjectURL(blob);
-            const downloadLink = document.createElement("a");
-            document.body.appendChild(downloadLink);
-            downloadLink.href = url;
-            downloadLink.download = `${fileName}.${extension}`;
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
-            showAlert(`${tipe} berhasil diunduh (${format})`, "📥");
-        }
-
-        // --- 1. LIVE CONTROL ---
-        function toggleLive() {
-            const overlay = document.getElementById('start-overlay');
-            const statusDot = document.getElementById('status-dot');
-            const statusText = document.getElementById('status-text');
-            const btnStart = document.getElementById('btn-start');
-            const iconStart = btnStart.querySelector('i');
-            const labelStart = btnStart.querySelector('span');
-
-            if (!isLive) {
-                startCamera();
-                isLive = true;
-                overlay.classList.add('hidden');
-                
-                statusDot.className = "w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.6)]";
-                statusText.innerText = "LIVE ON AIR";
-                iconStart.className = "fa-solid fa-pause ctrl-icon";
-                labelStart.innerText = "Pause";
-                btnStart.classList.add('active');
-                showAlert("Anda sedang Live", "📡");
-            } else {
-                stopCamera();
-                isLive = false;
-                overlay.classList.remove('hidden');
-                
-                statusDot.className = "w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]";
-                statusText.innerText = "PAUSED";
-                
-                iconStart.className = "fa-solid fa-play ctrl-icon";
-                labelStart.innerText = "Start";
-                btnStart.classList.remove('active');
-                showAlert("Live Dijeda", "⏸️");
-            }
-        }
-
-        // --- 2. SELF CONTROLS ---
-        function toggleMuteSelf() {
-            isMutedSelf = !isMutedSelf;
-            const stream = document.getElementById('guru-cam').srcObject;
-            if(stream) stream.getAudioTracks()[0].enabled = !isMutedSelf;
-            updateBtnUI('btn-mic', isMutedSelf, 'fa-microphone-slash', 'fa-microphone', 'Unmute', 'Mic');
-        }
-
-        function toggleCamSelf() {
-            isCamSelfOff = !isCamSelfOff;
-            const stream = document.getElementById('guru-cam').srcObject;
-            if(stream) stream.getVideoTracks()[0].enabled = !isCamSelfOff;
-            updateBtnUI('btn-cam', isCamSelfOff, 'fa-video-slash', 'fa-video', 'Cam On', 'Cam');
-        }
-
-        function updateBtnUI(id, active, iconOn, iconOff, textOn, textOff) {
-            const btn = document.getElementById(id);
-            const icon = btn.querySelector('i');
-            const label = btn.querySelector('span');
-            
-            if(active) {
-                btn.classList.add('danger', 'active');
-                icon.className = `fa-solid ${iconOn} ctrl-icon`;
-                label.innerText = textOn;
-            } else {
-                btn.classList.remove('danger', 'active');
-                icon.className = `fa-solid ${iconOff} ctrl-icon`;
-                label.innerText = textOff;
-            }
-        }
-
-        // --- 3. VIEW MODES ---
-        function resetViews() {
-            document.getElementById('student-grid-view').classList.remove('active');
-            document.getElementById('presentation-stage').classList.remove('active');
-            document.getElementById('guru-video-wrapper').classList.remove('pip-mode');
-            
-            const wrapper = document.getElementById('guru-video-wrapper');
-            if(isFullScreen) {
-                wrapper.classList.add('full-mode');
-                wrapper.classList.remove('default-mode');
-            } else {
-                wrapper.classList.add('default-mode');
-                wrapper.classList.remove('full-mode');
-            }
-
-            document.getElementById('btn-grid-murid').classList.remove('active');
-            document.getElementById('btn-grid-materi').classList.remove('active');
-        }
-
-        function toggleGridView() {
-            if (activeView === 'grid') {
-                resetViews();
-                activeView = 'normal';
-            } else {
-                resetViews();
-                document.getElementById('student-grid-view').classList.add('active');
-                const wrapper = document.getElementById('guru-video-wrapper');
-                wrapper.classList.remove('default-mode', 'full-mode'); 
-                wrapper.classList.add('pip-mode'); 
-                document.getElementById('btn-grid-murid').classList.add('active');
-                activeView = 'grid';
-                showAlert("Mode Grid Siswa", "👥");
-            }
-        }
-
-        function toggleMateriView() {
-            if(!lastGeneratedData) return showAlert("Belum ada materi untuk direview!", "⚠️");
-            if (activeView === 'materi') {
-                resetViews();
-                activeView = 'normal';
-            } else {
-                resetViews();
-                document.getElementById('presentation-stage').classList.add('active');
-                const wrapper = document.getElementById('guru-video-wrapper');
-                wrapper.classList.remove('default-mode', 'full-mode');
-                wrapper.classList.add('pip-mode');
-
-                document.getElementById('btn-grid-materi').classList.add('active');
-                activeView = 'materi';
-                showAlert("Mode Review Materi", "📖");
-            }
-        }
-
-        // --- DISTRIBUTE QUIZ ---
-        function distributeQuiz(type) {
-            if (!lastGeneratedData) return showAlert("Generate materi dulu!", "⚠️");
-            const namaKelas = document.getElementById('nama-kelas').value;
-            if(!namaKelas) return showAlert("Masukan Nama Kelas dulu di atas!", "🏫");
-
-            const targetRoom = `${room}-${namaKelas}`;
-
-            let dataToSend = {
-                room: targetRoom, 
-                type: type,
-                materi_judul: lastGeneratedData.judul_besar || lastGeneratedData.judul
-            };
-
-            if (type === 'PG') dataToSend.soal_pg = lastGeneratedData.soal_pg;
-            else if (type === 'ESSAY') dataToSend.soal_essay = lastGeneratedData.soal_essay;
-            else if (type === 'QUIZ') dataToSend.soal_quiz = lastGeneratedData.soal_quiz;
-
-            socket.emit('start-quiz', dataToSend);
-            showAlert(`Kuis dikirim ke kelas ${namaKelas}`, "🚀");
-        }
-
-
-        // --- 4. AI GENERATOR (OPTIMIZED WITH SLIDER SUPPORT) ---
-        async function generate() {
-            const btn = document.getElementById('btnGen');
-            const prompt = document.getElementById('prompt').value;
-            if(!prompt) return showAlert("Masukkan topik materi", "✍️");
-
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Nano Banana Bekerja...'; 
-            btn.disabled = true;
-
-            // Tambahan: AbortController untuk timeout
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 60000); // Timeout 60 detik
-
+        async function initKelasMurid() {
             try {
-                const res = await fetch('/api/generate', { 
-                    method: 'POST', 
-                    headers: {'Content-Type':'application/json'}, 
-                    body: JSON.stringify({instruksi: prompt}),
-                    signal: controller.signal // Signal abort
+                const res = await fetch(`/api/kelas/${kodeSekolah}`);
+                const data = await res.json();
+                const select = document.getElementById('select-kelas-murid');
+                select.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+                data.forEach(k => {
+                    const isSelected = (k.nama_kelas === kelasTersimpan) ? 'selected' : '';
+                    select.innerHTML += `<option value="${k.nama_kelas}" ${isSelected}>${k.nama_kelas}</option>`;
                 });
-                
-                clearTimeout(timeoutId); // Clear timeout jika sukses
-                
-                if (!res.ok) throw new Error(`Server Error (${res.status})`);
-
-                const data = await res.json();
-                lastGeneratedData = data; // Simpan data global
-
-                // CEK JIKA DATA MENGANDUNG SLIDES
-                if (!data.slides || data.slides.length === 0) {
-                    throw new Error("AI tidak menghasilkan slide yang valid.");
+                if(kelasTersimpan && kelasTersimpan !== "null" && kelasTersimpan !== "") {
+                    joinRoomSiswa(kelasTersimpan);
                 }
-
-                // SIMPAN SLIDE KE VARIABEL & RESET
-                currentSlides = data.slides;
-                currentSlideIndex = 0; 
-                document.getElementById('slide-judul-besar').innerText = data.judul_besar;
-
-                // RENDER SLIDE PERTAMA
-                renderSlide();
-                
-                document.getElementById('quiz-controller').style.display = 'block';
-                showAlert("Materi Siap! Geser slide untuk melihat.", "🍌");
-                
-                if(activeView !== 'materi') toggleMateriView();
-
-            } catch (e) { 
-                console.error("Error Detail:", e);
-                // Handle pesan error timeout vs error server
-                let msg = e.name === 'AbortError' ? "Waktu habis! Coba lagi." : "Gagal: " + e.message;
-                showAlert(msg, "❌"); 
-            }
-
-            btn.innerHTML = '<span>Buat Materi & Soal</span> <i class="fa-solid fa-bolt"></i>';
-            btn.disabled = false;
-        }
-
-        // --- FUNGSI NAVIGASI SLIDE & VISUALISASI ---
-        function renderSlide() {
-            if(currentSlides.length === 0) return;
-
-            const slide = currentSlides[currentSlideIndex];
-            
-            // 1. Update Teks
-            document.getElementById('slide-subjudul').innerText = slide.judul_slide;
-            document.getElementById('slide-konten').innerHTML = slide.konten_html;
-            document.getElementById('page-indicator').innerText = `${currentSlideIndex + 1} / ${currentSlides.length}`;
-
-            // 2. Visualisasi Nano Banana (Image Prompt)
-            const keyword = slide.keyword_gambar || 'education';
-            document.getElementById('slide-keyword').innerText = `Visual: ${keyword}`;
-            
-            // 3. Generate Gambar Otomatis (via Pollinations)
-            const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(keyword)}?width=800&height=400&nologo=true`;
-            document.getElementById('slide-img').src = imgUrl;
-        }
-
-        function nextSlide() {
-            if (currentSlideIndex < currentSlides.length - 1) {
-                currentSlideIndex++;
-                renderSlide();
-                
-                // Sinkronisasi ke Murid (Jika ada di room)
-                const namaKelas = document.getElementById('nama-kelas').value;
-                if(namaKelas) {
-                    const targetRoom = `${room}-${namaKelas}`;
-                    socket.emit('change-slide', { room: targetRoom, slideIndex: currentSlideIndex });
-                }
-            } else {
-                showAlert("Ini slide terakhir bos!", "end");
-            }
-        }
-
-        function prevSlide() {
-            if (currentSlideIndex > 0) {
-                currentSlideIndex--;
-                renderSlide();
-
-                // Sinkronisasi ke Murid
-                const namaKelas = document.getElementById('nama-kelas').value;
-                if(namaKelas) {
-                    const targetRoom = `${room}-${namaKelas}`;
-                    socket.emit('change-slide', { room: targetRoom, slideIndex: currentSlideIndex });
-                }
-            }
-        }
-
-
-        // --- 5. CHAT & ADMIN ---
-        function muteAllStudents() {
-            socket.emit('mute-all', { room: room });
-            showAlert("Semua Siswa Di-mute", "🔇");
-        }
-
-        function toggleChat() {
-            const panel = document.getElementById('chat-panel');
-            const input = document.getElementById('chat-input');
-            panel.classList.toggle('active');
-            if(panel.classList.contains('active')) input.focus();
-        }
-
-        function togglePinChat() {
-            isChatPinned = !isChatPinned;
-            const btn = document.getElementById('btn-pin');
-            if(isChatPinned) {
-                btn.classList.add('text-brand-600');
-                showAlert("Pesan Penting di-Pin", "📌");
-            } else {
-                btn.classList.remove('text-brand-600');
-            }
-        }
-
-        function kirimChat(e) {
-            e.preventDefault();
-            const inp = document.getElementById('chat-input');
-            const msg = inp.value.trim();
-            if(!msg) return;
-
-            socket.emit('chat-message', { 
-                room: room, 
-                user: namaGuru, 
-                msg: msg, 
-                role: 'Guru',
-                isPinned: isChatPinned
-            });
-            inp.value = '';
-        }
-
-        // --- IMPROVED: CHAT RECEIVER (NOW SECURE) ---
-        socket.on('chat-message', (data) => {
-            const c = document.getElementById('chat-container');
-            const isMe = data.user === namaGuru;
-            if(c.innerText.includes('Belum ada pesan')) c.innerHTML = '';
-            
-            let bgClass = isMe ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-700';
-            if(data.isPinned) bgClass = 'bg-yellow-100 text-yellow-800 border border-yellow-300';
-
-            // GUNAKAN escapeHtml UNTUK MENCEGAH XSS
-            const safeMsg = escapeHtml(data.msg);
-            const safeUser = escapeHtml(data.user);
-
-            c.innerHTML += `
-                <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} animate-[fadeIn_0.3s_ease-out]">
-                    <span class="text-[9px] text-slate-400 mb-1 ml-1 font-bold uppercase tracking-wider">${safeUser} ${data.isPinned ? '<i class="fa-solid fa-thumbtack text-xs ml-1"></i>' : ''}</span>
-                    <div class="${bgClass} px-4 py-2 rounded-2xl ${isMe ? 'rounded-tr-none' : 'rounded-tl-none'} max-w-[85%] text-xs shadow-sm leading-relaxed">${safeMsg}</div>
-                </div>`;
-            c.scrollTop = c.scrollHeight;
-        });
-
-        // --- CAMERA LOGIC ---
-        async function startCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                document.getElementById('guru-cam').srcObject = stream;
-                
-                socket.emit('teacher-ready', { room: room });
-            } catch (e) {
-                console.error(e);
-                showAlert("Akses kamera ditolak", "❌");
-                if(isLive) toggleLive();
-            }
-        }
-
-        function stopCamera() {
-            const video = document.getElementById('guru-cam');
-            if(video.srcObject) {
-                video.srcObject.getTracks().forEach(track => track.stop());
-                video.srcObject = null;
-            }
-        }
-        
-        socket.on('connect', () => { 
-            const namaKelas = document.getElementById('nama-kelas').value.trim();
-            const finalRoom = namaKelas ? `${room}-${namaKelas}` : room;
-
-            socket.emit('join-room', { 
-                roomID: finalRoom,  
-                userName: namaGuru, 
-                role: 'Guru' 
-            }); 
-            console.log("Berhasil join ke room: " + finalRoom);
-        });
-
-        socket.on('join-live', (data) => {
-            const list = document.getElementById('mini-list-siswa');
-            if(list.innerText.includes('Menunggu')) list.innerHTML = '';
-            
-            const safeName = escapeHtml(data.name); // Safety
-            const safeId = data.name.replace(/\s+/g, '-');
-
-            if(!document.getElementById(`li-${data.name}`)) {
-                list.innerHTML += `
-                    <li id="li-${data.name}" class="p-2 bg-white border border-slate-100 rounded-lg flex items-center justify-between shadow-sm">
-                        <div class="flex items-center gap-2">
-                            <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <span class="text-xs font-bold text-slate-700">${safeName}</span>
-                        </div>
-                        <i class="fa-solid fa-wifi text-[10px] text-green-500"></i>
-                    </li>`;
-            }
-            document.getElementById('count-badge').innerText = list.children.length;
-
-            const grid = document.getElementById('student-grid-view');
-            
-            if(!document.getElementById(`tile-${safeId}`)) {
-                const div = document.createElement('div');
-                div.id = `tile-${safeId}`;
-                div.className = "relative bg-slate-800 rounded-xl overflow-hidden aspect-video border border-slate-700 shadow-lg";
-                div.innerHTML = `
-                    <img id="img-${safeId}" class="w-full h-full object-cover opacity-80" src="${data.image}">
-                    <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                        <span class="bg-black/60 text-white text-[10px] px-2 py-0.5 rounded backdrop-blur-sm font-bold border border-white/10 truncate max-w-[80px]">${safeName}</span>
-                        <i class="fa-solid fa-microphone-slash text-red-400 text-[10px]"></i>
-                    </div>
-                `;
-                grid.appendChild(div);
-            }
-        });
-
-        socket.on('receive-frame', (data) => {
-            const img = document.getElementById(`img-${data.name.replace(/\s+/g, '-')}`);
-            if(img) img.src = data.image;
-        });
-
-        function showAlert(msg, icon) {
-            const el = document.getElementById('customAlert');
-            document.getElementById('alertMsg').innerText = msg;
-            document.getElementById('alertIcon').innerText = icon;
-            el.style.opacity = '1'; el.style.transform = 'translate(-50%, 40px)';
-            setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translate(-50%, -20px)'; }, 3000);
-        }
-
-        // --- SCOREBOARD ---
-        function toggleHistoryModal() {
-            const modal = document.getElementById('history-modal');
-            const content = document.getElementById('history-content');
-            
-            if (modal.classList.contains('hidden')) {
-                modal.classList.remove('hidden');
-                setTimeout(() => {
-                    modal.classList.remove('opacity-0');
-                    content.classList.remove('scale-95');
-                    content.classList.add('scale-100');
-                }, 10);
-            } else {
-                modal.classList.add('opacity-0');
-                content.classList.remove('scale-100');
-                content.classList.add('scale-95');
-                setTimeout(() => {
-                    modal.classList.add('hidden');
-                }, 300);
-            }
-        }
-        
-        socket.on('score-updated-live', (data) => {
-            const safeNama = escapeHtml(data.nama_siswa);
-            showAlert(`${safeNama} baru saja selesai: Skor ${data.skor}`, "⭐");
-
-            const tbody = document.getElementById('history-table-body');
-            const emptyRow = document.getElementById('empty-history');
-            
-            if(emptyRow) emptyRow.style.display = 'none';
-
-            const row = `
-                <tr class="animate-[fadeIn_0.5s] border-b border-slate-50">
-                    <td class="p-4 text-[11px] font-bold text-slate-500">${data.waktu}</td>
-                    <td class="p-4 text-xs font-bold text-slate-800">${safeNama}</td>
-                    <td class="p-4 text-sm font-black ${data.skor < 60 ? 'text-red-500' : 'text-green-600'}">
-                        <span class="bg-slate-100 px-2 py-1 rounded">${data.skor}</span>
-                    </td>
-                    <td class="p-4 text-[10px] text-slate-500 italic leading-tight max-w-xs">${data.umpan_balik}</td>
-                </tr>
-            `;
-            tbody.insertAdjacentHTML('afterbegin', row);
-        });
-
-        // --- WEBRTC SIGNALING (COMPLETE HANDSHAKE) ---
-        socket.on('student-signal', async (data) => {
-            const pc = new RTCPeerConnection({
-                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-            });
-
-            peerConnections[data.senderId] = pc;
-
-            const stream = document.getElementById('guru-cam').srcObject;
-            if(stream) {
-                stream.getTracks().forEach(track => pc.addTrack(track, stream));
-            }
-
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            
-            socket.emit('teacher-signal', {
-                targetId: data.senderId,
-                signal: offer
-            });
-
-            pc.onicecandidate = (event) => {
-                if (event.candidate) {
-                    socket.emit('teacher-signal', {
-                        targetId: data.senderId,
-                        signal: { ice: event.candidate }
-                    });
-                }
-            };
-        });
-
-        // TAMBAHAN PENTING: Menangani balasan Answer dan ICE Candidate dari Siswa
-        // Agar koneksi Video benar-benar terjadi
-        socket.on('student-signal-answer', async (data) => {
-            const pc = peerConnections[data.senderId];
-            if (pc) {
-                try {
-                    await pc.setRemoteDescription(data.signal);
-                } catch (e) { console.error("WebRTC Answer Error", e); }
-            }
-        });
-
-        socket.on('student-ice-candidate', async (data) => {
-            const pc = peerConnections[data.senderId];
-            if (pc && data.candidate) {
-                try {
-                    await pc.addIceCandidate(data.candidate);
-                } catch (e) { console.error("WebRTC ICE Error", e); }
-            }
-        });
-
-        // --- CLASS MANAGEMENT ---
-        async function muatDaftarKelas() {
-            try {
-                const res = await fetch('/api/kelas/<%= kode %>');
-                const data = await res.json();
-                const datalist = document.getElementById('list-kelas-guru');
-                datalist.innerHTML = data.map(k => `<option value="${escapeHtml(k.nama_kelas)}">`).join('');
             } catch (e) { console.error("Gagal muat kelas", e); }
         }
 
-        async function simpanKelasBaru() {
-            const namaKelas = document.getElementById('nama-kelas').value.trim();
-            if (!namaKelas) return showAlert("Ketik nama kelas dulu!", "⚠️");
+        async function muridPindahKelas() {
+            const kelasBaru = document.getElementById('select-kelas-murid').value;
+            if(!kelasBaru) return;
+            await fetch('/api/update-kelas-siswa', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email: emailSiswa, kelas: kelasBaru })
+            });
+            kelasTersimpan = kelasBaru;
+            joinRoomSiswa(kelasBaru);
+            showCuteAlert(`Pindah ke ${kelasBaru}`, '🚀');
+        }
 
-            try {
-                const res = await fetch('/api/tambah-kelas', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ kode_sekolah: "<%= kode %>", nama_kelas: namaKelas })
-                });
-                const hasil = await res.json();
-                if(hasil.status === 'ok') {
-                    showAlert("Kelas Tersimpan! Murid bisa memilih sekarang.", "✅");
-                    muatDaftarKelas(); 
-                    
-                    const targetRoom = `<%= kode %>-${namaKelas}`;
-                    socket.emit('join-room', { roomID: targetRoom, userName: namaGuru, role: 'Guru' });
-                }
-            } catch (e) {
-                showAlert("Gagal simpan kelas", "❌");
+        function joinRoomSiswa(namaKelas) {
+            const newRoom = `${kodeSekolah}-${namaKelas}`;
+            // Leave room lama jika perlu (opsional di socket.io biasanya otomatis handle via id, tapi kita update var)
+            currentRoom = newRoom;
+            
+            socket.emit('join-room', { room: newRoom, nama: namaSiswa, role: 'Siswa' });
+            
+            // Jika kamera sudah nyala, restart stream ke room baru
+            if(isCameraOn) {
+                socket.emit('join-live', { room: currentRoom, nama: namaSiswa });
             }
         }
 
-        muatDaftarKelas();
-        
+        window.onload = initKelasMurid;
+
+        // --- 2. LOGIKA KAMERA & MIC (SELF CONTROL) ---
+
+        async function startCamera() {
+            try {
+                // Minta akses kamera & audio
+                myStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                const video = document.createElement('video');
+                video.id = 'video-element';
+                video.srcObject = myStream;
+                video.autoplay = true;
+                video.muted = true; // Supaya tidak dengar suara sendiri di headphone
+                
+                // Pasang di PIP
+                const container = document.getElementById('cam-container');
+                container.innerHTML = '';
+                container.appendChild(video);
+                
+                // Aktifkan Socket & Loop Stream
+                isCameraOn = true;
+                isMicOn = true; // Default ON
+                socket.emit('join-live', { room: currentRoom, nama: namaSiswa });
+                sendFrameToGuru();
+
+                updateControlUI();
+                showCuteAlert('Kamera aktif! Guru bisa melihatmu.', '📹');
+            } catch (err) { 
+                showCuteAlert('Akses kamera ditolak!', '❌'); 
+                console.error(err);
+            }
+        }
+
+        // --- UPDATE LOGIKA: MUTE SUARA SENDIRI ---
+        function toggleMic() {
+            if (!myStream) {
+                showCuteAlert('Nyalakan kamera dulu!', '⚠️');
+                return;
+            }
+            
+            const audioTrack = myStream.getAudioTracks()[0];
+            if (audioTrack) {
+                audioTrack.enabled = !audioTrack.enabled;
+                isMicOn = audioTrack.enabled;
+                
+                updateControlUI();
+                showCuteAlert(isMicOn ? 'Suara Aktif' : 'Suara Mati (Muted)', isMicOn ? '🎤' : '🔇');
+            }
+        }
+
+        // --- UPDATE LOGIKA: PAUSE VIDEO SENDIRI (LAYAR HITAM) ---
+        function toggleCamera() {
+            if (!myStream) {
+                startCamera(); // Jika belum mulai, mulai dulu
+                return;
+            }
+
+            const videoTrack = myStream.getVideoTracks()[0];
+            if (videoTrack) {
+                videoTrack.enabled = !videoTrack.enabled;
+                isCameraOn = videoTrack.enabled;
+                
+                // Update UI PIP
+                const pip = document.getElementById('cam-container');
+                if(!isCameraOn) {
+                    pip.innerHTML = `<div class="w-full h-full bg-black flex items-center justify-center text-xs text-slate-500 font-bold uppercase tracking-wider">Kamera Off</div>`;
+                } else {
+                    const video = document.createElement('video');
+                    video.id = 'video-element';
+                    video.srcObject = myStream;
+                    video.autoplay = true;
+                    video.muted = true;
+                    pip.innerHTML = '';
+                    pip.appendChild(video);
+                }
+
+                updateControlUI();
+                showCuteAlert(isCameraOn ? 'Kamera Nyala' : 'Kamera Mati', isCameraOn ? '📹' : '🚫');
+            }
+        }
+
+        function updateControlUI() {
+            const btnMic = document.getElementById('btn-mic');
+            const iconMic = document.getElementById('icon-mic');
+            const btnCam = document.getElementById('btn-cam');
+            const iconCam = document.getElementById('icon-cam');
+            const statusText = document.getElementById('my-status-text');
+
+            if (isMicOn) {
+                btnMic.classList.add('bg-green-600', 'hover:bg-green-500');
+                btnMic.classList.remove('bg-red-600', 'bg-slate-700');
+                iconMic.className = "fa-solid fa-microphone";
+            } else {
+                btnMic.classList.add('bg-red-600', 'hover:bg-red-500');
+                btnMic.classList.remove('bg-green-600', 'bg-slate-700');
+                iconMic.className = "fa-solid fa-microphone-slash";
+            }
+
+            if (isCameraOn) {
+                btnCam.classList.add('bg-green-600', 'hover:bg-green-500');
+                btnCam.classList.remove('bg-red-600', 'bg-slate-700');
+                iconCam.className = "fa-solid fa-video";
+                statusText.innerText = "Kamera: ON | Mic: " + (isMicOn ? "ON" : "OFF");
+            } else {
+                btnCam.classList.add('bg-red-600', 'hover:bg-red-500');
+                btnCam.classList.remove('bg-green-600', 'bg-slate-700');
+                iconCam.className = "fa-solid fa-video-slash";
+                statusText.innerText = "Kamera: PAUSED";
+            }
+        }
+
+        function sendFrameToGuru() {
+            if(!isCameraOn || !myStream) {
+                // Jika dimatikan, kirim frame hitam sekali-sekali agar guru tau user masih connect tapi off cam
+                // Atau cukup stop sending
+                setTimeout(sendFrameToGuru, 500); 
+                return;
+            }
+
+            const video = document.getElementById('video-element');
+            const canvas = document.getElementById('hidden-canvas');
+            const ctx = canvas.getContext('2d');
+
+            if (video && video.readyState === video.HAVE_ENOUGH_DATA) {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const frame = canvas.toDataURL('image/jpeg', 0.5);
+                socket.emit('stream-frame', { room: currentRoom, image: frame });
+            }
+            setTimeout(sendFrameToGuru, 200); 
+        }
+
+        // --- 3. LOGIKA TERIMA GAMBAR GURU ---
+
+        socket.on('stream-frame', (data) => {
+            const img = document.getElementById('teacher-video-stream');
+            const placeholder = document.getElementById('video-placeholder');
+            
+            if(img && data.role === 'Guru') {
+                img.src = data.image;
+                img.classList.remove('opacity-0');
+                placeholder.classList.add('hidden');
+                document.getElementById('status-live-indicator').classList.remove('hidden');
+            }
+        });
+
+        // --- 4. LOGIKA LAYAR PENUH ---
+
+        function toggleFullscreen() {
+            const stage = document.getElementById('main-stage');
+            if (!document.fullscreenElement) {
+                stage.requestFullscreen().catch(err => {
+                    alert(`Error trying to enable fullscreen: ${err.message} (${err.name})`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+
+        // --- 5. LOGIKA CHAT (NYAMBUNG KE GURU) ---
+
+        function showCuteAlert(msg, icon = '🍓') {
+            const alert = document.getElementById('cuteAlert');
+            document.getElementById('cuteMsg').innerText = msg;
+            document.getElementById('cuteIcon').innerText = icon;
+            alert.classList.add('alert-active');
+            setTimeout(() => alert.classList.remove('alert-active'), 3000);
+        }
+
+        function sendChat() {
+            const input = document.getElementById('chat-input');
+            if(input.value.trim()) {
+                // Emit ke ROOM yang sama dengan guru
+                socket.emit('chat-message', { user: namaSiswa, msg: input.value, room: currentRoom, role: 'Siswa' });
+                input.value = '';
+            }
+        }
+
+        socket.on('chat-message', (data) => {
+            const chatBox = document.getElementById('chat-box');
+            
+            const isMe = data.user === namaSiswa;
+            const align = isMe ? 'justify-end' : 'justify-start';
+            const bg = isMe ? 'bg-pink-600 text-white' : 'bg-slate-700 text-slate-200 border border-slate-600';
+            const userLabel = isMe ? '' : `<span class="text-[10px] font-bold text-slate-400 block mb-1">${data.user}</span>`;
+            
+            chatBox.innerHTML += `
+                <div class="flex ${align} mb-2">
+                    <div class="max-w-[85%]">
+                        ${userLabel}
+                        <div class="px-3 py-2 rounded-xl text-xs leading-relaxed ${bg} shadow-sm">
+                            ${data.msg}
+                        </div>
+                    </div>
+                </div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+
+        // --- 6. LOGIKA KUIS (POPUP 1/4 LAYAR -> MODAL) ---
+
+        function openQuizModal() {
+             document.getElementById('quiz-overlay').classList.remove('hidden');
+             document.getElementById('quiz-alert-box').classList.add('hidden'); // Sembunyikan notif setelah dibuka
+        }
+
+        socket.on('start-quiz', (data) => {
+            currentQuizData = data; 
+            showCuteAlert('SOAL BARU MASUK!', '📝');
+            
+            // Tampilkan Notifikasi Besar di Sidebar
+            document.getElementById('quiz-alert-box').classList.remove('hidden');
+            
+            const body = document.getElementById('quiz-body');
+            document.getElementById('quiz-content').classList.remove('hidden');
+            document.getElementById('quiz-result').classList.add('hidden');
+            document.getElementById('quiz-footer').classList.remove('hidden');
+            document.getElementById('quiz-title').innerText = "Topik: " + data.judul;
+
+            let html = "";
+            // Render Soal (Sama seperti sebelumnya)
+            if(data.soal_pg && data.soal_pg.length > 0) {
+                html += `<div class="mb-6"><h4 class="font-bold text-pink-500 border-b border-pink-100 pb-2 mb-4">A. Pilihan Ganda</h4>`;
+                html += data.soal_pg.map((s, idx) => `
+                    <div class="pg-item mb-6" data-index="${idx}">
+                        <p class="font-semibold text-slate-700 mb-3 text-sm">${idx + 1}. ${s.q}</p>
+                        <div class="space-y-2">
+                            ${s.a.map(opsi => `<button onclick="selectOption(this)" class="option-btn w-full text-left p-3 bg-white rounded-xl border border-slate-200 hover:bg-pink-50 transition-all text-xs font-medium text-slate-600">${opsi}</button>`).join('')}
+                        </div>
+                    </div>`).join('');
+                html += `</div>`;
+            }
+            if(data.soal_essay && data.soal_essay.length > 0) {
+                html += `<div class="mb-6"><h4 class="font-bold text-purple-500 border-b border-purple-100 pb-2 mb-4">B. Essay</h4>`;
+                html += data.soal_essay.map((e, idx) => `<div class="essay-item mb-4"><p class="font-semibold text-slate-700 mb-2 text-sm">${idx + 1}. ${e.q}</p><textarea class="essay-ans w-full p-3 rounded-xl border border-slate-200 text-xs h-24"></textarea></div>`).join('');
+                html += `</div>`;
+            }
+            body.innerHTML = html;
+        });
+
+        function selectOption(btn) {
+            btn.closest('.pg-item').querySelectorAll('.option-btn').forEach(b => b.classList.remove('option-selected'));
+            btn.classList.add('option-selected');
+        }
+
+        function finishQuiz() {
+            // Logika Submit Jawaban (Sama)
+            const pgAnswers = [];
+            document.querySelectorAll('.pg-item').forEach(item => {
+                const selected = item.querySelector('.option-selected');
+                pgAnswers.push(selected ? selected.innerText.trim() : "");
+            });
+            const essayAnswers = [];
+            document.querySelectorAll('.essay-ans').forEach(ta => essayAnswers.push(ta.value.trim()));
+
+            document.getElementById('quiz-content').classList.add('hidden');
+            document.getElementById('quiz-result').classList.remove('hidden');
+            document.getElementById('quiz-footer').classList.add('hidden');
+            document.getElementById('final-score-val').innerText = "...";
+            document.getElementById('ai-feedback').innerText = "AI sedang memeriksa jawabanmu...";
+
+            socket.emit('submit-jawaban-siswa', {
+                name: namaSiswa, email: emailSiswa, kelas: kelasTersimpan || 'Umum', room: currentRoom,
+                materi_judul: currentQuizData ? currentQuizData.judul : "Kuis Live",
+                jawabanMurid: { pg: pgAnswers, essay: essayAnswers }
+            });
+        }
+
+        socket.on('score-updated-live', (data) => {
+            if(data.nama_siswa === namaSiswa) {
+                document.getElementById('final-score-val').innerText = data.skor;
+                document.getElementById('ai-feedback').innerText = data.umpan_balik;
+                document.getElementById('sidebar-score').innerText = data.skor;
+                showCuteAlert('Nilai kamu sudah keluar!', '🏆');
+            }
+        });
+
+        function closeQuiz() { document.getElementById('quiz-overlay').classList.add('hidden'); }
+        document.getElementById('chat-input').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendChat(); });
+
     </script>
 </body>
 </html>
