@@ -194,6 +194,45 @@ app.post('/api/update-kelas-siswa', async (req, res) => {
 });
 
 // ==========================================
+// 🛠️ API TAMBAH KELAS (DARI GURU)
+// ==========================================
+app.post('/api/tambah-kelas', async (req, res) => {
+    const { kode_sekolah, nama_kelas } = req.body;
+    try {
+        // Cek apakah kelas sudah ada di sekolah tersebut agar tidak duplikat
+        const cek = await pool.query(
+            'SELECT * FROM global_kelas WHERE kode_sekolah = $1 AND nama_kelas = $2', 
+            [kode_sekolah, nama_kelas]
+        );
+        
+        if (cek.rows.length === 0) {
+            await pool.query(
+                'INSERT INTO global_kelas (kode_sekolah, nama_kelas) VALUES ($1, $2)', 
+                [kode_sekolah, nama_kelas]
+            );
+        }
+        res.json({ status: 'ok', message: 'Kelas berhasil disimpan dan akan muncul di dashboard murid.' });
+    } catch (err) {
+        console.error("Error Tambah Kelas:", err);
+        res.status(500).json({ error: "Gagal membuat kelas." });
+    }
+});
+
+// API GET DAFTAR KELAS (UNTUK DROP-DOWN MURID)
+app.get('/api/kelas/:kode_sekolah', async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT nama_kelas FROM global_kelas WHERE kode_sekolah = $1 ORDER BY nama_kelas ASC', 
+            [req.params.kode_sekolah]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: "Gagal mengambil data kelas." });
+    }
+});
+
+
+// ==========================================
 // 🚀 SOCKET.IO (FIXED STRUCTURE)
 // ==========================================
 
