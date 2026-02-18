@@ -832,8 +832,24 @@
         
         // broadcastFrame removed (WebRTC handles stream)
 
-        socket.on('connect', () => { socket.emit('join-room', { room: room, nama: namaGuru, role: 'Guru' }); });
-        
+// Listener saat koneksi socket tersambung
+socket.on('connect', () => { 
+    // Mengambil nama kelas dari input box secara otomatis
+    const namaKelas = document.getElementById('nama-kelas').value.trim();
+    
+    // Jika guru sudah isi nama kelas, gabungkan KodeSekolah-NamaKelas (cth: SCH001-10IPA1)
+    // Jika belum isi, masuk ke room umum (KodeSekolah saja)
+    const finalRoom = namaKelas ? `${room}-${namaKelas}` : room;
+
+    socket.emit('join-room', { 
+        roomID: finalRoom,   // Sesuai dengan server.js (roomID)
+        userName: namaGuru,  // Sesuai dengan server.js (userName)
+        role: 'Guru' 
+    }); 
+    console.log("Berhasil join ke room: " + finalRoom);
+});
+
+
         socket.on('join-live', (data) => {
             const list = document.getElementById('mini-list-siswa');
             if(list.innerText.includes('Menunggu')) list.innerHTML = '';
