@@ -455,8 +455,9 @@
         let isCamSelfOff = false;
         let isFullScreen = false; 
         let activeView = 'normal'; 
-        let lastGeneratedData = null; // Menyimpan Materi, PG, Essay, Quiz
+        let lastGeneratedData = null; 
         let isChatPinned = false;
+        let peerConnections = {}; // Menyimpan koneksi WebRTC tiap siswa
 
         // --- CORE UI LOGIC ---
         function toggleSidebar() {
@@ -664,32 +665,31 @@
             }
         }
 
+        // --- REPLACED: NEW DISTRIBUTE QUIZ LOGIC (ROOM TARGETING) ---
         function distributeQuiz(type) {
             if (!lastGeneratedData) return showAlert("Generate materi dulu!", "⚠️");
             const namaKelas = document.getElementById('nama-kelas').value;
             if(!namaKelas) return showAlert("Masukan Nama Kelas dulu di atas!", "🏫");
 
+            // LOGIC PERBAIKAN ROOM: Gabungkan Kode Sekolah + Nama Kelas
+            const targetRoom = `${room}-${namaKelas}`;
+
             let dataToSend = {
-                room: room,
+                room: targetRoom, // Mengirim ke room spesifik kelas
                 type: type,
                 materi_judul: lastGeneratedData.judul
             };
 
-            if (type === 'PG') {
-                dataToSend.soal_pg = lastGeneratedData.soal_pg;
-                showAlert("Mengirim 15 Soal PG...", "🚀");
-            } else if (type === 'ESSAY') {
-                dataToSend.soal_essay = lastGeneratedData.soal_essay;
-                showAlert("Mengirim 5 Soal Essay...", "🚀");
-            } else if (type === 'QUIZ') {
-                dataToSend.soal_quiz = lastGeneratedData.soal_quiz;
-                showAlert("Mengirim 10 Quiz...", "🚀");
-            }
+            if (type === 'PG') dataToSend.soal_pg = lastGeneratedData.soal_pg;
+            else if (type === 'ESSAY') dataToSend.soal_essay = lastGeneratedData.soal_essay;
+            else if (type === 'QUIZ') dataToSend.soal_quiz = lastGeneratedData.soal_quiz;
 
             socket.emit('start-quiz', dataToSend);
+            showAlert(`Kuis dikirim ke kelas ${namaKelas}`, "🚀");
         }
 
-               // --- 4. AI GENERATOR (SUDAH DIPERBAIKI) ---
+
+        // --- 4. AI GENERATOR (SUDAH DIPERBAIKI) ---
         async function generate() {
             const btn = document.getElementById('btnGen');
             const prompt = document.getElementById('prompt').value;
@@ -797,16 +797,18 @@
             c.scrollTop = c.scrollHeight;
         });
 
-        // --- CAMERA UTILS ---
+        // --- REPLACED: NEW CAMERA LOGIC (WebRTC) ---
         async function startCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 document.getElementById('guru-cam').srcObject = stream;
-                broadcastFrame();
+                
+                // Beritahu server bahwa Guru siap melakukan WebRTC
+                socket.emit('teacher-ready', { room: room });
             } catch (e) {
                 console.error(e);
                 showAlert("Akses kamera ditolak", "❌");
-                toggleLive();
+                if(isLive) toggleLive();
             }
         }
 
@@ -817,19 +819,8 @@
                 video.srcObject = null;
             }
         }
-
-        function broadcastFrame() {
-            if (!isLive) return;
-            const video = document.getElementById('guru-cam');
-            const canvas = document.createElement('canvas');
-            canvas.width = 320; canvas.height = 240;
-
-            if (video.videoWidth) {
-                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-                socket.emit('stream-frame', { room: room, image: canvas.toDataURL('image/jpeg', 0.4) });
-            }
-            requestAnimationFrame(broadcastFrame);
-        }
+        
+        // broadcastFrame removed (WebRTC handles stream)
 
         socket.on('connect', () => { socket.emit('join-room', { room: room, nama: namaGuru, role: 'Guru' }); });
         
@@ -906,7 +897,66 @@
             }
         }
         
-        // Letakkan sisa kode Socket untuk penerimaan skor milikmu di bawah ini:
+        // --- ADDED: SCOREBOARD SOCKET LISTENER ---
+        socket.on('score-updated-live', (data) => {
+            // 1. Notifikasi Pop-up
+            showAlert(`${data.nama_siswa} baru saja selesai: Skor ${data.skor}`, "⭐");
+
+            // 2. Update Tabel Scoreboard di Modal
+            const tbody = document.getElementById('history-table-body');
+            const emptyRow = document.getElementById('empty-history');
+            
+            // Sembunyikan pesan "Belum ada data" jika ini data pertama
+            if(emptyRow) emptyRow.style.display = 'none';
+
+            // Buat baris baru dengan desain sesuai tabelmu
+            const row = `
+                <tr class="animate-[fadeIn_0.5s] border-b border-slate-50">
+                    <td class="p-4 text-[11px] font-bold text-slate-500">${data.waktu}</td>
+                    <td class="p-4 text-xs font-bold text-slate-800">${data.nama_siswa}</td>
+                    <td class="p-4 text-sm font-black ${data.skor < 60 ? 'text-red-500' : 'text-green-600'}">
+                        <span class="bg-slate-100 px-2 py-1 rounded">${data.skor}</span>
+                    </td>
+                    <td class="p-4 text-[10px] text-slate-500 italic leading-tight max-w-xs">${data.umpan_balik}</td>
+                </tr>
+            `;
+            
+            // Masukkan ke urutan paling atas tabel
+            tbody.insertAdjacentHTML('afterbegin', row);
+        });
+
+        // --- ADDED: WEBRTC SIGNALING LISTENER ---
+        socket.on('student-signal', async (data) => {
+            const pc = new RTCPeerConnection({
+                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+            });
+
+            peerConnections[data.senderId] = pc;
+
+            // Tambahkan stream guru ke koneksi ini
+            const stream = document.getElementById('guru-cam').srcObject;
+            if(stream) {
+                stream.getTracks().forEach(track => pc.addTrack(track, stream));
+            }
+
+            // Kirim penawaran (Offer) ke siswa
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            
+            socket.emit('teacher-signal', {
+                targetId: data.senderId,
+                signal: offer
+            });
+
+            pc.onicecandidate = (event) => {
+                if (event.candidate) {
+                    socket.emit('teacher-signal', {
+                        targetId: data.senderId,
+                        signal: { ice: event.candidate }
+                    });
+                }
+            };
+        });
         
     </script>
 </body>
