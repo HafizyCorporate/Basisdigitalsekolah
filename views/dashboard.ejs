@@ -467,7 +467,18 @@
         let activeView = 'normal'; 
         let lastGeneratedData = null; 
         let isChatPinned = false;
-        let peerConnections = {}; // Menyimpan koneksi WebRTC tiap siswa
+        let peerConnections = {}; 
+
+        // --- NEW: SECURITY HELPER (Anti XSS) ---
+        function escapeHtml(text) {
+            if (!text) return text;
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
 
         // --- CORE UI LOGIC ---
         function toggleSidebar() {
@@ -498,11 +509,10 @@
             }
         }
 
-        // --- EXPORT FUNCTIONALITY (REAL DOWNLOAD) ---
+        // --- EXPORT FUNCTIONALITY ---
         function exportData(tipe, format) {
             const fileName = `${tipe}_Kelas_${document.getElementById('nama-kelas').value || 'Umum'}_${new Date().toLocaleDateString()}`;
             
-            // SIMULASI DATA UNTUK DEMO (Nanti diganti data real dari DB/Memory)
             let content = "";
             let mimeType = "";
             let extension = "";
@@ -522,7 +532,6 @@
                 return showAlert("Data belum tersedia untuk diekspor!", "⚠️");
             }
 
-            // LOGIKA EXPORT
             if (format === 'Word') {
                 mimeType = 'application/msword';
                 extension = 'doc';
@@ -530,10 +539,8 @@
             } else if (format === 'Excel') {
                 mimeType = 'application/vnd.ms-excel';
                 extension = 'xls';
-                // Pastikan format tabel untuk Excel
                 if(!content.includes('<table')) content = `<table><tr><td>${content}</td></tr></table>`;
             } else if (format === 'PDF') {
-                // Trik simpel print PDF tanpa library berat di klien
                 const win = window.open('', '', 'height=700,width=700');
                 win.document.write('<html><head><title>Cetak PDF</title>');
                 win.document.write('</head><body>');
@@ -541,10 +548,9 @@
                 win.document.write('</body></html>');
                 win.document.close();
                 win.print();
-                return; // Keluar function karena Print handle sendiri
+                return; 
             }
 
-            // Download Trigger
             const blob = new Blob([content], { type: mimeType });
             const url = URL.createObjectURL(blob);
             const downloadLink = document.createElement("a");
@@ -622,7 +628,7 @@
             }
         }
 
-        // --- 3. VIEW MODES & QUIZ DISTRIBUTION ---
+        // --- 3. VIEW MODES ---
         function resetViews() {
             document.getElementById('student-grid-view').classList.remove('active');
             document.getElementById('presentation-stage').classList.remove('active');
@@ -675,17 +681,16 @@
             }
         }
 
-        // --- REPLACED: NEW DISTRIBUTE QUIZ LOGIC (ROOM TARGETING) ---
+        // --- DISTRIBUTE QUIZ ---
         function distributeQuiz(type) {
             if (!lastGeneratedData) return showAlert("Generate materi dulu!", "⚠️");
             const namaKelas = document.getElementById('nama-kelas').value;
             if(!namaKelas) return showAlert("Masukan Nama Kelas dulu di atas!", "🏫");
 
-            // LOGIC PERBAIKAN ROOM: Gabungkan Kode Sekolah + Nama Kelas
             const targetRoom = `${room}-${namaKelas}`;
 
             let dataToSend = {
-                room: targetRoom, // Mengirim ke room spesifik kelas
+                room: targetRoom, 
                 type: type,
                 materi_judul: lastGeneratedData.judul
             };
@@ -699,53 +704,53 @@
         }
 
 
-        // --- 4. AI GENERATOR (SUDAH DIPERBAIKI) ---
+        // --- 4. AI GENERATOR (OPTIMIZED WITH TIMEOUT & ERROR HANDLING) ---
         async function generate() {
             const btn = document.getElementById('btnGen');
             const prompt = document.getElementById('prompt').value;
             if(!prompt) return showAlert("Masukkan topik materi", "✍️");
 
-            // UI Loading state
             btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Memproses...'; 
             btn.disabled = true;
+
+            // Tambahan: AbortController untuk timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000); // Timeout 60 detik
 
             try {
                 const res = await fetch('/api/generate', { 
                     method: 'POST', 
                     headers: {'Content-Type':'application/json'}, 
-                    body: JSON.stringify({instruksi: prompt}) 
+                    body: JSON.stringify({instruksi: prompt}),
+                    signal: controller.signal // Signal abort
                 });
                 
-                // Cek jika server/koneksi bermasalah (misal 404, 500)
-                if (!res.ok) throw new Error("Koneksi ke backend gagal!");
+                clearTimeout(timeoutId); // Clear timeout jika sukses
+                
+                if (!res.ok) throw new Error(`Server Error (${res.status})`);
 
                 const data = await res.json();
-                
-                // Antisipasi format payload dari server { data: {...} } atau raw
                 lastGeneratedData = data.data || data.result || data;
 
-                // Cek jika AI mengembalikan fallback "Gagal Memuat" karena error dari ai.js
                 if (lastGeneratedData.judul === "Gagal Memuat") {
                     throw new Error("Sistem AI menolak request. Periksa API key atau Model!");
                 }
                 
-                // Tampilkan Konten Materi
                 document.getElementById('slide-judul').innerText = lastGeneratedData.judul;
                 document.getElementById('slide-konten').innerHTML = lastGeneratedData.html;
                 
-                // Tampilkan Tombol Quiz
                 document.getElementById('quiz-controller').style.display = 'block';
                 showAlert("Materi Siap! Silakan Review.", "✨");
                 
-                // Auto switch ke mode review
                 if(activeView !== 'materi') toggleMateriView();
 
             } catch (e) { 
                 console.error("Error Detail:", e);
-                showAlert("Gagal: " + e.message, "❌"); 
+                // Handle pesan error timeout vs error server
+                let msg = e.name === 'AbortError' ? "Waktu habis! Coba lagi." : "Gagal: " + e.message;
+                showAlert(msg, "❌"); 
             }
 
-            // Kembalikan status tombol
             btn.innerHTML = '<span>Buat Materi & Soal</span> <i class="fa-solid fa-bolt"></i>';
             btn.disabled = false;
         }
@@ -791,6 +796,7 @@
             inp.value = '';
         }
 
+        // --- IMPROVED: CHAT RECEIVER (NOW SECURE) ---
         socket.on('chat-message', (data) => {
             const c = document.getElementById('chat-container');
             const isMe = data.user === namaGuru;
@@ -799,21 +805,24 @@
             let bgClass = isMe ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-700';
             if(data.isPinned) bgClass = 'bg-yellow-100 text-yellow-800 border border-yellow-300';
 
+            // GUNAKAN escapeHtml UNTUK MENCEGAH XSS
+            const safeMsg = escapeHtml(data.msg);
+            const safeUser = escapeHtml(data.user);
+
             c.innerHTML += `
                 <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} animate-[fadeIn_0.3s_ease-out]">
-                    <span class="text-[9px] text-slate-400 mb-1 ml-1 font-bold uppercase tracking-wider">${data.user} ${data.isPinned ? '<i class="fa-solid fa-thumbtack text-xs ml-1"></i>' : ''}</span>
-                    <div class="${bgClass} px-4 py-2 rounded-2xl ${isMe ? 'rounded-tr-none' : 'rounded-tl-none'} max-w-[85%] text-xs shadow-sm leading-relaxed">${data.msg}</div>
+                    <span class="text-[9px] text-slate-400 mb-1 ml-1 font-bold uppercase tracking-wider">${safeUser} ${data.isPinned ? '<i class="fa-solid fa-thumbtack text-xs ml-1"></i>' : ''}</span>
+                    <div class="${bgClass} px-4 py-2 rounded-2xl ${isMe ? 'rounded-tr-none' : 'rounded-tl-none'} max-w-[85%] text-xs shadow-sm leading-relaxed">${safeMsg}</div>
                 </div>`;
             c.scrollTop = c.scrollHeight;
         });
 
-        // --- REPLACED: NEW CAMERA LOGIC (WebRTC) ---
+        // --- CAMERA LOGIC ---
         async function startCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 document.getElementById('guru-cam').srcObject = stream;
                 
-                // Beritahu server bahwa Guru siap melakukan WebRTC
                 socket.emit('teacher-ready', { room: room });
             } catch (e) {
                 console.error(e);
@@ -830,18 +839,13 @@
             }
         }
         
-        // Listener saat koneksi socket tersambung
         socket.on('connect', () => { 
-            // Mengambil nama kelas dari input box secara otomatis
             const namaKelas = document.getElementById('nama-kelas').value.trim();
-            
-            // Jika guru sudah isi nama kelas, gabungkan KodeSekolah-NamaKelas (cth: SCH001-10IPA1)
-            // Jika belum isi, masuk ke room umum (KodeSekolah saja)
             const finalRoom = namaKelas ? `${room}-${namaKelas}` : room;
 
             socket.emit('join-room', { 
-                roomID: finalRoom,   // Sesuai dengan server.js (roomID)
-                userName: namaGuru,  // Sesuai dengan server.js (userName)
+                roomID: finalRoom,  
+                userName: namaGuru, 
                 role: 'Guru' 
             }); 
             console.log("Berhasil join ke room: " + finalRoom);
@@ -851,12 +855,15 @@
             const list = document.getElementById('mini-list-siswa');
             if(list.innerText.includes('Menunggu')) list.innerHTML = '';
             
+            const safeName = escapeHtml(data.name); // Safety
+            const safeId = data.name.replace(/\s+/g, '-');
+
             if(!document.getElementById(`li-${data.name}`)) {
                 list.innerHTML += `
                     <li id="li-${data.name}" class="p-2 bg-white border border-slate-100 rounded-lg flex items-center justify-between shadow-sm">
                         <div class="flex items-center gap-2">
                             <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <span class="text-xs font-bold text-slate-700">${data.name}</span>
+                            <span class="text-xs font-bold text-slate-700">${safeName}</span>
                         </div>
                         <i class="fa-solid fa-wifi text-[10px] text-green-500"></i>
                     </li>`;
@@ -864,7 +871,6 @@
             document.getElementById('count-badge').innerText = list.children.length;
 
             const grid = document.getElementById('student-grid-view');
-            const safeId = data.name.replace(/\s+/g, '-');
             
             if(!document.getElementById(`tile-${safeId}`)) {
                 const div = document.createElement('div');
@@ -873,7 +879,7 @@
                 div.innerHTML = `
                     <img id="img-${safeId}" class="w-full h-full object-cover opacity-80" src="${data.image}">
                     <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                        <span class="bg-black/60 text-white text-[10px] px-2 py-0.5 rounded backdrop-blur-sm font-bold border border-white/10 truncate max-w-[80px]">${data.name}</span>
+                        <span class="bg-black/60 text-white text-[10px] px-2 py-0.5 rounded backdrop-blur-sm font-bold border border-white/10 truncate max-w-[80px]">${safeName}</span>
                         <i class="fa-solid fa-microphone-slash text-red-400 text-[10px]"></i>
                     </div>
                 `;
@@ -894,16 +900,13 @@
             setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translate(-50%, -20px)'; }, 3000);
         }
 
-        // --- FITUR BARU: LIVE SCORE & RIWAYAT ---
-
-        // 1. Toggle Modal
+        // --- SCOREBOARD ---
         function toggleHistoryModal() {
             const modal = document.getElementById('history-modal');
             const content = document.getElementById('history-content');
             
             if (modal.classList.contains('hidden')) {
                 modal.classList.remove('hidden');
-                // Sedikit delay untuk animasi
                 setTimeout(() => {
                     modal.classList.remove('opacity-0');
                     content.classList.remove('scale-95');
@@ -913,42 +916,35 @@
                 modal.classList.add('opacity-0');
                 content.classList.remove('scale-100');
                 content.classList.add('scale-95');
-                // Menyembunyikan div kembali setelah transisi selesai
                 setTimeout(() => {
                     modal.classList.add('hidden');
                 }, 300);
             }
         }
         
-        // --- ADDED: SCOREBOARD SOCKET LISTENER ---
         socket.on('score-updated-live', (data) => {
-            // 1. Notifikasi Pop-up
-            showAlert(`${data.nama_siswa} baru saja selesai: Skor ${data.skor}`, "⭐");
+            const safeNama = escapeHtml(data.nama_siswa);
+            showAlert(`${safeNama} baru saja selesai: Skor ${data.skor}`, "⭐");
 
-            // 2. Update Tabel Scoreboard di Modal
             const tbody = document.getElementById('history-table-body');
             const emptyRow = document.getElementById('empty-history');
             
-            // Sembunyikan pesan "Belum ada data" jika ini data pertama
             if(emptyRow) emptyRow.style.display = 'none';
 
-            // Buat baris baru dengan desain sesuai tabelmu
             const row = `
                 <tr class="animate-[fadeIn_0.5s] border-b border-slate-50">
                     <td class="p-4 text-[11px] font-bold text-slate-500">${data.waktu}</td>
-                    <td class="p-4 text-xs font-bold text-slate-800">${data.nama_siswa}</td>
+                    <td class="p-4 text-xs font-bold text-slate-800">${safeNama}</td>
                     <td class="p-4 text-sm font-black ${data.skor < 60 ? 'text-red-500' : 'text-green-600'}">
                         <span class="bg-slate-100 px-2 py-1 rounded">${data.skor}</span>
                     </td>
                     <td class="p-4 text-[10px] text-slate-500 italic leading-tight max-w-xs">${data.umpan_balik}</td>
                 </tr>
             `;
-            
-            // Masukkan ke urutan paling atas tabel
             tbody.insertAdjacentHTML('afterbegin', row);
         });
 
-        // --- ADDED: WEBRTC SIGNALING LISTENER ---
+        // --- WEBRTC SIGNALING (COMPLETE HANDSHAKE) ---
         socket.on('student-signal', async (data) => {
             const pc = new RTCPeerConnection({
                 iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
@@ -956,13 +952,11 @@
 
             peerConnections[data.senderId] = pc;
 
-            // Tambahkan stream guru ke koneksi ini
             const stream = document.getElementById('guru-cam').srcObject;
             if(stream) {
                 stream.getTracks().forEach(track => pc.addTrack(track, stream));
             }
 
-            // Kirim penawaran (Offer) ke siswa
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
             
@@ -981,19 +975,36 @@
             };
         });
 
-        // --- FITUR MANAJEMEN KELAS ---
+        // TAMBAHAN PENTING: Menangani balasan Answer dan ICE Candidate dari Siswa
+        // Agar koneksi Video benar-benar terjadi
+        socket.on('student-signal-answer', async (data) => {
+            const pc = peerConnections[data.senderId];
+            if (pc) {
+                try {
+                    await pc.setRemoteDescription(data.signal);
+                } catch (e) { console.error("WebRTC Answer Error", e); }
+            }
+        });
 
-        // 1. Ambil daftar kelas yang sudah ada saat halaman dibuka
+        socket.on('student-ice-candidate', async (data) => {
+            const pc = peerConnections[data.senderId];
+            if (pc && data.candidate) {
+                try {
+                    await pc.addIceCandidate(data.candidate);
+                } catch (e) { console.error("WebRTC ICE Error", e); }
+            }
+        });
+
+        // --- CLASS MANAGEMENT ---
         async function muatDaftarKelas() {
             try {
                 const res = await fetch('/api/kelas/<%= kode %>');
                 const data = await res.json();
                 const datalist = document.getElementById('list-kelas-guru');
-                datalist.innerHTML = data.map(k => `<option value="${k.nama_kelas}">`).join('');
+                datalist.innerHTML = data.map(k => `<option value="${escapeHtml(k.nama_kelas)}">`).join('');
             } catch (e) { console.error("Gagal muat kelas", e); }
         }
 
-        // 2. Simpan kelas baru ke database
         async function simpanKelasBaru() {
             const namaKelas = document.getElementById('nama-kelas').value.trim();
             if (!namaKelas) return showAlert("Ketik nama kelas dulu!", "⚠️");
@@ -1007,9 +1018,8 @@
                 const hasil = await res.json();
                 if(hasil.status === 'ok') {
                     showAlert("Kelas Tersimpan! Murid bisa memilih sekarang.", "✅");
-                    muatDaftarKelas(); // Refresh list
+                    muatDaftarKelas(); 
                     
-                    // Otomatis join room kelas tersebut
                     const targetRoom = `<%= kode %>-${namaKelas}`;
                     socket.emit('join-room', { roomID: targetRoom, userName: namaGuru, role: 'Guru' });
                 }
@@ -1018,7 +1028,6 @@
             }
         }
 
-        // Panggil fungsi muat kelas saat start
         muatDaftarKelas();
         
     </script>
