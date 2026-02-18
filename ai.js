@@ -1,6 +1,38 @@
 // FILE: ai.js
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
+// --- KONFIGURASI MODEL & FALLBACK ---
+// Prioritas: Gemini 3 Flash -> Fallback: Gemini 2.5 Flash
+const PRIMARY_MODEL = "gemini-3-flash";
+const FALLBACK_MODEL = "gemini-2.5-flash"; 
+
+/**
+ * Helper: Mencoba generate dengan model utama, lalu pindah ke cadangan jika gagal
+ */
+async function generateWithFallback(genAI, prompt) {
+  try {
+    // 1. Coba Model Utama
+    const model = genAI.getGenerativeModel({ 
+      model: PRIMARY_MODEL,
+      generationConfig: { responseMimeType: "application/json" }
+    });
+    
+    console.log(`🤖 AI memproses dengan: ${PRIMARY_MODEL}...`);
+    return await model.generateContent(prompt);
+
+  } catch (error) {
+    // 2. Jika Gagal, Switch ke Model Cadangan
+    console.warn(`⚠️ ${PRIMARY_MODEL} gagal (${error.message}). Mengalihkan ke ${FALLBACK_MODEL}...`);
+    
+    const fallbackModel = genAI.getGenerativeModel({ 
+      model: FALLBACK_MODEL,
+      generationConfig: { responseMimeType: "application/json" }
+    });
+
+    return await fallbackModel.generateContent(prompt);
+  }
+}
+
 /**
  * 1. FUNGSI GENERATOR
  * AI membuat soal + KUNCI RAHASIA + MATERI BERBASIS SLIDE
@@ -8,12 +40,6 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const processAI = async (instruksi) => {
   if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY tidak ditemukan!");
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  
-  // Tetap menggunakan Gemini 3 Flash sesuai request Anda
-  const model = genAI.getGenerativeModel({ 
-    model: "gemini-3-flash", 
-    generationConfig: { responseMimeType: "application/json" }
-  });
   
   // --- UPDATE PROMPT: MEMINTA STRUKTUR SLIDES & VISUAL ---
   const prompt = `Bertindaklah sebagai Guru Ahli Internasional (Profesor Nano Banana). 
@@ -44,7 +70,8 @@ const processAI = async (instruksi) => {
   PENTING: Hanya JSON murni, jangan ada teks penjelasan lain.`;
 
   try {
-    const result = await model.generateContent(prompt);
+    // UPDATE: Menggunakan fungsi fallback, bukan inisialisasi model langsung
+    const result = await generateWithFallback(genAI, prompt);
     const text = result.response.text();
     
     try {
@@ -69,17 +96,11 @@ const processAI = async (instruksi) => {
 
 /**
  * 2. FUNGSI PEMERIKSA (LOGIKA SENTRALISTIK)
- * Tidak ada perubahan logika di sini.
+ * Tidak ada perubahan logika di sini selain implementasi fallback.
  */
 const periksaUjian = async (soalAsli, jawabanMurid) => {
   if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY tidak ditemukan!");
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  
-  // Tetap menggunakan Gemini 3 Flash
-  const model = genAI.getGenerativeModel({ 
-    model: "gemini-3-flash", 
-    generationConfig: { responseMimeType: "application/json" }
-  });
 
   const prompt = `Bertindaklah sebagai Guru Penilai.
   TUGAS: Bandingkan Jawaban Murid dengan Kunci Jawaban Asli.
@@ -105,7 +126,8 @@ const periksaUjian = async (soalAsli, jawabanMurid) => {
   PENTING: Hanya JSON murni.`;
 
   try {
-    const result = await model.generateContent(prompt);
+    // UPDATE: Menggunakan fungsi fallback
+    const result = await generateWithFallback(genAI, prompt);
     const text = result.response.text();
     
     try {
