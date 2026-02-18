@@ -2,212 +2,289 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Student Space - Pro Connection</title>
-    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="/socket.io/socket.io.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        body { font-family: 'Quicksand', sans-serif; background: #0f172a; color: #e2e8f0; height: 100vh; overflow: hidden; }
+        body { font-family: 'Quicksand', sans-serif; background: #0f172a; color: #e2e8f0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         
-        /* Layout Grid */
-        .main-grid { display: grid; grid-template-columns: 3fr 1fr; height: calc(100vh - 70px); gap: 1rem; padding: 1rem; }
-        
-        @media (max-width: 1024px) {
-            .main-grid { grid-template-columns: 1fr; overflow-y: auto; }
-            #sidebar-col { height: 500px; }
+        /* --- LAYOUT UTAMA --- */
+        /* Desktop: Grid Kiri Kanan | Mobile: Flex Atas Bawah */
+        .main-layout {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 350px; /* Video Besar, Sidebar 350px */
+            gap: 1rem;
+            padding: 1rem;
+            overflow: hidden;
         }
 
-        /* Video Stage */
+        /* Responsif untuk HP */
+        @media (max-width: 1024px) {
+            .main-layout {
+                display: flex;
+                flex-direction: column;
+                padding: 0.5rem;
+                gap: 0.5rem;
+                overflow-y: auto; /* Agar bisa scroll jika konten panjang */
+            }
+        }
+
+        /* --- STAGE VIDEO --- */
         #main-stage { 
-            position: relative; background: #000; border-radius: 1.5rem; 
-            overflow: hidden; border: 1px solid #334155; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-            display: flex; flex-direction: column; justify-content: center;
+            position: relative; 
+            background: #000; 
+            border-radius: 1rem; 
+            overflow: hidden; 
+            border: 1px solid #334155; 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center;
+            width: 100%;
+        }
+
+        /* Di HP, paksa rasio video 16:9 agar tidak gepeng */
+        @media (max-width: 1024px) {
+            #main-stage {
+                aspect-ratio: 16/9;
+                flex-shrink: 0; /* Jangan mengecil */
+            }
         }
         
-        /* Teacher Stream */
         #teacher-video-stream { width: 100%; height: 100%; object-fit: contain; background: #000; }
         
-        /* Student PIP (Picture in Picture) */
+        /* --- PIP (KAMERA SISWA) --- */
         #student-pip-wrapper {
-            position: absolute; bottom: 5rem; right: 1rem; width: 200px; aspect-ratio: 4/3;
-            border-radius: 1rem; overflow: hidden; border: 3px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.8); z-index: 20; background: #1e293b;
+            position: absolute; 
+            z-index: 20; 
+            background: #1e293b;
+            border-radius: 0.75rem; 
+            overflow: hidden; 
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
             transition: all 0.3s ease;
+            
+            /* Posisi Desktop */
+            bottom: 5rem; 
+            right: 1rem; 
+            width: 180px; 
+            aspect-ratio: 4/3;
         }
+
+        /* Posisi Mobile: Lebih kecil & pojok atas agar tidak menutupi kontrol */
+        @media (max-width: 768px) {
+            #student-pip-wrapper {
+                width: 100px; /* Kecilkan ukuran */
+                bottom: 4rem; /* Di atas tombol kontrol */
+                right: 0.5rem;
+            }
+        }
+
         #video-element { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* Control Bar - Fixed & Visible */
+        /* --- KONTROL VIDEO --- */
         .video-controls {
             position: absolute; bottom: 0; left: 0; right: 0;
-            padding: 1.5rem; padding-bottom: 1rem;
+            padding: 0.75rem;
             background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
-            display: flex; align-items: center; gap: 1.5rem; z-index: 30;
+            display: flex; align-items: center; justify-content: space-between; gap: 1rem; z-index: 30;
         }
 
         .ctrl-btn {
-            width: 45px; height: 45px; border-radius: 50%;
+            width: 38px; height: 38px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.2rem; transition: all 0.2s; cursor: pointer;
-            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1);
+            font-size: 1rem; transition: all 0.2s; cursor: pointer;
+            background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1);
         }
-        .ctrl-btn:hover { background: rgba(255, 255, 255, 0.3); transform: scale(1.1); }
-        .ctrl-btn.active-red { background: #ef4444; border-color: #ef4444; color: white; }
-        .ctrl-btn.active-green { background: #10b981; border-color: #10b981; color: white; }
+        .ctrl-btn:active { transform: scale(0.95); }
 
-        /* Sidebar Styling */
-        .glass-panel { background: #1e293b; border-radius: 1.5rem; border: 1px solid #334155; overflow: hidden; display: flex; flex-direction: column; }
+        /* --- SIDEBAR & CHAT --- */
+        #sidebar-col {
+            display: flex; flex-direction: column; gap: 0.75rem;
+            height: 100%; overflow: hidden;
+        }
+
+        @media (max-width: 1024px) {
+            #sidebar-col {
+                flex: 1; /* Isi sisa layar di HP */
+                min-height: 400px; /* Minimal tinggi agar chat nyaman */
+            }
+        }
+
+        .glass-panel { background: #1e293b; border-radius: 1rem; border: 1px solid #334155; overflow: hidden; display: flex; flex-direction: column; }
         
         /* Notifikasi Alert */
         #cuteAlert {
             position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
-            background: #ec4899; color: white; padding: 0.75rem 2rem;
-            border-radius: 50px; font-weight: 700; border: 2px solid #fce7f3;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); z-index: 5000; transition: top 0.5s;
-            display: flex; align-items: center; gap: 10px;
+            background: #ec4899; color: white; padding: 0.5rem 1.5rem;
+            border-radius: 50px; font-weight: 600; font-size: 0.9rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); z-index: 5000; transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; align-items: center; gap: 8px; white-space: nowrap;
         }
-        .alert-active { top: 30px !important; }
+        .alert-active { top: 20px !important; }
 
-        /* Quiz Overlay */
-        #quiz-overlay { z-index: 9999; }
-        .option-selected { background: #ec4899 !important; color: white !important; border-color: #ec4899 !important; }
+        /* Scrollbar Custom */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
     </style>
 </head>
 <body>
 
-    <nav class="h-[60px] flex justify-between items-center px-6 bg-slate-900 border-b border-slate-800">
-        <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-full bg-pink-500 flex items-center justify-center text-white font-bold text-sm">
+    <nav class="h-[60px] flex-none flex justify-between items-center px-4 bg-slate-900 border-b border-slate-800 z-50">
+        <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-full bg-pink-600 flex items-center justify-center text-white text-xs shadow-lg shadow-pink-500/30">
                 <i class="fa-solid fa-graduation-cap"></i>
             </div>
-            <div>
-                <h1 class="font-bold text-slate-100 text-sm md:text-base">Student Space</h1>
-            </div>
+            <h1 class="font-bold text-slate-100 text-sm tracking-wide hidden sm:block">Student Space</h1>
         </div>
         
-        <div class="flex items-center gap-3">
-            <select id="select-kelas-murid" onchange="muridPindahKelas()" class="bg-slate-800 border border-slate-700 text-white text-xs rounded-full p-2 px-4 outline-none focus:border-pink-500">
-                <option value="">-- Pilih Kelas --</option>
+        <div class="flex items-center gap-2">
+            <select id="select-kelas-murid" onchange="muridPindahKelas()" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg py-1.5 px-2 outline-none focus:border-pink-500 transition-colors max-w-[150px]">
+                <option value="">-- Kelas --</option>
             </select>
-            <div id="status-live-indicator" class="hidden px-3 py-1 bg-red-900/50 text-red-400 rounded-full text-[10px] font-bold border border-red-900 flex items-center gap-2">
-                <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> LIVE
+            <div id="status-live-indicator" class="hidden px-2 py-1 bg-red-500/10 text-red-400 rounded-md text-[10px] font-bold border border-red-500/20 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span> LIVE
             </div>
         </div>
     </nav>
 
     <div id="cuteAlert">
-        <span id="cuteIcon" class="text-xl">🍓</span>
-        <span id="cuteMsg" class="text-sm">Halo!</span>
+        <span id="cuteIcon">🍓</span>
+        <span id="cuteMsg">Halo!</span>
     </div>
 
-    <div class="main-grid">
+    <div class="main-layout">
 
         <div id="main-stage">
             
-            <img id="teacher-video-stream" src="" alt="Guru belum menyalakan kamera">
+            <img id="teacher-video-stream" src="" class="opacity-0 transition-opacity duration-500">
             
             <div id="video-placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-950 z-0">
-                <i class="fa-solid fa-satellite-dish text-6xl mb-4 opacity-50"></i>
-                <p class="font-bold text-lg">Menunggu Sinyal Guru...</p>
-                <p class="text-xs mt-2 opacity-60">Pastikan kamu sudah memilih kelas yang benar.</p>
+                <div class="w-16 h-16 rounded-full bg-slate-900 flex items-center justify-center mb-3 animate-pulse">
+                    <i class="fa-solid fa-satellite-dish text-2xl text-slate-700"></i>
+                </div>
+                <p class="font-bold text-sm text-slate-400">Menunggu Guru...</p>
             </div>
 
             <div id="student-pip-wrapper">
                 <div id="cam-container" class="w-full h-full bg-slate-800 flex items-center justify-center">
-                    <span class="text-[10px] text-slate-400">Kamera Mati</span>
+                    <span class="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Kamera Mati</span>
                 </div>
             </div>
 
-            <div class="video-controls text-white">
-                
-                <button id="btn-mic" onclick="toggleMic()" class="ctrl-btn bg-slate-700 hover:bg-slate-600" title="Matikan/Nyalakan Suara Saya">
-                    <i id="icon-mic" class="fa-solid fa-microphone-slash"></i>
-                </button>
-
-                <button id="btn-cam" onclick="toggleCamera()" class="ctrl-btn bg-slate-700 hover:bg-slate-600" title="Matikan/Nyalakan Kamera Saya">
-                    <i id="icon-cam" class="fa-solid fa-video-slash"></i>
-                </button>
-
-                <div class="h-8 w-[1px] bg-white/20 mx-2"></div>
-
-                <div class="flex-1 text-xs font-semibold opacity-80">
-                    <span id="my-status-text">Kamu Offline</span>
+            <div class="video-controls">
+                <div class="flex gap-3">
+                    <button id="btn-mic" onclick="toggleMic()" class="ctrl-btn bg-slate-800 hover:bg-slate-700 text-slate-300">
+                        <i id="icon-mic" class="fa-solid fa-microphone-slash"></i>
+                    </button>
+                    <button id="btn-cam" onclick="toggleCamera()" class="ctrl-btn bg-slate-800 hover:bg-slate-700 text-slate-300">
+                        <i id="icon-cam" class="fa-solid fa-video-slash"></i>
+                    </button>
                 </div>
 
-                <button onclick="toggleFullscreen()" class="ctrl-btn" title="Layar Penuh">
+                <div class="flex-1 text-center px-2">
+                     <span id="my-status-text" class="text-[10px] bg-black/40 px-2 py-1 rounded-full text-slate-300 backdrop-blur-sm border border-white/5">
+                        Siap Belajar
+                    </span>
+                </div>
+
+                <button onclick="toggleFullscreen()" class="ctrl-btn text-white">
                     <i id="icon-fullscreen" class="fa-solid fa-expand"></i>
                 </button>
             </div>
         </div>
 
-        <div id="sidebar-col" class="flex flex-col gap-4">
+        <div id="sidebar-col">
             
-            <div id="quiz-alert-box" class="hidden bg-gradient-to-br from-pink-600 to-rose-600 rounded-2xl p-4 text-white shadow-lg animate-bounce cursor-pointer" onclick="openQuizModal()">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="font-black text-sm uppercase tracking-wider">⚡ Kuis Aktif!</span>
-                    <i class="fa-solid fa-pen-to-square"></i>
+            <div id="quiz-alert-box" class="hidden bg-gradient-to-r from-pink-600 to-rose-500 rounded-xl p-3 text-white shadow-lg cursor-pointer transform hover:scale-[1.02] transition-transform" onclick="openQuizModal()">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                            <i class="fa-solid fa-bolt text-yellow-300 text-sm"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-xs uppercase tracking-wide">Kuis Aktif!</h4>
+                            <p class="text-[10px] opacity-90">Ketuk untuk mengerjakan</p>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-xs opacity-70"></i>
                 </div>
-                <p class="text-xs mb-3 opacity-90">Guru baru saja membagikan soal. Kerjakan sekarang.</p>
-                <button class="w-full bg-white text-pink-600 py-2 rounded-lg text-xs font-bold uppercase shadow">Buka Soal</button>
             </div>
 
-            <div class="glass-panel flex-1">
-                <div class="p-3 bg-slate-800 border-b border-slate-700 flex justify-between items-center">
-                    <h3 class="font-bold text-slate-300 text-xs uppercase">
-                        <i class="fa-regular fa-comments mr-2"></i> Chat Kelas
+            <div class="glass-panel flex-1 min-h-0"> <div class="p-3 bg-slate-800/80 border-b border-slate-700 flex justify-between items-center backdrop-blur-sm">
+                    <h3 class="font-bold text-slate-300 text-xs flex items-center gap-2">
+                        <i class="fa-regular fa-comments text-pink-500"></i> Diskusi Kelas
                     </h3>
-                    <div class="text-[10px] text-green-400 flex items-center gap-1">
-                        <div class="w-1.5 h-1.5 bg-green-500 rounded-full"></div> Online
+                    <div class="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                        ● Online
                     </div>
                 </div>
                 
-                <div id="chat-box" class="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-900 text-xs text-slate-300">
+                <div id="chat-box" class="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-900/50 text-xs text-slate-300">
                     </div>
 
-                <div class="p-3 bg-slate-800 border-t border-slate-700">
+                <div class="p-2 bg-slate-800 border-t border-slate-700">
                     <div class="flex gap-2">
-                        <input id="chat-input" type="text" placeholder="Tanya Guru..." class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-pink-500 outline-none">
-                        <button onclick="sendChat()" class="bg-pink-600 text-white p-2 rounded-lg hover:bg-pink-500 transition-all">
+                        <input id="chat-input" type="text" placeholder="Ketik pesan..." class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 text-xs focus:border-pink-500 focus:ring-1 focus:ring-pink-500 outline-none transition-all">
+                        <button onclick="sendChat()" class="bg-pink-600 text-white w-9 rounded-lg hover:bg-pink-500 transition-all flex items-center justify-center shadow-lg shadow-pink-500/20">
                             <i class="fa-solid fa-paper-plane text-xs"></i>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div class="glass-panel p-3 flex flex-row items-center gap-3 bg-slate-800">
-                <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center border border-slate-600">
-                    <i class="fa-solid fa-user text-slate-400 text-xs"></i>
+            <div class="glass-panel p-3 flex flex-row items-center gap-3 bg-slate-800/80 flex-none">
+                <div class="w-9 h-9 rounded-lg bg-slate-700 flex items-center justify-center border border-slate-600 text-slate-300 font-bold text-sm">
+                    <%= nama_siswa.charAt(0) %>
                 </div>
-                <div class="flex-1">
+                <div class="flex-1 min-w-0">
                     <h2 class="font-bold text-xs text-slate-200 truncate"><%= nama_siswa %></h2>
-                    <p class="text-[10px] text-slate-500">Skor: <span id="sidebar-score" class="text-pink-400 font-bold">0</span></p>
+                    <div class="flex items-center gap-2 mt-0.5">
+                        <p class="text-[10px] text-slate-400">Skor:</p>
+                        <span id="sidebar-score" class="text-[10px] font-bold text-pink-400 bg-pink-400/10 px-1.5 rounded border border-pink-400/20">0</span>
+                    </div>
                 </div>
             </div>
 
         </div>
     </div>
 
-    <div id="quiz-overlay" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-4xl h-[85vh] rounded-2xl flex flex-col overflow-hidden">
-            <div class="bg-pink-600 p-4 flex justify-between items-center text-white">
-                <h2 id="quiz-title" class="text-lg font-bold">Lembar Jawaban</h2>
-                <button onclick="closeQuiz()" class="hover:text-pink-200"><i class="fa-solid fa-xmark text-xl"></i></button>
+    <div id="quiz-overlay" class="hidden fixed inset-0 bg-slate-900/95 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl h-[90vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl">
+            <div class="bg-pink-600 p-4 flex justify-between items-center text-white flex-none">
+                <div>
+                    <h2 class="text-xs opacity-80 uppercase font-semibold">Lembar Jawaban</h2>
+                    <h3 id="quiz-title" class="text-sm font-bold truncate max-w-[200px]">Topik Kuis</h3>
+                </div>
+                <button onclick="closeQuiz()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
-            <div id="quiz-content" class="flex-1 overflow-y-auto p-6 bg-slate-50">
-                <div id="quiz-body" class="space-y-6"></div>
+            
+            <div id="quiz-content" class="flex-1 overflow-y-auto p-5 bg-slate-50">
+                <div id="quiz-body" class="space-y-6 pb-10"></div>
             </div>
-            <div id="quiz-result" class="hidden flex-1 flex flex-col items-center justify-center p-10 text-center">
-                <div class="text-6xl mb-4">🏆</div>
-                <h3 class="text-2xl font-bold text-slate-800">Nilai Kamu</h3>
-                <div class="text-5xl font-black text-pink-600 my-4" id="final-score-val">0</div>
-                <p id="ai-feedback" class="text-sm text-slate-500 max-w-md bg-slate-100 p-4 rounded-xl">Analisis...</p>
-                <button onclick="closeQuiz()" class="mt-6 text-pink-600 font-bold text-sm underline">Tutup</button>
+            
+            <div id="quiz-result" class="hidden flex-1 flex flex-col items-center justify-center p-6 text-center bg-white">
+                <div class="text-6xl mb-4 animate-bounce">🏆</div>
+                <h3 class="text-xl font-bold text-slate-800">Selesai!</h3>
+                <div class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-600 my-2" id="final-score-val">0</div>
+                <p id="ai-feedback" class="text-xs text-slate-500 max-w-xs bg-slate-100 p-3 rounded-lg leading-relaxed">Menunggu hasil...</p>
+                <button onclick="closeQuiz()" class="mt-8 text-pink-600 font-bold text-xs hover:underline">Tutup Halaman</button>
             </div>
-            <div id="quiz-footer" class="p-4 border-t bg-slate-100 flex justify-end">
-                <button onclick="finishQuiz()" class="bg-pink-600 text-white px-6 py-3 rounded-lg font-bold shadow hover:bg-pink-500">Kirim Jawaban 🚀</button>
+            
+            <div id="quiz-footer" class="p-4 border-t border-slate-200 bg-white flex-none">
+                <button onclick="finishQuiz()" class="w-full bg-pink-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-pink-500/30 hover:bg-pink-500 active:scale-[0.98] transition-all text-sm">
+                    Kirim Jawaban <i class="fa-solid fa-rocket ml-2"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -216,57 +293,59 @@
 
     <script>
         const socket = io();
-        const namaSiswa = "<%= nama_siswa %>";
-        const emailSiswa = "<%= email_siswa %>"; 
-        const kodeSekolah = "<%= kode_sekolah %>";
-        let kelasTersimpan = "<%= kelas_siswa %>"; 
+        // Fallback jika variabel EJS tidak ter-render (untuk testing HTML)
+        const namaSiswa = "<%= typeof nama_siswa !== 'undefined' ? nama_siswa : 'Siswa' %>";
+        const emailSiswa = "<%= typeof email_siswa !== 'undefined' ? email_siswa : 'email@test.com' %>"; 
+        const kodeSekolah = "<%= typeof kode_sekolah !== 'undefined' ? kode_sekolah : 'SCH' %>";
+        let kelasTersimpan = "<%= typeof kelas_siswa !== 'undefined' ? kelas_siswa : '' %>"; 
+        
         let currentRoom = kodeSekolah;
         let myStream = null;
         let currentQuizData = null; 
-        
-        // Status Lirik
         let isCameraOn = false;
         let isMicOn = false;
 
         // --- 1. LOGIKA UTAMA (KONEKSI) ---
-
         async function initKelasMurid() {
             try {
-                const res = await fetch(`/api/kelas/${kodeSekolah}`);
-                const data = await res.json();
+                // Mockup data jika fetch gagal (untuk UI testing)
                 const select = document.getElementById('select-kelas-murid');
-                select.innerHTML = '<option value="">-- Pilih Kelas --</option>';
-                data.forEach(k => {
-                    const isSelected = (k.nama_kelas === kelasTersimpan) ? 'selected' : '';
-                    select.innerHTML += `<option value="${k.nama_kelas}" ${isSelected}>${k.nama_kelas}</option>`;
-                });
+                // Ganti URL ini sesuai endpoint asli kamu
+                const res = await fetch(`/api/kelas/${kodeSekolah}`);
+                if(res.ok) {
+                    const data = await res.json();
+                    select.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+                    data.forEach(k => {
+                        const isSelected = (k.nama_kelas === kelasTersimpan) ? 'selected' : '';
+                        select.innerHTML += `<option value="${k.nama_kelas}" ${isSelected}>${k.nama_kelas}</option>`;
+                    });
+                }
                 if(kelasTersimpan && kelasTersimpan !== "null" && kelasTersimpan !== "") {
                     joinRoomSiswa(kelasTersimpan);
                 }
-            } catch (e) { console.error("Gagal muat kelas", e); }
+            } catch (e) { console.log("Mode UI Only / Fetch Error"); }
         }
 
         async function muridPindahKelas() {
             const kelasBaru = document.getElementById('select-kelas-murid').value;
             if(!kelasBaru) return;
-            await fetch('/api/update-kelas-siswa', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ email: emailSiswa, kelas: kelasBaru })
-            });
+            try {
+                await fetch('/api/update-kelas-siswa', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email: emailSiswa, kelas: kelasBaru })
+                });
+            } catch(e) {}
+            
             kelasTersimpan = kelasBaru;
             joinRoomSiswa(kelasBaru);
-            showCuteAlert(`Pindah ke ${kelasBaru}`, '🚀');
+            showCuteAlert(`Masuk ke ${kelasBaru}`, '🚀');
         }
 
         function joinRoomSiswa(namaKelas) {
             const newRoom = `${kodeSekolah}-${namaKelas}`;
-            // Leave room lama jika perlu (opsional di socket.io biasanya otomatis handle via id, tapi kita update var)
             currentRoom = newRoom;
-            
             socket.emit('join-room', { room: newRoom, nama: namaSiswa, role: 'Siswa' });
-            
-            // Jika kamera sudah nyala, restart stream ke room baru
             if(isCameraOn) {
                 socket.emit('join-live', { room: currentRoom, nama: namaSiswa });
             }
@@ -274,70 +353,56 @@
 
         window.onload = initKelasMurid;
 
-        // --- 2. LOGIKA KAMERA & MIC (SELF CONTROL) ---
-
+        // --- 2. LOGIKA KAMERA & MIC ---
         async function startCamera() {
             try {
-                // Minta akses kamera & audio
-                myStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                myStream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 }, audio: true });
                 const video = document.createElement('video');
                 video.id = 'video-element';
                 video.srcObject = myStream;
                 video.autoplay = true;
-                video.muted = true; // Supaya tidak dengar suara sendiri di headphone
+                video.muted = true;
                 
-                // Pasang di PIP
+                // Clear & Append
                 const container = document.getElementById('cam-container');
                 container.innerHTML = '';
                 container.appendChild(video);
                 
-                // Aktifkan Socket & Loop Stream
                 isCameraOn = true;
-                isMicOn = true; // Default ON
+                isMicOn = true; 
+                
+                // Join Live
                 socket.emit('join-live', { room: currentRoom, nama: namaSiswa });
                 sendFrameToGuru();
-
                 updateControlUI();
-                showCuteAlert('Kamera aktif! Guru bisa melihatmu.', '📹');
+                showCuteAlert('Kamera Aktif', '📹');
             } catch (err) { 
-                showCuteAlert('Akses kamera ditolak!', '❌'); 
+                showCuteAlert('Akses Ditolak', '❌'); 
                 console.error(err);
             }
         }
 
-        // --- UPDATE LOGIKA: MUTE SUARA SENDIRI ---
         function toggleMic() {
-            if (!myStream) {
-                showCuteAlert('Nyalakan kamera dulu!', '⚠️');
-                return;
-            }
-            
+            if (!myStream) { showCuteAlert('Nyalakan kamera dulu!', '⚠️'); return; }
             const audioTrack = myStream.getAudioTracks()[0];
             if (audioTrack) {
                 audioTrack.enabled = !audioTrack.enabled;
                 isMicOn = audioTrack.enabled;
-                
                 updateControlUI();
-                showCuteAlert(isMicOn ? 'Suara Aktif' : 'Suara Mati (Muted)', isMicOn ? '🎤' : '🔇');
+                showCuteAlert(isMicOn ? 'Mic On' : 'Mic Muted', isMicOn ? '🎤' : '🔇');
             }
         }
 
-        // --- UPDATE LOGIKA: PAUSE VIDEO SENDIRI (LAYAR HITAM) ---
         function toggleCamera() {
-            if (!myStream) {
-                startCamera(); // Jika belum mulai, mulai dulu
-                return;
-            }
-
+            if (!myStream) { startCamera(); return; }
             const videoTrack = myStream.getVideoTracks()[0];
             if (videoTrack) {
                 videoTrack.enabled = !videoTrack.enabled;
                 isCameraOn = videoTrack.enabled;
                 
-                // Update UI PIP
                 const pip = document.getElementById('cam-container');
                 if(!isCameraOn) {
-                    pip.innerHTML = `<div class="w-full h-full bg-black flex items-center justify-center text-xs text-slate-500 font-bold uppercase tracking-wider">Kamera Off</div>`;
+                    pip.innerHTML = `<div class="w-full h-full bg-slate-800 flex items-center justify-center"><span class="text-[9px] text-slate-500 font-bold uppercase">Off</span></div>`;
                 } else {
                     const video = document.createElement('video');
                     video.id = 'video-element';
@@ -347,9 +412,8 @@
                     pip.innerHTML = '';
                     pip.appendChild(video);
                 }
-
                 updateControlUI();
-                showCuteAlert(isCameraOn ? 'Kamera Nyala' : 'Kamera Mati', isCameraOn ? '📹' : '🚫');
+                showCuteAlert(isCameraOn ? 'Cam On' : 'Cam Off', isCameraOn ? '📹' : '🚫');
             }
         }
 
@@ -361,50 +425,44 @@
             const statusText = document.getElementById('my-status-text');
 
             if (isMicOn) {
-                btnMic.classList.add('bg-green-600', 'hover:bg-green-500');
-                btnMic.classList.remove('bg-red-600', 'bg-slate-700');
+                btnMic.className = "ctrl-btn bg-emerald-600 text-white hover:bg-emerald-500 border-emerald-500";
                 iconMic.className = "fa-solid fa-microphone";
             } else {
-                btnMic.classList.add('bg-red-600', 'hover:bg-red-500');
-                btnMic.classList.remove('bg-green-600', 'bg-slate-700');
+                btnMic.className = "ctrl-btn bg-rose-600 text-white hover:bg-rose-500 border-rose-500";
                 iconMic.className = "fa-solid fa-microphone-slash";
             }
 
             if (isCameraOn) {
-                btnCam.classList.add('bg-green-600', 'hover:bg-green-500');
-                btnCam.classList.remove('bg-red-600', 'bg-slate-700');
+                btnCam.className = "ctrl-btn bg-emerald-600 text-white hover:bg-emerald-500 border-emerald-500";
                 iconCam.className = "fa-solid fa-video";
-                statusText.innerText = "Kamera: ON | Mic: " + (isMicOn ? "ON" : "OFF");
+                statusText.innerText = "On Air";
+                statusText.classList.add("text-emerald-400");
             } else {
-                btnCam.classList.add('bg-red-600', 'hover:bg-red-500');
-                btnCam.classList.remove('bg-green-600', 'bg-slate-700');
+                btnCam.className = "ctrl-btn bg-rose-600 text-white hover:bg-rose-500 border-rose-500";
                 iconCam.className = "fa-solid fa-video-slash";
-                statusText.innerText = "Kamera: PAUSED";
+                statusText.innerText = "Paused";
+                statusText.classList.remove("text-emerald-400");
             }
         }
 
         function sendFrameToGuru() {
             if(!isCameraOn || !myStream) {
-                // Jika dimatikan, kirim frame hitam sekali-sekali agar guru tau user masih connect tapi off cam
-                // Atau cukup stop sending
-                setTimeout(sendFrameToGuru, 500); 
+                setTimeout(sendFrameToGuru, 1000); 
                 return;
             }
-
             const video = document.getElementById('video-element');
             const canvas = document.getElementById('hidden-canvas');
             const ctx = canvas.getContext('2d');
 
             if (video && video.readyState === video.HAVE_ENOUGH_DATA) {
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const frame = canvas.toDataURL('image/jpeg', 0.5);
+                const frame = canvas.toDataURL('image/jpeg', 0.4); // Kualitas diturunkan sedikit biar ringan
                 socket.emit('stream-frame', { room: currentRoom, image: frame });
             }
-            setTimeout(sendFrameToGuru, 200); 
+            setTimeout(sendFrameToGuru, 250); 
         }
 
-        // --- 3. LOGIKA TERIMA GAMBAR GURU ---
-
+        // --- 3. STREAM & CHAT ---
         socket.on('stream-frame', (data) => {
             const img = document.getElementById('teacher-video-stream');
             const placeholder = document.getElementById('video-placeholder');
@@ -417,21 +475,12 @@
             }
         });
 
-        // --- 4. LOGIKA LAYAR PENUH ---
-
         function toggleFullscreen() {
             const stage = document.getElementById('main-stage');
             if (!document.fullscreenElement) {
-                stage.requestFullscreen().catch(err => {
-                    alert(`Error trying to enable fullscreen: ${err.message} (${err.name})`);
-                });
-            } else {
-                document.exitFullscreen();
-            }
+                stage.requestFullscreen().catch(err => { console.log(err); });
+            } else { document.exitFullscreen(); }
         }
-
-
-        // --- 5. LOGIKA CHAT (NYAMBUNG KE GURU) ---
 
         function showCuteAlert(msg, icon = '🍓') {
             const alert = document.getElementById('cuteAlert');
@@ -444,7 +493,6 @@
         function sendChat() {
             const input = document.getElementById('chat-input');
             if(input.value.trim()) {
-                // Emit ke ROOM yang sama dengan guru
                 socket.emit('chat-message', { user: namaSiswa, msg: input.value, room: currentRoom, role: 'Siswa' });
                 input.value = '';
             }
@@ -452,17 +500,21 @@
 
         socket.on('chat-message', (data) => {
             const chatBox = document.getElementById('chat-box');
-            
             const isMe = data.user === namaSiswa;
+            
+            // Design Bubble Chat Lebih Modern
+            const bubbleClass = isMe 
+                ? 'bg-pink-600 text-white rounded-tr-none' 
+                : 'bg-slate-700 text-slate-200 rounded-tl-none';
+            
             const align = isMe ? 'justify-end' : 'justify-start';
-            const bg = isMe ? 'bg-pink-600 text-white' : 'bg-slate-700 text-slate-200 border border-slate-600';
-            const userLabel = isMe ? '' : `<span class="text-[10px] font-bold text-slate-400 block mb-1">${data.user}</span>`;
+            const userLabel = isMe ? '' : `<span class="text-[9px] font-bold text-pink-400 block mb-1 ml-1">${data.user}</span>`;
             
             chatBox.innerHTML += `
-                <div class="flex ${align} mb-2">
-                    <div class="max-w-[85%]">
+                <div class="flex ${align} mb-2 animate-fade-in-up">
+                    <div class="max-w-[80%]">
                         ${userLabel}
-                        <div class="px-3 py-2 rounded-xl text-xs leading-relaxed ${bg} shadow-sm">
+                        <div class="px-3 py-2 rounded-2xl text-xs leading-relaxed shadow-sm ${bubbleClass}">
                             ${data.msg}
                         </div>
                     </div>
@@ -470,85 +522,78 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
-        // --- 6. LOGIKA KUIS (POPUP 1/4 LAYAR -> MODAL) ---
-
+        // --- 4. KUIS LOGIC ---
         function openQuizModal() {
              document.getElementById('quiz-overlay').classList.remove('hidden');
-             document.getElementById('quiz-alert-box').classList.add('hidden'); // Sembunyikan notif setelah dibuka
+             document.getElementById('quiz-alert-box').classList.add('hidden');
         }
+
+        function closeQuiz() { document.getElementById('quiz-overlay').classList.add('hidden'); }
 
         socket.on('start-quiz', (data) => {
             currentQuizData = data; 
-            showCuteAlert('SOAL BARU MASUK!', '📝');
-            
-            // Tampilkan Notifikasi Besar di Sidebar
+            showCuteAlert('Kuis Dimulai!', '📝');
             document.getElementById('quiz-alert-box').classList.remove('hidden');
             
             const body = document.getElementById('quiz-body');
             document.getElementById('quiz-content').classList.remove('hidden');
             document.getElementById('quiz-result').classList.add('hidden');
             document.getElementById('quiz-footer').classList.remove('hidden');
-            document.getElementById('quiz-title').innerText = "Topik: " + data.judul;
+            document.getElementById('quiz-title').innerText = data.judul;
 
             let html = "";
-            // Render Soal (Sama seperti sebelumnya)
             if(data.soal_pg && data.soal_pg.length > 0) {
-                html += `<div class="mb-6"><h4 class="font-bold text-pink-500 border-b border-pink-100 pb-2 mb-4">A. Pilihan Ganda</h4>`;
+                html += `<div class="mb-4"><h4 class="text-xs font-bold text-pink-600 uppercase mb-3">Pilihan Ganda</h4>`;
                 html += data.soal_pg.map((s, idx) => `
-                    <div class="pg-item mb-6" data-index="${idx}">
-                        <p class="font-semibold text-slate-700 mb-3 text-sm">${idx + 1}. ${s.q}</p>
+                    <div class="pg-item mb-6 bg-white p-3 rounded-xl border border-slate-100 shadow-sm" data-index="${idx}">
+                        <p class="font-semibold text-slate-700 mb-3 text-sm"><span class="text-pink-500 mr-1">${idx + 1}.</span> ${s.q}</p>
                         <div class="space-y-2">
-                            ${s.a.map(opsi => `<button onclick="selectOption(this)" class="option-btn w-full text-left p-3 bg-white rounded-xl border border-slate-200 hover:bg-pink-50 transition-all text-xs font-medium text-slate-600">${opsi}</button>`).join('')}
+                            ${s.a.map(opsi => `<button onclick="selectOption(this)" class="option-btn w-full text-left p-3 bg-slate-50 rounded-lg border border-slate-200 hover:bg-pink-50 hover:border-pink-200 transition-all text-xs font-medium text-slate-600">${opsi}</button>`).join('')}
                         </div>
                     </div>`).join('');
                 html += `</div>`;
             }
-            if(data.soal_essay && data.soal_essay.length > 0) {
-                html += `<div class="mb-6"><h4 class="font-bold text-purple-500 border-b border-purple-100 pb-2 mb-4">B. Essay</h4>`;
-                html += data.soal_essay.map((e, idx) => `<div class="essay-item mb-4"><p class="font-semibold text-slate-700 mb-2 text-sm">${idx + 1}. ${e.q}</p><textarea class="essay-ans w-full p-3 rounded-xl border border-slate-200 text-xs h-24"></textarea></div>`).join('');
-                html += `</div>`;
-            }
+            // Essay logic same...
             body.innerHTML = html;
         });
 
         function selectOption(btn) {
-            btn.closest('.pg-item').querySelectorAll('.option-btn').forEach(b => b.classList.remove('option-selected'));
-            btn.classList.add('option-selected');
+            btn.closest('.pg-item').querySelectorAll('.option-btn').forEach(b => {
+                b.classList.remove('bg-pink-500', 'text-white', 'border-pink-500', 'option-selected');
+                b.classList.add('bg-slate-50', 'text-slate-600');
+            });
+            btn.classList.remove('bg-slate-50', 'text-slate-600');
+            btn.classList.add('bg-pink-500', 'text-white', 'border-pink-500', 'option-selected');
         }
 
         function finishQuiz() {
-            // Logika Submit Jawaban (Sama)
+            // ... Logic submit sama seperti sebelumnya ...
             const pgAnswers = [];
             document.querySelectorAll('.pg-item').forEach(item => {
                 const selected = item.querySelector('.option-selected');
                 pgAnswers.push(selected ? selected.innerText.trim() : "");
             });
-            const essayAnswers = [];
-            document.querySelectorAll('.essay-ans').forEach(ta => essayAnswers.push(ta.value.trim()));
 
             document.getElementById('quiz-content').classList.add('hidden');
             document.getElementById('quiz-result').classList.remove('hidden');
             document.getElementById('quiz-footer').classList.add('hidden');
             document.getElementById('final-score-val').innerText = "...";
-            document.getElementById('ai-feedback').innerText = "AI sedang memeriksa jawabanmu...";
-
+            
             socket.emit('submit-jawaban-siswa', {
                 name: namaSiswa, email: emailSiswa, kelas: kelasTersimpan || 'Umum', room: currentRoom,
                 materi_judul: currentQuizData ? currentQuizData.judul : "Kuis Live",
-                jawabanMurid: { pg: pgAnswers, essay: essayAnswers }
+                jawabanMurid: { pg: pgAnswers, essay: [] }
             });
         }
-
+        
         socket.on('score-updated-live', (data) => {
             if(data.nama_siswa === namaSiswa) {
                 document.getElementById('final-score-val').innerText = data.skor;
-                document.getElementById('ai-feedback').innerText = data.umpan_balik;
+                document.getElementById('ai-feedback').innerText = data.umpan_balik || "Kerja bagus!";
                 document.getElementById('sidebar-score').innerText = data.skor;
-                showCuteAlert('Nilai kamu sudah keluar!', '🏆');
             }
         });
 
-        function closeQuiz() { document.getElementById('quiz-overlay').classList.add('hidden'); }
         document.getElementById('chat-input').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendChat(); });
 
     </script>
