@@ -207,6 +207,33 @@ io.on("connection", (socket) => {
     socket.to(roomID).emit("user-joined", { name: userName, role });
   });
 
+  // --- START WEBRTC SIGNALING EVENTS ---
+
+  // 1. Guru siap streaming, beri tahu semua siswa di room
+  socket.on("teacher-ready", (data) => {
+    socket.to(data.room).emit("teacher-ready", { teacherId: socket.id });
+  });
+
+  // 2. Relay sinyal dari Siswa ke Guru
+  socket.on("student-signal", (data) => {
+    // Kirim sinyal ke targetId (Guru) beserta ID pengirimnya (Siswa)
+    io.to(data.targetId).emit("student-signal", {
+      signal: data.signal,
+      senderId: socket.id
+    });
+  });
+
+  // 3. Relay sinyal dari Guru ke Siswa
+  socket.on("teacher-signal", (data) => {
+    // Kirim sinyal ke targetId (Siswa)
+    io.to(data.targetId).emit("teacher-signal", {
+      signal: data.signal,
+      senderId: socket.id
+    });
+  });
+
+  // --- END WEBRTC SIGNALING EVENTS ---
+
   socket.on("stream-frame", (data) => {
     socket.to(data.room).emit("stream-frame", {
       image: data.image,
