@@ -25,143 +25,49 @@
 
     <style>
         body { background: #020617; overflow: hidden; height: 100vh; touch-action: none; color: white; }
-        
-        /* Layout Grid */
         .app-layout { display: grid; grid-template-columns: 340px 1fr; height: 100vh; width: 100vw; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         body.sidebar-closed .app-layout { grid-template-columns: 0px 1fr; }
-        
-        /* Sidebar Styles */
-        .sidebar { 
-            background: #ffffff; border-right: 1px solid #e2e8f0; 
-            display: flex; flex-direction: column; overflow: hidden; 
-            white-space: nowrap; position: relative; z-index: 50;
-        }
-
-        /* Main Stage */
+        .sidebar { background: #ffffff; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow: hidden; white-space: nowrap; position: relative; z-index: 50; }
         .main-stage { position: relative; background: #0f172a; display: flex; align-items: center; justify-content: center; overflow: hidden; width: 100%; height: 100%; }
-
-        /* --- FITUR VIDEO & PIP --- */
-        .video-wrapper { 
-            position: relative; transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); 
-            overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); background: #000;
-        }
-
-        /* Mode Default (3/4 Layar) */
+        .video-wrapper { position: relative; transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); background: #000; }
         .video-wrapper.default-mode { width: 85%; height: 75%; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); }
-
-        /* Mode Full Screen */
         .video-wrapper.full-mode { width: 100%; height: 100%; border-radius: 0; border: none; }
-        
-        /* Mode PiP (Picture in Picture - Saat Share Materi/Grid) */
-        .video-wrapper.pip-mode {
-            position: absolute; bottom: 160px; right: 20px;
-            width: 180px; height: 135px; z-index: 60; border-radius: 16px; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.2);
-        }
-
-        /* Overlays (Grid & Materi) */
+        .video-wrapper.pip-mode { position: absolute; bottom: 160px; right: 20px; width: 180px; height: 135px; z-index: 60; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.2); }
         .stage-overlay { position: absolute; inset: 0; z-index: 40; background: #0f172a; display: none; opacity: 0; transition: opacity 0.3s; }
         .stage-overlay.active { display: block; opacity: 1; }
-        
-        #student-grid-view {
-            display: none; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px; padding: 20px; align-content: center; overflow-y: auto;
-        }
+        #student-grid-view { display: none; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; padding: 20px; align-content: center; overflow-y: auto; }
         #student-grid-view.active { display: grid; }
-        
-        /* --- UPDATE TAMPILAN PRESENTATION STAGE (SLIDER) --- */
-        #presentation-stage { 
-            padding: 0; /* Reset padding */
-            overflow: hidden; 
-            background: white; 
-            color: #1e293b; 
-            display: none;
-            flex-direction: column;
-        }
+        #presentation-stage { padding: 0; overflow: hidden; background: white; color: #1e293b; display: none; flex-direction: column; }
         #presentation-stage.active { display: flex; }
-
-        /* --- CONTROLS & UI --- */
-
-        /* Top Bar Controls */
-        .top-controls {
-            position: absolute; top: 20px; left: 20px; right: 20px; z-index: 70;
-            display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none;
-        }
-
-        .hamburger-btn { 
-            pointer-events: auto; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.1); 
-            color: white; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; 
-            transition: 0.2s; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
+        .top-controls { position: absolute; top: 20px; left: 20px; right: 20px; z-index: 70; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; }
+        .hamburger-btn { pointer-events: auto; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.1); color: white; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; transition: 0.2s; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
         .hamburger-btn:hover { background: rgba(0,0,0,0.6); transform: scale(1.05); }
-
-        /* Start Overlay */
-        .start-overlay {
-            position: absolute; inset: 0; background: rgba(0,0,0,0.9); z-index: 80;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            backdrop-filter: blur(10px); transition: opacity 0.4s;
-        }
+        .start-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.9); z-index: 80; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(10px); transition: opacity 0.4s; }
         .start-overlay.hidden { opacity: 0; pointer-events: none; }
-
-        /* Control Bar (Bottom) - DIGESER NAIK AGAR TIDAK KE-TRIGGER GESTURE HP */
-        .control-bar {
-            position: absolute; bottom: 60px; /* Desktop */
-            left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(20px);
-            padding: 10px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15);
-            display: flex; align-items: center; gap: 8px; z-index: 70; box-shadow: 0 20px 50px rgba(0,0,0,0.6); white-space: nowrap;
-        }
-
-        .ctrl-btn {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            width: 54px; height: 54px; border-radius: 12px; color: #94a3b8; cursor: pointer; transition: all 0.2s;
-            gap: 4px; background: transparent;
-        }
+        .control-bar { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(20px); padding: 10px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; gap: 8px; z-index: 70; box-shadow: 0 20px 50px rgba(0,0,0,0.6); white-space: nowrap; }
+        .ctrl-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 54px; height: 54px; border-radius: 12px; color: #94a3b8; cursor: pointer; transition: all 0.2s; gap: 4px; background: transparent; }
         .ctrl-btn:hover { background: rgba(255,255,255,0.08); color: white; transform: translateY(-2px); }
         .ctrl-btn.active { background: #2563eb; color: white; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4); }
         .ctrl-btn.danger { color: #f87171; }
         .ctrl-btn.danger.active { background: #ef4444; color: white; }
-        
         .ctrl-icon { font-size: 18px; margin-bottom: 2px; }
         .ctrl-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-        
         .divider { width: 1px; height: 32px; background: rgba(255,255,255,0.1); margin: 0 4px; }
-
-        /* Floating Chat */
-        .floating-chat-btn {
-            position: fixed; bottom: 140px; right: 25px; z-index: 90;
-            width: 56px; height: 56px; border-radius: 50%;
-            background: linear-gradient(135deg, #3b82f6, #2563eb); color: white;
-            box-shadow: 0 8px 25px rgba(37, 99, 235, 0.5); border: 2px solid rgba(255,255,255,0.2);
-            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s;
-        }
+        .floating-chat-btn { position: fixed; bottom: 140px; right: 25px; z-index: 90; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; box-shadow: 0 8px 25px rgba(37, 99, 235, 0.5); border: 2px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; }
         .floating-chat-btn:hover { transform: scale(1.1) rotate(-5deg); }
-        
-        /* Chat Panel */
-        .chat-panel-float {
-            position: fixed; bottom: 210px; right: 25px; width: 320px; height: 400px;
-            background: white; border-radius: 20px; z-index: 89; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            border: 1px solid #e2e8f0; display: none; flex-direction: column; transform-origin: bottom right; 
-            animation: popUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
+        .chat-panel-float { position: fixed; bottom: 210px; right: 25px; width: 320px; height: 400px; background: white; border-radius: 20px; z-index: 89; box-shadow: 0 20px 60px rgba(0,0,0,0.3); border: 1px solid #e2e8f0; display: none; flex-direction: column; transform-origin: bottom right; animation: popUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .chat-panel-float.active { display: flex; }
         @keyframes popUp { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
-
-        /* AI Quiz Controller (Hidden by default) */
         #quiz-controller { display: none; margin-top: 15px; padding: 10px; background: #f1f5f9; border-radius: 12px; border: 1px solid #e2e8f0; }
-
-        /* Responsive */
+        
         @media (max-width: 1024px) {
             .app-layout { grid-template-columns: 1fr; }
             .sidebar { position: fixed; inset: 0; width: 100%; transform: translateX(-100%); transition: transform 0.3s; z-index: 100;}
             .sidebar.open { transform: translateX(0); }
             body.sidebar-closed .app-layout { grid-template-columns: 1fr; }
-            
-            /* Control Bar di Mobile lebih naik lagi */
             .control-bar { padding: 8px 12px; bottom: 80px; width: 95%; max-width: 450px; justify-content: space-around; gap: 2px;}
             .ctrl-btn { width: 48px; height: 48px; }
             .ctrl-label { font-size: 8px; }
-            
-            /* Pada Mobile, video default lebih lebar dikit */
             .video-wrapper.default-mode { width: 92%; height: 60%; }
         }
     </style>
@@ -213,20 +119,19 @@
 
             <div class="flex-1 overflow-y-auto p-5 space-y-6">
                 
-                <div class="bg-yellow-50 border border-yellow-200 p-3 rounded-xl">
-                    <label class="text-[10px] font-bold text-yellow-700 block mb-1">Buat atau Pilih Kelas</label>
+                <div class="bg-yellow-50 border border-yellow-200 p-3 rounded-xl shadow-sm">
+                    <label class="text-[10px] font-bold text-yellow-700 block mb-1">Pilih / Buat Kelas</label>
                     <div class="flex gap-2">
-                        <input type="text" id="nama-kelas" list="list-kelas-guru" 
+                        <input type="text" id="nama-kelas" list="list-kelas-guru" onchange="pilihKelasExisting()"
                             class="flex-1 bg-white border border-yellow-300 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-yellow-400" 
-                            placeholder="Nama kelas baru...">
-                        <button onclick="simpanKelasBaru()" class="bg-yellow-500 text-white px-3 py-2 rounded-lg hover:bg-yellow-600 transition shadow-sm" title="Simpan Kelas ke Database">
-                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            placeholder="Ketik/Pilih Kelas...">
+                        <button onclick="simpanKelasBaru()" class="bg-yellow-500 text-white px-3 py-2 rounded-lg hover:bg-yellow-600 transition shadow-sm" title="Simpan Kelas">
+                            <i class="fa-solid fa-floppy-disk"></i>
                         </button>
                     </div>
                     <datalist id="list-kelas-guru"></datalist>
-                    <p class="text-[9px] text-yellow-600 mt-1">*Klik simpan agar muncul di HP Murid</p>
+                    <p class="text-[9px] text-yellow-600 mt-1 italic" id="status-kelas-info">Menunggu pilihan kelas...</p>
                 </div>
-
 
                 <div class="border-t border-slate-100"></div>
 
@@ -312,7 +217,7 @@
                         <span id="count-badge" class="bg-green-100 text-green-700 px-2 py-0.5 rounded-md text-[9px] font-bold">0</span>
                     </div>
                     <ul id="mini-list-siswa" class="space-y-1">
-                        <li class="text-[11px] text-slate-400 italic text-center py-4 bg-slate-50 rounded-lg">Menunggu siswa...</li>
+                        <li class="text-[11px] text-slate-400 italic text-center py-4 bg-slate-50 rounded-lg">Menunggu siswa di kelas...</li>
                     </ul>
                 </div>
 
@@ -350,7 +255,7 @@
                         <i class="fa-solid fa-video text-4xl text-white"></i>
                     </div>
                     <h2 class="text-2xl font-bold text-white mb-2">Teacher Studio</h2>
-                    <p class="text-slate-300 text-sm mb-8">Klik mulai untuk mengajar</p>
+                    <p class="text-slate-300 text-sm mb-8">Pilih Kelas di Sidebar lalu Klik Mulai</p>
                     
                     <button onclick="toggleLive()" class="px-8 py-3 bg-white text-slate-900 rounded-full font-bold shadow-xl hover:scale-105 transition flex items-center gap-2 mx-auto">
                         <i class="fa-solid fa-play text-brand-600"></i> MULAI LIVE
@@ -392,7 +297,6 @@
             </div>
 
             <div class="control-bar">
-                
                 <div class="ctrl-btn" onclick="toggleLive()" id="btn-start" title="Mulai / Jeda Live">
                     <i class="fa-solid fa-play ctrl-icon"></i>
                     <span class="ctrl-label">Start</span>
@@ -483,7 +387,10 @@
     <script>
         const socket = io();
         const namaGuru = "<%= nama_guru %>";
-        const room = "<%= kode %>";
+        const kodeSekolah = "<%= kode %>";
+        
+        // VARIABLE PENTING: activeRoom defaultnya kode sekolah
+        let activeRoom = kodeSekolah; 
         
         let isLive = false;
         let isMutedSelf = false;
@@ -495,10 +402,9 @@
         let peerConnections = {}; 
         
         // --- VARIABLE SLIDER BARU ---
-        let currentSlides = []; 
+        let currentSlides = [];
         let currentSlideIndex = 0;
 
-        // --- NEW: SECURITY HELPER (Anti XSS) ---
         function escapeHtml(text) {
             if (!text) return text;
             return text
@@ -545,16 +451,13 @@
             let content = "";
             let mimeType = "";
             let extension = "";
-
             if (tipe === 'Materi' && lastGeneratedData) {
-                // UPDATE: Handle struktur slide
                 if (lastGeneratedData.slides && lastGeneratedData.slides.length > 0) {
                     content = `<h1>${lastGeneratedData.judul_besar}</h1>`;
                     lastGeneratedData.slides.forEach(slide => {
                         content += `<h2>${slide.judul_slide}</h2>${slide.konten_html}<hr>`;
                     });
                 } else {
-                    // Fallback jika format lama
                     content = `<h1>${lastGeneratedData.judul || 'Materi'}</h1>${lastGeneratedData.html || ''}`;
                 }
             } else if (tipe === 'Nilai') {
@@ -608,7 +511,6 @@
             const btnStart = document.getElementById('btn-start');
             const iconStart = btnStart.querySelector('i');
             const labelStart = btnStart.querySelector('span');
-
             if (!isLive) {
                 startCamera();
                 isLive = true;
@@ -619,7 +521,7 @@
                 iconStart.className = "fa-solid fa-pause ctrl-icon";
                 labelStart.innerText = "Pause";
                 btnStart.classList.add('active');
-                showAlert("Anda sedang Live", "📡");
+                showAlert(`Anda Live di ${activeRoom.includes('-') ? 'Kelas ' + activeRoom.split('-')[1] : 'Lobi Utama'}`, "📡");
             } else {
                 stopCamera();
                 isLive = false;
@@ -722,13 +624,10 @@
         // --- DISTRIBUTE QUIZ ---
         function distributeQuiz(type) {
             if (!lastGeneratedData) return showAlert("Generate materi dulu!", "⚠️");
-            const namaKelas = document.getElementById('nama-kelas').value;
-            if(!namaKelas) return showAlert("Masukan Nama Kelas dulu di atas!", "🏫");
-
-            const targetRoom = `${room}-${namaKelas}`;
+            if (activeRoom === kodeSekolah) return showAlert("Pilih kelas dulu untuk mengirim soal!", "🏫");
 
             let dataToSend = {
-                room: targetRoom, 
+                room: activeRoom, 
                 type: type,
                 materi_judul: lastGeneratedData.judul_besar || lastGeneratedData.judul
             };
@@ -738,61 +637,53 @@
             else if (type === 'QUIZ') dataToSend.soal_quiz = lastGeneratedData.soal_quiz;
 
             socket.emit('start-quiz', dataToSend);
-            showAlert(`Kuis dikirim ke kelas ${namaKelas}`, "🚀");
+            showAlert(`Kuis dikirim ke ${activeRoom.split('-')[1]}`, "🚀");
         }
 
 
-        // --- 4. AI GENERATOR (OPTIMIZED WITH SLIDER SUPPORT) ---
+        // --- 4. AI GENERATOR ---
         async function generate() {
             const btn = document.getElementById('btnGen');
             const prompt = document.getElementById('prompt').value;
             if(!prompt) return showAlert("Masukkan topik materi", "✍️");
 
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Nano Banana Bekerja...'; 
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Nano Banana Bekerja...';
             btn.disabled = true;
 
-            // Tambahan: AbortController untuk timeout
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 60000); // Timeout 60 detik
+            const timeoutId = setTimeout(() => controller.abort(), 60000); 
 
             try {
                 const res = await fetch('/api/generate', { 
                     method: 'POST', 
                     headers: {'Content-Type':'application/json'}, 
                     body: JSON.stringify({instruksi: prompt}),
-                    signal: controller.signal // Signal abort
+                    signal: controller.signal 
                 });
-                
-                clearTimeout(timeoutId); // Clear timeout jika sukses
+                clearTimeout(timeoutId); 
                 
                 if (!res.ok) throw new Error(`Server Error (${res.status})`);
-
                 const data = await res.json();
-                lastGeneratedData = data; // Simpan data global
+                lastGeneratedData = data; 
 
                 // CEK JIKA DATA MENGANDUNG SLIDES
                 if (!data.slides || data.slides.length === 0) {
                     throw new Error("AI tidak menghasilkan slide yang valid.");
                 }
 
-                // SIMPAN SLIDE KE VARIABEL & RESET
                 currentSlides = data.slides;
                 currentSlideIndex = 0; 
                 document.getElementById('slide-judul-besar').innerText = data.judul_besar;
 
-                // RENDER SLIDE PERTAMA
                 renderSlide();
-                
                 document.getElementById('quiz-controller').style.display = 'block';
                 showAlert("Materi Siap! Geser slide untuk melihat.", "🍌");
                 
                 if(activeView !== 'materi') toggleMateriView();
-
             } catch (e) { 
                 console.error("Error Detail:", e);
-                // Handle pesan error timeout vs error server
                 let msg = e.name === 'AbortError' ? "Waktu habis! Coba lagi." : "Gagal: " + e.message;
-                showAlert(msg, "❌"); 
+                showAlert(msg, "❌");
             }
 
             btn.innerHTML = '<span>Buat Materi & Soal</span> <i class="fa-solid fa-bolt"></i>';
@@ -802,19 +693,15 @@
         // --- FUNGSI NAVIGASI SLIDE & VISUALISASI ---
         function renderSlide() {
             if(currentSlides.length === 0) return;
-
             const slide = currentSlides[currentSlideIndex];
             
-            // 1. Update Teks
             document.getElementById('slide-subjudul').innerText = slide.judul_slide;
             document.getElementById('slide-konten').innerHTML = slide.konten_html;
             document.getElementById('page-indicator').innerText = `${currentSlideIndex + 1} / ${currentSlides.length}`;
-
-            // 2. Visualisasi Nano Banana (Image Prompt)
+            
             const keyword = slide.keyword_gambar || 'education';
             document.getElementById('slide-keyword').innerText = `Visual: ${keyword}`;
             
-            // 3. Generate Gambar Otomatis (via Pollinations)
             const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(keyword)}?width=800&height=400&nologo=true`;
             document.getElementById('slide-img').src = imgUrl;
         }
@@ -824,11 +711,9 @@
                 currentSlideIndex++;
                 renderSlide();
                 
-                // Sinkronisasi ke Murid (Jika ada di room)
-                const namaKelas = document.getElementById('nama-kelas').value;
-                if(namaKelas) {
-                    const targetRoom = `${room}-${namaKelas}`;
-                    socket.emit('change-slide', { room: targetRoom, slideIndex: currentSlideIndex });
+                // Sinkronisasi ke Murid jika ada kelas aktif
+                if(activeRoom !== kodeSekolah) {
+                    socket.emit('change-slide', { room: activeRoom, slideIndex: currentSlideIndex });
                 }
             } else {
                 showAlert("Ini slide terakhir bos!", "end");
@@ -840,11 +725,8 @@
                 currentSlideIndex--;
                 renderSlide();
 
-                // Sinkronisasi ke Murid
-                const namaKelas = document.getElementById('nama-kelas').value;
-                if(namaKelas) {
-                    const targetRoom = `${room}-${namaKelas}`;
-                    socket.emit('change-slide', { room: targetRoom, slideIndex: currentSlideIndex });
+                if(activeRoom !== kodeSekolah) {
+                    socket.emit('change-slide', { room: activeRoom, slideIndex: currentSlideIndex });
                 }
             }
         }
@@ -852,7 +734,7 @@
 
         // --- 5. CHAT & ADMIN ---
         function muteAllStudents() {
-            socket.emit('mute-all', { room: room });
+            socket.emit('mute-all', { room: activeRoom });
             showAlert("Semua Siswa Di-mute", "🔇");
         }
 
@@ -879,9 +761,8 @@
             const inp = document.getElementById('chat-input');
             const msg = inp.value.trim();
             if(!msg) return;
-
             socket.emit('chat-message', { 
-                room: room, 
+                room: activeRoom, 
                 user: namaGuru, 
                 msg: msg, 
                 role: 'Guru',
@@ -890,7 +771,6 @@
             inp.value = '';
         }
 
-        // --- IMPROVED: CHAT RECEIVER (NOW SECURE) ---
         socket.on('chat-message', (data) => {
             const c = document.getElementById('chat-container');
             const isMe = data.user === namaGuru;
@@ -899,7 +779,6 @@
             let bgClass = isMe ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-700';
             if(data.isPinned) bgClass = 'bg-yellow-100 text-yellow-800 border border-yellow-300';
 
-            // GUNAKAN escapeHtml UNTUK MENCEGAH XSS
             const safeMsg = escapeHtml(data.msg);
             const safeUser = escapeHtml(data.user);
 
@@ -917,7 +796,8 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 document.getElementById('guru-cam').srcObject = stream;
                 
-                socket.emit('teacher-ready', { room: room });
+                // Broadcast ke ROOM AKTIF
+                socket.emit('teacher-ready', { room: activeRoom });
             } catch (e) {
                 console.error(e);
                 showAlert("Akses kamera ditolak", "❌");
@@ -934,22 +814,47 @@
         }
         
         socket.on('connect', () => { 
-            const namaKelas = document.getElementById('nama-kelas').value.trim();
-            const finalRoom = namaKelas ? `${room}-${namaKelas}` : room;
-
+            // Default join ke Lobi Sekolah
             socket.emit('join-room', { 
-                roomID: finalRoom,  
+                roomID: kodeSekolah,  
                 userName: namaGuru, 
                 role: 'Guru' 
-            }); 
-            console.log("Berhasil join ke room: " + finalRoom);
+            });
+            console.log("Connected to lobby: " + kodeSekolah);
         });
+
+        // --- LOGIKA GANTI KELAS (PENTING) ---
+        function pilihKelasExisting() {
+            const namaKelas = document.getElementById('nama-kelas').value.trim();
+            if(!namaKelas) return;
+
+            // 1. Update Active Room
+            activeRoom = `${kodeSekolah}-${namaKelas}`;
+            
+            // 2. Join Socket Room Baru
+            socket.emit('join-room', { roomID: activeRoom, userName: namaGuru, role: 'Guru' });
+            
+            // 3. UI Feedback
+            document.getElementById('status-kelas-info').innerText = `Aktif di: ${namaKelas}`;
+            document.getElementById('status-kelas-info').className = "text-[9px] text-green-600 mt-1 font-bold";
+            showAlert(`Masuk ke Kelas ${namaKelas}`, "door-open");
+
+            // 4. Jika sedang live, restart live di room baru
+            if(isLive) {
+                socket.emit('teacher-ready', { room: activeRoom });
+            }
+            
+            // 5. Bersihkan tampilan siswa lama
+            document.getElementById('mini-list-siswa').innerHTML = '<li class="text-[11px] text-slate-400 italic text-center py-4 bg-slate-50 rounded-lg">Menunggu siswa di kelas baru...</li>';
+            document.getElementById('student-grid-view').innerHTML = '';
+            document.getElementById('count-badge').innerText = '0';
+        }
 
         socket.on('join-live', (data) => {
             const list = document.getElementById('mini-list-siswa');
             if(list.innerText.includes('Menunggu')) list.innerHTML = '';
             
-            const safeName = escapeHtml(data.name); // Safety
+            const safeName = escapeHtml(data.name); 
             const safeId = data.name.replace(/\s+/g, '-');
 
             if(!document.getElementById(`li-${data.name}`)) {
@@ -963,7 +868,6 @@
                     </li>`;
             }
             document.getElementById('count-badge').innerText = list.children.length;
-
             const grid = document.getElementById('student-grid-view');
             
             if(!document.getElementById(`tile-${safeId}`)) {
@@ -989,7 +893,7 @@
         function showAlert(msg, icon) {
             const el = document.getElementById('customAlert');
             document.getElementById('alertMsg').innerText = msg;
-            document.getElementById('alertIcon').innerText = icon;
+            document.getElementById('alertIcon').innerText = icon || "";
             el.style.opacity = '1'; el.style.transform = 'translate(-50%, 40px)';
             setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translate(-50%, -20px)'; }, 3000);
         }
@@ -1022,7 +926,6 @@
 
             const tbody = document.getElementById('history-table-body');
             const emptyRow = document.getElementById('empty-history');
-            
             if(emptyRow) emptyRow.style.display = 'none';
 
             const row = `
@@ -1038,7 +941,7 @@
             tbody.insertAdjacentHTML('afterbegin', row);
         });
 
-        // --- WEBRTC SIGNALING (COMPLETE HANDSHAKE) ---
+        // --- WEBRTC SIGNALING ---
         socket.on('student-signal', async (data) => {
             const pc = new RTCPeerConnection({
                 iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
@@ -1069,8 +972,6 @@
             };
         });
 
-        // TAMBAHAN PENTING: Menangani balasan Answer dan ICE Candidate dari Siswa
-        // Agar koneksi Video benar-benar terjadi
         socket.on('student-signal-answer', async (data) => {
             const pc = peerConnections[data.senderId];
             if (pc) {
@@ -1114,8 +1015,13 @@
                     showAlert("Kelas Tersimpan! Murid bisa memilih sekarang.", "✅");
                     muatDaftarKelas(); 
                     
-                    const targetRoom = `<%= kode %>-${namaKelas}`;
-                    socket.emit('join-room', { roomID: targetRoom, userName: namaGuru, role: 'Guru' });
+                    // Pindah room otomatis
+                    activeRoom = `<%= kode %>-${namaKelas}`;
+                    socket.emit('join-room', { roomID: activeRoom, userName: namaGuru, role: 'Guru' });
+                    
+                    // Update UI status
+                    document.getElementById('status-kelas-info').innerText = `Aktif di: ${namaKelas}`;
+                    document.getElementById('status-kelas-info').className = "text-[9px] text-green-600 mt-1 font-bold";
                 }
             } catch (e) {
                 showAlert("Gagal simpan kelas", "❌");
