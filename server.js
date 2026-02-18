@@ -147,6 +147,19 @@ app.post('/api/generate', async (req, res) => {
   } catch (err) { res.status(500).json({ error: "AI Sedang sibuk." }); }
 });
 
+// --- [BARU] UPDATE KELAS SISWA ---
+app.post('/api/update-kelas-siswa', async (req, res) => {
+    const { email, kelas } = req.body;
+    try {
+        await pool.query('UPDATE global_siswa SET kelas = $1 WHERE email = $2', [kelas, email]);
+        res.json({ status: 'ok', message: 'Kelas berhasil diperbarui' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Gagal update kelas." });
+    }
+});
+// ---------------------------------
+
 
 // ==========================================
 // 🚀 2. SOCKET.IO (MODERN COLLABORATION)
@@ -199,52 +212,76 @@ io.on('connection', (socket) => {
     }); 
   });
 
-  // LOGIKA KUIS AMAN (MASTER KEY PROTECTION)
+  // --- [UPDATE] LOGIKA KUIS AMAN (PERBAIKAN SINKRONISASI) ---
   socket.on('start-quiz', (payload) => {
-    const { room, fullData } = payload;
+    const { room, type, materi_judul } = payload;
     
-    // 1. Simpan Master Soal (Lengkap dengan Kunci) di Server
-    activeQuizzes[room] = fullData; 
+    // 1. Simpan Master Soal (Data penuh berisi Kunci Jawaban) di Server Memory
+    activeQuizzes[room] = payload; 
 
-    // 2. Buat Salinan Bersih (Sensor Kunci Jawaban)
-    const cleanData = JSON.parse(JSON.stringify(fullData));
+    console.log(`[QUIZ START] Room: ${room}, Tipe: ${type}`);
+
+    // 2. Buat Salinan Bersih (Sensor Kunci Jawaban) agar Murid tidak bisa intip di Console
+    const cleanData = JSON.parse(JSON.stringify(payload));
     
-    if(cleanData.soal_pg) cleanData.soal_pg.forEach(s => delete s.c);
-    if(cleanData.soal_quiz) cleanData.soal_quiz.forEach(s => delete s.jawaban_benar);
-    if(cleanData.soal_essay) cleanData.soal_essay.forEach(s => delete s.kriteria);
+    // Hapus kunci jawaban berdasarkan tipe data yang ada
+    if(cleanData.soal_pg) {
+        cleanData.soal_pg.forEach(s => delete s.c); // Hapus 'c' (correct answer)
+    }
+    if(cleanData.soal_quiz) {
+        cleanData.soal_quiz.forEach(s => delete s.jawaban_benar);
+    }
+    if(cleanData.soal_essay) {
+        cleanData.soal_essay.forEach(s => delete s.kriteria);
+    }
     
-    // 3. Kirim soal "Aman" ke semua murid
+    // 3. Kirim soal "Aman" ke semua murid di room
     socket.to(room).emit('start-quiz', cleanData);
-    console.log(`[SECURE QUIZ] Started in ${room}. Answers stored in memory.`);
   });
 
-  // PENILAIAN AI SENTRALISTIK
+  // --- [UPDATE] PENILAIAN AI SENTRALISTIK (PERBAIKAN LOGIKA) ---
   socket.on('submit-jawaban-siswa', async (data) => {
     try {
-        const { name, email, kelas, room, jawabanMurid, materi_judul } = data;
+        const { name, email, kelas, room, jawabanMurid } = data;
         
-        // 1. Ambil Kunci Jawaban dari Memory Server (Bukan dari Client Siswa)
-        const soalAsli = activeQuizzes[room];
-        if (!soalAsli) return console.error("❌ Quiz key missing in server memory!");
+        // 1. Ambil Kunci Jawaban Asli dari Server Memory
+        const dataSoal = activeQuizzes[room];
+        
+        if (!dataSoal) {
+            console.error(`❌ Quiz Error: Data soal untuk room ${room} tidak ditemukan.`);
+            return;
+        }
 
-        // 2. Proses Penilaian AI
-        const hasilAI = await periksaUjian(soalAsli, jawabanMurid);
+        const materi_judul = dataSoal.materi_judul || "Kuis Live";
+
+        // 2. Siapkan data spesifik untuk dikirim ke AI (Biar AI tidak bingung)
+        let soalUntukDinilai = {};
+        if (dataSoal.type === 'PG') soalUntukDinilai = { soal_pg: dataSoal.soal_pg };
+        else if (dataSoal.type === 'ESSAY') soalUntukDinilai = { soal_essay: dataSoal.soal_essay };
+        else if (dataSoal.type === 'QUIZ') soalUntukDinilai = { soal_quiz: dataSoal.soal_quiz };
+        else soalUntukDinilai = dataSoal; // Fallback jika format lama
+
+        // 3. Proses Penilaian AI (server-side processing)
+        const hasilAI = await periksaUjian(soalUntukDinilai, jawabanMurid);
+        
         const kodeSekolah = room.includes('-') ? room.split('-')[0] : room;
 
-        // 3. Simpan ke Database (Schema Sekolah & Global)
+        // 4. Simpan ke Database (Schema Sekolah & Global)
+        // Simpan ke detail penilaian per sekolah
         await pool.query(
             `INSERT INTO "${kodeSekolah}".penilaian (nama, email, kelas, tipe, skor, feedback_ai, materi, jawaban_essay) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-            [name, email, kelas, 'Kuis AI', hasilAI.skor_total, hasilAI.analisis, materi_judul, JSON.stringify(jawabanMurid.essay)]
+            [name, email, kelas, dataSoal.type, hasilAI.skor_total, hasilAI.analisis, materi_judul, JSON.stringify(jawabanMurid.essay)]
         );
 
+        // Simpan ke global scoreboard (untuk dashboard guru)
         await pool.query(
             `INSERT INTO global_jawaban (nama_siswa, skor, umpan_balik_ai, nama_kelas) 
              VALUES ($1, $2, $3, $4)`,
             [name, hasilAI.skor_total, hasilAI.analisis, kelas]
         );
 
-        // 4. Update Dashboard Guru Secara Live
+        // 5. Update Dashboard Guru Secara Live (Real-time Scoreboard)
         io.to(room).emit('score-updated-live', {
             nama_siswa: name,
             skor: hasilAI.skor_total,
@@ -253,8 +290,9 @@ io.on('connection', (socket) => {
             waktu: new Date().toLocaleTimeString()
         });
 
-        // 5. Beri Notifikasi Skor ke Murid
-        socket.emit('personal-score', {
+        // 6. Beri Notifikasi Skor Balik ke Murid
+        socket.emit('score-updated-live', {
+            nama_siswa: name,
             skor: hasilAI.skor_total,
             umpan_balik: hasilAI.analisis
         });
