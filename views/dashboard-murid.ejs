@@ -170,10 +170,16 @@
 
         // --- 1. LOGIKA VIDEO & STREAMING ---
         
-        socket.on('update-frame', (data) => {
-            const img = document.getElementById('teacher-video-stream');
-            if(img) img.src = data.image;
-        });
+        // ✅ BENAR (Perbaikan)
+socket.on('stream-frame', (data) => {
+    const img = document.getElementById('teacher-video-stream');
+    
+    // Validasi tambahan agar hanya menampilkan stream dari Guru
+    if(img && data.role === 'Guru') {
+        img.src = data.image;
+    }
+});
+
 
         async function startCamera() {
             try {
