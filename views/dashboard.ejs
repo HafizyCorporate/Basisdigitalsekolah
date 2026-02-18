@@ -27,7 +27,7 @@
         body { background: #020617; overflow: hidden; height: 100vh; touch-action: none; color: white; }
         
         /* Layout Grid */
-        .app-layout { display: grid; grid-template-columns: 320px 1fr; height: 100vh; width: 100vw; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .app-layout { display: grid; grid-template-columns: 340px 1fr; height: 100vh; width: 100vw; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         body.sidebar-closed .app-layout { grid-template-columns: 0px 1fr; }
         
         /* Sidebar Styles */
@@ -38,23 +38,38 @@
         }
 
         /* Main Stage */
-        .main-stage { position: relative; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; width: 100%; height: 100%; }
+        .main-stage { position: relative; background: #0f172a; display: flex; align-items: center; justify-content: center; overflow: hidden; width: 100%; height: 100%; }
 
         /* --- FITUR VIDEO & PIP --- */
         .video-wrapper { 
-            width: 100%; height: 100%; position: relative; 
+            position: relative; 
             transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); 
-            border-radius: 0; overflow: hidden;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            background: #000;
+        }
+
+        /* Mode Default (3/4 Layar) */
+        .video-wrapper.default-mode {
+            width: 85%; height: 75%; 
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Mode Full Screen */
+        .video-wrapper.full-mode {
+            width: 100%; height: 100%;
+            border-radius: 0;
+            border: none;
         }
         
-        /* Mode PiP (Picture in Picture) */
+        /* Mode PiP (Picture in Picture - Saat Share Materi/Grid) */
         .video-wrapper.pip-mode {
-            position: absolute; bottom: 120px; right: 20px;
+            position: absolute; bottom: 140px; right: 20px;
             width: 180px; height: 135px; z-index: 60;
             border-radius: 16px; 
             box-shadow: 0 10px 40px rgba(0,0,0,0.6);
             border: 2px solid rgba(255,255,255,0.2);
-            background: #1e293b;
         }
 
         /* Overlays (Grid & Materi) */
@@ -82,58 +97,53 @@
             pointer-events: none; 
         }
 
-        /* Hamburger Menu (Top Right) */
         .hamburger-btn { 
-            pointer-events: auto; 
-            background: rgba(0,0,0,0.4); 
-            backdrop-filter: blur(8px); 
-            border: 1px solid rgba(255,255,255,0.1); 
-            color: white; 
-            width: 44px; height: 44px; 
-            border-radius: 12px; 
-            display: flex; align-items: center; justify-content: center; 
-            transition: 0.2s; cursor: pointer; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            pointer-events: auto; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.1); 
+            color: white; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; 
+            transition: 0.2s; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
         .hamburger-btn:hover { background: rgba(0,0,0,0.6); transform: scale(1.05); }
 
         /* Start Overlay */
         .start-overlay {
-            position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: 80;
+            position: absolute; inset: 0; background: rgba(0,0,0,0.9); z-index: 80;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             backdrop-filter: blur(10px); transition: opacity 0.4s;
         }
         .start-overlay.hidden { opacity: 0; pointer-events: none; }
 
-        /* Control Bar (Bottom) - DI RAPIHKAN */
+        /* Control Bar (Bottom) - DINAIKKAN & DIRAPIHKAN */
         .control-bar {
-            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: rgba(10, 10, 10, 0.8); backdrop-filter: blur(20px);
-            padding: 10px 20px; border-radius: 24px; 
+            position: absolute; 
+            bottom: 50px; /* Dinaikkan agar tidak terlalu bawah */
+            left: 50%; transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(20px);
+            padding: 10px 16px; border-radius: 20px; 
             border: 1px solid rgba(255,255,255,0.15);
-            display: flex; align-items: center; gap: 12px; z-index: 70;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+            display: flex; align-items: center; gap: 8px; z-index: 70;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            white-space: nowrap;
         }
 
         .ctrl-btn {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            width: 50px; height: 50px; border-radius: 14px; color: #cbd5e1;
+            width: 54px; height: 54px; border-radius: 12px; color: #94a3b8;
             cursor: pointer; transition: all 0.2s; gap: 4px;
-            background: rgba(255,255,255,0.03);
+            background: transparent;
         }
-        .ctrl-btn:hover { background: rgba(255,255,255,0.1); color: white; transform: translateY(-2px); }
-        .ctrl-btn.active { background: #3b82f6; color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
+        .ctrl-btn:hover { background: rgba(255,255,255,0.08); color: white; transform: translateY(-2px); }
+        .ctrl-btn.active { background: #2563eb; color: white; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4); }
         .ctrl-btn.danger { color: #f87171; }
-        .ctrl-btn.danger.active { background: #ef4444; color: white; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4); }
+        .ctrl-btn.danger.active { background: #ef4444; color: white; }
         
-        .ctrl-icon { font-size: 18px; }
-        .ctrl-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .ctrl-icon { font-size: 18px; margin-bottom: 2px; }
+        .ctrl-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         
-        .divider { width: 1px; height: 30px; background: rgba(255,255,255,0.15); margin: 0 2px; }
+        .divider { width: 1px; height: 32px; background: rgba(255,255,255,0.1); margin: 0 4px; }
 
-        /* Floating Chat - ICON SURAT */
+        /* Floating Chat */
         .floating-chat-btn {
-            position: fixed; bottom: 100px; right: 25px; z-index: 90;
+            position: fixed; bottom: 120px; right: 25px; z-index: 90;
             width: 56px; height: 56px; border-radius: 50%;
             background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; 
             box-shadow: 0 8px 25px rgba(37, 99, 235, 0.5); border: 2px solid rgba(255,255,255,0.2);
@@ -144,7 +154,7 @@
         
         /* Chat Panel */
         .chat-panel-float {
-            position: fixed; bottom: 170px; right: 25px; width: 320px; height: 400px;
+            position: fixed; bottom: 190px; right: 25px; width: 320px; height: 400px;
             background: white; border-radius: 20px; z-index: 89;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3); border: 1px solid #e2e8f0;
             display: none; flex-direction: column; transform-origin: bottom right; 
@@ -160,9 +170,12 @@
             .sidebar.open { transform: translateX(0); }
             body.sidebar-closed .app-layout { grid-template-columns: 1fr; }
             
-            .control-bar { padding: 8px 16px; bottom: 20px; width: 90%; max-width: 400px; justify-content: space-between; }
-            .ctrl-btn { width: 45px; height: 45px; }
-            .ctrl-label { display: none; } /* Hide labels on mobile for cleaner look */
+            .control-bar { padding: 8px 12px; bottom: 40px; width: 95%; max-width: 450px; justify-content: space-around; gap: 2px;}
+            .ctrl-btn { width: 48px; height: 48px; }
+            .ctrl-label { font-size: 8px; }
+            
+            /* Pada Mobile, video default lebih lebar dikit */
+            .video-wrapper.default-mode { width: 92%; height: 60%; }
         }
     </style>
 </head>
@@ -181,7 +194,7 @@
             <button onclick="toggleChat()" class="text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-xmark text-lg"></i></button>
         </div>
         <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-3 bg-white text-sm text-slate-800 scrollbar-hide">
-            <div class="text-center text-[10px] text-slate-400 italic py-10">Belum ada pesan masuk.<br>Mulai percakapan sekarang.</div>
+            <div class="text-center text-[10px] text-slate-400 italic py-10">Belum ada pesan masuk.</div>
         </div>
         <div class="p-3 bg-white border-t border-slate-100 rounded-b-2xl">
             <form onsubmit="kirimChat(event)" class="flex gap-2">
@@ -208,44 +221,84 @@
                 </button>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-5 space-y-8">
+            <div class="flex-1 overflow-y-auto p-5 space-y-6">
+                
                 <div class="space-y-3">
-                    <div class="flex items-center gap-2 mb-2">
+                    <div class="flex items-center gap-2">
                         <i class="fa-solid fa-wand-magic-sparkles text-brand-500 text-xs"></i>
-                        <label class="text-[11px] font-bold text-slate-700 uppercase tracking-wide">AI Generator</label>
+                        <label class="text-[11px] font-bold text-slate-700 uppercase tracking-wide">AI Materi Generator</label>
                     </div>
                     <div class="bg-slate-50 p-1 rounded-2xl border border-slate-200 focus-within:ring-2 focus-within:ring-brand-100 transition">
-                        <textarea id="prompt" class="w-full bg-transparent border-none p-3 text-xs text-slate-700 h-24 resize-none outline-none placeholder:text-slate-400" placeholder="Ketik topik materi (contoh: Fotosintesis)..."></textarea>
+                        <textarea id="prompt" class="w-full bg-transparent border-none p-3 text-xs text-slate-700 h-20 resize-none outline-none placeholder:text-slate-400" placeholder="Topik materi (cth: Perang Dunia II)..."></textarea>
                     </div>
-                    <button onclick="generate()" id="btnGen" class="w-full py-3 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-brand-600 hover:shadow-lg hover:shadow-brand-500/20 transition-all duration-300 flex items-center justify-center gap-2">
-                        <span>Buat Materi</span> <i class="fa-solid fa-arrow-right"></i>
+                    <button onclick="generate()" id="btnGen" class="w-full py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-brand-600 hover:shadow-lg transition flex items-center justify-center gap-2">
+                        <span>Buat Materi</span> <i class="fa-solid fa-bolt"></i>
                     </button>
                 </div>
 
                 <div class="border-t border-slate-100"></div>
 
-                <div>
-                    <div class="flex justify-between items-center mb-4">
-                        <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-users text-slate-400 text-xs"></i>
-                            <label class="text-[11px] font-bold text-slate-700 uppercase tracking-wide">Daftar Siswa</label>
-                        </div>
-                        <span id="count-badge" class="bg-green-100 text-green-700 px-2 py-0.5 rounded-md text-[10px] font-bold border border-green-200">0 Online</span>
+                <div class="space-y-3">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i class="fa-solid fa-file-export text-orange-500 text-xs"></i>
+                        <label class="text-[11px] font-bold text-slate-700 uppercase tracking-wide">Pusat Unduhan</label>
                     </div>
-                    
-                    <div class="bg-slate-50 rounded-2xl p-3 min-h-[150px] border border-slate-100">
-                        <ul id="mini-list-siswa" class="space-y-1">
-                            <li class="text-[11px] text-slate-400 italic text-center py-8 flex flex-col items-center gap-2">
-                                <i class="fa-solid fa-circle-notch fa-spin"></i>
-                                <span>Menunggu siswa bergabung...</span>
-                            </li>
-                        </ul>
+
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <div class="text-[10px] font-bold text-slate-500 mb-2">Materi Pelajaran</div>
+                        <div class="flex gap-2">
+                            <button onclick="exportData('Materi', 'PDF')" class="flex-1 py-1.5 bg-red-100 text-red-600 rounded-lg text-xs hover:bg-red-200 transition"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                            <button onclick="exportData('Materi', 'Word')" class="flex-1 py-1.5 bg-blue-100 text-blue-600 rounded-lg text-xs hover:bg-blue-200 transition"><i class="fa-solid fa-file-word"></i> Doc</button>
+                            <button onclick="exportData('Materi', 'Excel')" class="flex-1 py-1.5 bg-green-100 text-green-600 rounded-lg text-xs hover:bg-green-200 transition"><i class="fa-solid fa-file-excel"></i> Xls</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <div class="text-[10px] font-bold text-slate-500 mb-2">Nilai / Live Score</div>
+                        <div class="flex gap-2">
+                            <button onclick="exportData('Nilai', 'PDF')" class="flex-1 py-1.5 bg-red-100 text-red-600 rounded-lg text-xs hover:bg-red-200 transition"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                            <button onclick="exportData('Nilai', 'Word')" class="flex-1 py-1.5 bg-blue-100 text-blue-600 rounded-lg text-xs hover:bg-blue-200 transition"><i class="fa-solid fa-file-word"></i> Doc</button>
+                            <button onclick="exportData('Nilai', 'Excel')" class="flex-1 py-1.5 bg-green-100 text-green-600 rounded-lg text-xs hover:bg-green-200 transition"><i class="fa-solid fa-file-excel"></i> Xls</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <div class="text-[10px] font-bold text-slate-500 mb-2">Absensi Kehadiran</div>
+                        <div class="flex gap-2">
+                            <button onclick="exportData('Absen', 'PDF')" class="flex-1 py-1.5 bg-red-100 text-red-600 rounded-lg text-xs hover:bg-red-200 transition"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                            <button onclick="exportData('Absen', 'Word')" class="flex-1 py-1.5 bg-blue-100 text-blue-600 rounded-lg text-xs hover:bg-blue-200 transition"><i class="fa-solid fa-file-word"></i> Doc</button>
+                            <button onclick="exportData('Absen', 'Excel')" class="flex-1 py-1.5 bg-green-100 text-green-600 rounded-lg text-xs hover:bg-green-200 transition"><i class="fa-solid fa-file-excel"></i> Xls</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="p-4 border-t border-slate-100 bg-slate-50 text-[10px] text-slate-400 text-center">
-                &copy; 2024 Teacher Studio Pro
+
+                <div class="border-t border-slate-100"></div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-users text-slate-400 text-xs"></i>
+                            <label class="text-[11px] font-bold text-slate-700 uppercase tracking-wide">Siswa Online</label>
+                        </div>
+                        <span id="count-badge" class="bg-green-100 text-green-700 px-2 py-0.5 rounded-md text-[9px] font-bold">0</span>
+                    </div>
+                    <ul id="mini-list-siswa" class="space-y-1">
+                        <li class="text-[11px] text-slate-400 italic text-center py-4 bg-slate-50 rounded-lg">Menunggu siswa...</li>
+                    </ul>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-slate-100">
+                    <button class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition text-left group">
+                        <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 group-hover:bg-brand-500 group-hover:text-white transition">
+                            <i class="fa-solid fa-gear"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-slate-700">Pengaturan Kelas</div>
+                            <div class="text-[10px] text-slate-400">Audio, Video & Profil</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right ml-auto text-xs text-slate-300"></i>
+                    </button>
+                 </div>
             </div>
         </aside>
 
@@ -264,68 +317,68 @@
 
             <div id="start-overlay" class="start-overlay">
                 <div class="text-center scale-95 animate-[fadeInUp_0.4s_ease-out_forwards]">
-                    <div class="w-24 h-24 bg-gradient-to-tr from-brand-600 to-indigo-600 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-brand-500/30 mb-8 mx-auto border border-white/10 relative overflow-hidden">
-                        <div class="absolute inset-0 bg-white/10 skew-x-12 -translate-x-10"></div>
-                        <i class="fa-solid fa-video text-4xl text-white relative z-10"></i>
+                    <div class="w-24 h-24 bg-gradient-to-tr from-brand-600 to-indigo-600 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-brand-500/30 mb-6 mx-auto border border-white/10 relative">
+                        <i class="fa-solid fa-video text-4xl text-white"></i>
                     </div>
-                    <h2 class="text-3xl font-black text-white mb-2 tracking-tight">Teacher Studio</h2>
-                    <p class="text-slate-300 text-sm mb-10 font-medium">Siap untuk memulai sesi pembelajaran?</p>
+                    <h2 class="text-2xl font-bold text-white mb-2">Teacher Studio</h2>
+                    <p class="text-slate-300 text-sm mb-8">Klik mulai untuk mengajar</p>
                     
-                    <button onclick="toggleLive()" class="group px-10 py-4 bg-white text-slate-900 rounded-full font-bold shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105 hover:shadow-[0_0_60px_rgba(255,255,255,0.5)] transition-all duration-300 flex items-center gap-3 mx-auto">
-                        <div class="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center group-hover:bg-brand-500 transition">
-                            <i class="fa-solid fa-play ml-0.5 text-xs"></i>
-                        </div>
-                        <span>MULAI LIVE</span>
+                    <button onclick="toggleLive()" class="px-8 py-3 bg-white text-slate-900 rounded-full font-bold shadow-xl hover:scale-105 transition flex items-center gap-2 mx-auto">
+                        <i class="fa-solid fa-play text-brand-600"></i> MULAI LIVE
                     </button>
                 </div>
             </div>
 
-            <div id="guru-video-wrapper" class="video-wrapper">
+            <div id="guru-video-wrapper" class="video-wrapper default-mode">
                 <video id="guru-cam" class="w-full h-full object-cover" autoplay playsinline muted></video>
-                <div class="absolute bottom-6 left-6 bg-black/50 backdrop-blur-md px-4 py-1.5 rounded-full text-white text-[11px] font-semibold border border-white/10 flex items-center gap-2">
+                <div class="absolute bottom-4 left-4 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full text-white text-[10px] font-semibold border border-white/10 flex items-center gap-2">
                     <i class="fa-solid fa-user-tie text-brand-400"></i> <%= nama_guru %>
                 </div>
             </div>
 
             <div id="student-grid-view" class="stage-overlay"></div>
-
             <div id="presentation-stage" class="stage-overlay prose max-w-none">
                 <h1 id="slide-judul" class="text-3xl font-black mb-6 text-brand-600">Judul Materi</h1>
-                <div id="slide-konten" class="text-lg leading-relaxed text-slate-700">Konten materi akan muncul di sini...</div>
+                <div id="slide-konten" class="text-lg leading-relaxed text-slate-700">Konten materi...</div>
             </div>
 
             <div class="control-bar">
                 
-                <div class="ctrl-btn" onclick="toggleLive()" id="btn-start" title="Start/Pause">
+                <div class="ctrl-btn" onclick="toggleLive()" id="btn-start" title="Mulai / Jeda Live">
                     <i class="fa-solid fa-play ctrl-icon"></i>
                     <span class="ctrl-label">Start</span>
                 </div>
                 
                 <div class="divider"></div>
 
-                <div class="ctrl-btn" onclick="toggleMuteSelf()" id="btn-mic" title="Mic">
+                <div class="ctrl-btn" onclick="toggleMuteSelf()" id="btn-mic" title="Matikan/Hidupkan Mic">
                     <i class="fa-solid fa-microphone ctrl-icon"></i>
                     <span class="ctrl-label">Mic</span>
                 </div>
-                <div class="ctrl-btn" onclick="toggleCamSelf()" id="btn-cam" title="Camera">
+                <div class="ctrl-btn" onclick="toggleCamSelf()" id="btn-cam" title="Matikan/Hidupkan Kamera">
                     <i class="fa-solid fa-video ctrl-icon"></i>
                     <span class="ctrl-label">Cam</span>
                 </div>
 
+                <div class="ctrl-btn" onclick="toggleScreenSize()" id="btn-screen" title="Ubah Ukuran Layar">
+                    <i class="fa-solid fa-expand ctrl-icon"></i>
+                    <span class="ctrl-label">Full Scr</span>
+                </div>
+
                 <div class="divider"></div>
 
-                <div class="ctrl-btn" onclick="toggleGridView()" id="btn-grid-murid" title="Grid Siswa">
+                <div class="ctrl-btn" onclick="toggleGridView()" id="btn-grid-murid" title="Tampilkan Semua Siswa">
                     <i class="fa-solid fa-table-cells ctrl-icon"></i>
                     <span class="ctrl-label">Grid</span>
                 </div>
-                <div class="ctrl-btn" onclick="toggleMateriView()" id="btn-grid-materi" title="Lihat Materi">
+                <div class="ctrl-btn" onclick="toggleMateriView()" id="btn-grid-materi" title="Tampilkan Materi">
                     <i class="fa-solid fa-file-powerpoint ctrl-icon"></i>
                     <span class="ctrl-label">Materi</span>
                 </div>
 
                 <div class="divider"></div>
 
-                <div class="ctrl-btn danger" onclick="muteAllStudents()" title="Mute Semua Siswa">
+                <div class="ctrl-btn danger" onclick="muteAllStudents()" title="Bisukan Semua Siswa">
                     <i class="fa-solid fa-volume-xmark ctrl-icon"></i>
                     <span class="ctrl-label">Mute All</span>
                 </div>
@@ -349,6 +402,7 @@
         let isLive = false;
         let isMutedSelf = false;
         let isCamSelfOff = false;
+        let isFullScreen = false; // State untuk ukuran layar
         let activeView = 'normal'; 
         let lastGeneratedData = null;
 
@@ -357,12 +411,48 @@
         function toggleSidebar() {
             const body = document.body;
             const sidebar = document.getElementById('sidebar');
-            
-            if (window.innerWidth <= 1024) {
-                sidebar.classList.toggle('open');
+            if (window.innerWidth <= 1024) { sidebar.classList.toggle('open'); } 
+            else { body.classList.toggle('sidebar-closed'); }
+        }
+
+        // --- SCREEN SIZE TOGGLE ---
+        function toggleScreenSize() {
+            const wrapper = document.getElementById('guru-video-wrapper');
+            const btn = document.getElementById('btn-screen');
+            const icon = btn.querySelector('i');
+            const label = btn.querySelector('span');
+
+            isFullScreen = !isFullScreen;
+
+            if (isFullScreen) {
+                // Masuk Full Screen
+                wrapper.classList.remove('default-mode');
+                wrapper.classList.add('full-mode');
+                icon.className = "fa-solid fa-compress ctrl-icon";
+                label.innerText = "Kecilkan";
+                btn.classList.add('active');
             } else {
-                body.classList.toggle('sidebar-closed');
+                // Kembali ke 3/4
+                wrapper.classList.remove('full-mode');
+                wrapper.classList.add('default-mode');
+                icon.className = "fa-solid fa-expand ctrl-icon";
+                label.innerText = "Full Scr";
+                btn.classList.remove('active');
             }
+        }
+
+        // --- EXPORT FUNCTION ---
+        function exportData(tipe, format) {
+            // Simulasi Export
+            let icon = "📄";
+            if(format === 'Excel') icon = "📊";
+            if(format === 'Word') icon = "📝";
+            
+            // Disini nanti logika backend (window.location.href = /download...)
+            showAlert(`Mengunduh ${tipe} (${format})...`, icon);
+            
+            // Console log simulation
+            console.log(`Action: Export ${tipe} to ${format}`);
         }
 
         // --- 1. LIVE CONTROL ---
@@ -385,7 +475,6 @@
                 iconStart.className = "fa-solid fa-pause ctrl-icon";
                 labelStart.innerText = "Pause";
                 btnStart.classList.add('active');
-                
                 showAlert("Anda sedang Live", "📡");
             } else {
                 stopCamera();
@@ -398,7 +487,6 @@
                 iconStart.className = "fa-solid fa-play ctrl-icon";
                 labelStart.innerText = "Start";
                 btnStart.classList.remove('active');
-                
                 showAlert("Live Dijeda", "⏸️");
             }
         }
@@ -408,18 +496,14 @@
             isMutedSelf = !isMutedSelf;
             const stream = document.getElementById('guru-cam').srcObject;
             if(stream) stream.getAudioTracks()[0].enabled = !isMutedSelf;
-            
             updateBtnUI('btn-mic', isMutedSelf, 'fa-microphone-slash', 'fa-microphone', 'Unmute', 'Mic');
-            showAlert(isMutedSelf ? "Mikrofon Mati" : "Mikrofon Hidup", isMutedSelf ? "🔇" : "🎙️");
         }
 
         function toggleCamSelf() {
             isCamSelfOff = !isCamSelfOff;
             const stream = document.getElementById('guru-cam').srcObject;
             if(stream) stream.getVideoTracks()[0].enabled = !isCamSelfOff;
-
             updateBtnUI('btn-cam', isCamSelfOff, 'fa-video-slash', 'fa-video', 'Cam On', 'Cam');
-            showAlert(isCamSelfOff ? "Kamera Mati" : "Kamera Hidup", isCamSelfOff ? "🚫" : "📷");
         }
 
         function updateBtnUI(id, active, iconOn, iconOff, textOn, textOff) {
@@ -443,6 +527,17 @@
             document.getElementById('student-grid-view').classList.remove('active');
             document.getElementById('presentation-stage').classList.remove('active');
             document.getElementById('guru-video-wrapper').classList.remove('pip-mode');
+            
+            // Jika reset, kembalikan ke mode default atau full sesuai state terakhir
+            const wrapper = document.getElementById('guru-video-wrapper');
+            if(isFullScreen) {
+                wrapper.classList.add('full-mode');
+                wrapper.classList.remove('default-mode');
+            } else {
+                wrapper.classList.add('default-mode');
+                wrapper.classList.remove('full-mode');
+            }
+
             document.getElementById('btn-grid-murid').classList.remove('active');
             document.getElementById('btn-grid-materi').classList.remove('active');
         }
@@ -454,7 +549,12 @@
             } else {
                 resetViews();
                 document.getElementById('student-grid-view').classList.add('active');
-                document.getElementById('guru-video-wrapper').classList.add('pip-mode');
+                
+                // Masuk PiP Mode (Kecil di pojok)
+                const wrapper = document.getElementById('guru-video-wrapper');
+                wrapper.classList.remove('default-mode', 'full-mode'); // Hapus mode layar utama
+                wrapper.classList.add('pip-mode'); 
+                
                 document.getElementById('btn-grid-murid').classList.add('active');
                 activeView = 'grid';
                 showAlert("Mode Grid Siswa", "👥");
@@ -470,7 +570,12 @@
             } else {
                 resetViews();
                 document.getElementById('presentation-stage').classList.add('active');
-                document.getElementById('guru-video-wrapper').classList.add('pip-mode');
+                
+                // Masuk PiP Mode
+                const wrapper = document.getElementById('guru-video-wrapper');
+                wrapper.classList.remove('default-mode', 'full-mode');
+                wrapper.classList.add('pip-mode');
+
                 document.getElementById('btn-grid-materi').classList.add('active');
                 activeView = 'materi';
                 showAlert("Mode Presentasi", "📊");
@@ -516,7 +621,6 @@
             const video = document.getElementById('guru-cam');
             const canvas = document.createElement('canvas');
             canvas.width = 320; canvas.height = 240;
-            
             if (video.videoWidth) {
                 canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
                 socket.emit('update-frame', { room: room, image: canvas.toDataURL('image/jpeg', 0.4) });
@@ -537,20 +641,16 @@
                     body: JSON.stringify({instruksi: prompt}) 
                 });
                 lastGeneratedData = await res.json();
-                
                 document.getElementById('slide-judul').innerText = lastGeneratedData.judul;
                 document.getElementById('slide-konten').innerHTML = lastGeneratedData.html;
                 
                 showAlert("Materi Berhasil Dibuat!", "✨");
                 if(activeView !== 'materi') toggleMateriView();
-                
             } catch (e) { showAlert("Gagal Membuat Materi", "❌"); }
-            btn.innerHTML = '<span>Buat Materi</span> <i class="fa-solid fa-arrow-right"></i>'; btn.disabled = false;
+            btn.innerHTML = '<span>Buat Materi</span> <i class="fa-solid fa-bolt"></i>'; btn.disabled = false;
         }
 
-        socket.on('connect', () => {
-            socket.emit('join-room', { room: room, nama: namaGuru, role: 'Guru' });
-        });
+        socket.on('connect', () => { socket.emit('join-room', { room: room, nama: namaGuru, role: 'Guru' }); });
 
         socket.on('join-live', (data) => {
             const list = document.getElementById('mini-list-siswa');
@@ -566,7 +666,7 @@
                         <i class="fa-solid fa-wifi text-[10px] text-green-500"></i>
                     </li>`;
             }
-            document.getElementById('count-badge').innerText = list.children.length + " Online";
+            document.getElementById('count-badge').innerText = list.children.length;
 
             const grid = document.getElementById('student-grid-view');
             const safeId = data.name.replace(/\s+/g, '-');
@@ -595,7 +695,6 @@
             const inp = document.getElementById('chat-input');
             const msg = inp.value.trim();
             if(!msg) return;
-            
             socket.emit('chat-message', { room: room, user: namaGuru, msg: msg, role: 'Guru' });
             inp.value = '';
         }
@@ -603,18 +702,12 @@
         socket.on('chat-message', (data) => {
             const c = document.getElementById('chat-container');
             const isMe = data.user === namaGuru;
-            
-            // Hapus pesan kosong "Belum ada pesan" jika ada
             if(c.innerText.includes('Belum ada pesan')) c.innerHTML = '';
-
             c.innerHTML += `
                 <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} animate-[fadeIn_0.3s_ease-out]">
                     <span class="text-[9px] text-slate-400 mb-1 ml-1 font-bold uppercase tracking-wider">${data.user}</span>
-                    <div class="${isMe ? 'bg-brand-600 text-white shadow-brand-500/20' : 'bg-slate-100 text-slate-700'} px-4 py-2 rounded-2xl ${isMe ? 'rounded-tr-none' : 'rounded-tl-none'} max-w-[85%] text-xs shadow-sm leading-relaxed">
-                        ${data.msg}
-                    </div>
-                </div>
-            `;
+                    <div class="${isMe ? 'bg-brand-600 text-white shadow-brand-500/20' : 'bg-slate-100 text-slate-700'} px-4 py-2 rounded-2xl ${isMe ? 'rounded-tr-none' : 'rounded-tl-none'} max-w-[85%] text-xs shadow-sm leading-relaxed">${data.msg}</div>
+                </div>`;
             c.scrollTop = c.scrollHeight;
         });
 
@@ -623,11 +716,7 @@
             document.getElementById('alertMsg').innerText = msg;
             document.getElementById('alertIcon').innerText = icon;
             el.style.opacity = '1'; el.style.transform = 'translate(-50%, 40px)';
-            
-            setTimeout(() => { 
-                el.style.opacity = '0'; 
-                el.style.transform = 'translate(-50%, -20px)'; 
-            }, 3000);
+            setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translate(-50%, -20px)'; }, 3000);
         }
 
     </script>
