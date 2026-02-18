@@ -3,39 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Student Space - Pro Connection</title>
+    <title>Student Space - Edisi Ramadan</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/socket.io/socket.io.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        body { font-family: 'Quicksand', sans-serif; background: #0f172a; color: #e2e8f0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        /* TEMA RAMADAN */
+        body { 
+            font-family: 'Quicksand', sans-serif; 
+            background: #020617; 
+            color: #e2e8f0; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+        }
         
         /* --- LAYOUT UTAMA --- */
-        /* PERBAIKAN: Sidebar dikecilkan jadi 300px (sebelumnya 350px) */
         .main-layout {
             flex: 1;
             display: grid;
-            grid-template-columns: 1fr 300px; 
+            grid-template-columns: 1fr 320px; /* Sidebar sedikit diperlebar agar muat soal */
             gap: 1rem;
             padding: 1rem;
-            overflow: hidden;
+            overflow: hidden; 
         }
 
-        /* Responsif untuk HP: Menggunakan Scroll jika konten panjang */
+        /* --- RESPONSIF HP --- */
         @media (max-width: 1024px) {
+            body { height: auto; overflow-y: auto; }
             .main-layout {
                 display: flex;
                 flex-direction: column;
                 padding: 0.5rem;
-                gap: 0.5rem;
-                overflow-y: auto; /* FITUR SCROLL: Aktif jika konten melebihi layar */
+                gap: 1rem;
+                overflow: visible;
+                height: auto;
             }
-            
-            /* Agar chat tidak terlalu panjang memakan tempat di awal load */
             #sidebar-col {
-                min-height: 400px; 
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
             }
         }
 
@@ -45,197 +54,162 @@
             background: #000; 
             border-radius: 1rem; 
             overflow: hidden; 
-            border: 1px solid #334155; 
+            border: 1px solid #1e293b; 
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center;
+            display: flex; flex-direction: column; justify-content: center;
             width: 100%;
+            min-height: 250px; /* Minimal tinggi di HP */
         }
 
         @media (max-width: 1024px) {
-            #main-stage {
-                aspect-ratio: 16/9;
-                flex-shrink: 0; 
-            }
+            #main-stage { aspect-ratio: 16/9; flex-shrink: 0; }
         }
         
         #teacher-video-stream { width: 100%; height: 100%; object-fit: contain; background: #000; }
         
-        /* --- PIP (KAMERA SISWA) --- */
+        /* PIP */
         #student-pip-wrapper {
-            position: absolute; 
-            z-index: 20; 
-            background: #1e293b;
-            border-radius: 0.75rem; 
-            overflow: hidden; 
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
-            transition: all 0.3s ease;
-            bottom: 5rem; 
-            right: 1rem; 
-            width: 180px; 
-            aspect-ratio: 4/3;
+            position: absolute; z-index: 20; background: #0f172a;
+            border-radius: 0.75rem; overflow: hidden; 
+            border: 2px solid rgba(234, 179, 8, 0.3);
+            bottom: 5rem; right: 1rem; width: 140px; aspect-ratio: 4/3;
         }
 
         @media (max-width: 768px) {
-            #student-pip-wrapper {
-                width: 100px; 
-                bottom: 4rem; 
-                right: 0.5rem;
-            }
+            #student-pip-wrapper { width: 100px; bottom: 4rem; right: 0.5rem; }
         }
 
         #video-element { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* --- KONTROL VIDEO --- */
+        /* CONTROLS */
         .video-controls {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            padding: 0.75rem;
+            position: absolute; bottom: 0; left: 0; right: 0; padding: 0.75rem;
             background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
             display: flex; align-items: center; justify-content: space-between; gap: 1rem; z-index: 30;
         }
 
         .ctrl-btn {
-            width: 38px; height: 38px; border-radius: 50%;
+            width: 35px; height: 35px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1rem; transition: all 0.2s; cursor: pointer;
+            font-size: 0.9rem; cursor: pointer;
             background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1);
         }
-        .ctrl-btn:active { transform: scale(0.95); }
 
-        /* --- SIDEBAR & CHAT --- */
-        #sidebar-col {
-            display: flex; flex-direction: column; gap: 0.75rem;
-            height: 100%; overflow: hidden;
-        }
+        /* --- SIDEBAR STYLE --- */
+        #sidebar-col { height: 100%; overflow: hidden; display: flex; flex-direction: column; gap: 10px; }
+        @media (max-width: 1024px) { #sidebar-col { height: auto; overflow: visible; } }
 
-        .glass-panel { background: #1e293b; border-radius: 1rem; border: 1px solid #334155; overflow: hidden; display: flex; flex-direction: column; }
+        .glass-panel { background: #0f172a; border-radius: 1rem; border: 1px solid #1e293b; overflow: hidden; display: flex; flex-direction: column; }
         
-        #cuteAlert {
-            position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
-            background: #ec4899; color: white; padding: 0.5rem 1.5rem;
-            border-radius: 50px; font-weight: 600; font-size: 0.9rem;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); z-index: 5000; transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex; align-items: center; gap: 8px; white-space: nowrap;
-        }
-        .alert-active { top: 20px !important; }
-
+        /* SCROLLBAR */
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+        
+        /* CHAT BUBBLE & STATUS */
+        .msg-status { font-size: 10px; margin-left: 6px; vertical-align: middle; }
 
     </style>
 </head>
 <body>
 
-    <nav class="h-[60px] flex-none flex justify-between items-center px-4 bg-slate-900 border-b border-slate-800 z-50">
-        <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-full bg-pink-600 flex items-center justify-center text-white text-xs shadow-lg shadow-pink-500/30">
-                <i class="fa-solid fa-graduation-cap"></i>
+    <nav class="h-[60px] flex-none flex justify-between items-center px-4 bg-slate-950 border-b border-emerald-900/30 z-50">
+        <div class="flex items-center gap-3">
+            <div class="relative">
+                <div class="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center text-white text-sm shadow-lg border border-amber-400">
+                    <i class="fa-solid fa-child-reaching"></i>
+                </div>
+                <div class="absolute -top-1 -right-1 text-amber-400 text-[10px] drop-shadow-md">🌙</div>
             </div>
-            <h1 class="font-bold text-slate-100 text-sm tracking-wide hidden sm:block">Student Space</h1>
+            <div class="flex flex-col justify-center">
+                <h1 class="font-bold text-amber-400 text-xs leading-tight">Halo 🙋 <%= nama_siswa.split(' ')[0] %></h1>
+                <p class="text-[9px] text-emerald-100/70">Siap belajar</p>
+            </div>
         </div>
         
         <div class="flex items-center gap-2">
-            <select id="select-kelas-murid" onchange="muridPindahKelas()" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg py-1.5 px-2 outline-none focus:border-pink-500 transition-colors max-w-[150px]">
+            <select id="select-kelas-murid" onchange="muridPindahKelas()" class="bg-slate-900 border border-slate-700 text-emerald-100 text-[10px] rounded-lg py-1 px-2 outline-none focus:border-amber-400 max-w-[100px]">
                 <option value="">-- Kelas --</option>
             </select>
-            <div id="status-live-indicator" class="hidden px-2 py-1 bg-red-500/10 text-red-400 rounded-md text-[10px] font-bold border border-red-500/20 flex items-center gap-1.5">
+            <div id="status-live-indicator" class="hidden px-2 py-0.5 bg-red-500/10 text-red-400 rounded text-[9px] font-bold border border-red-500/20 flex items-center gap-1">
                 <span class="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span> LIVE
             </div>
         </div>
     </nav>
 
-    <div id="cuteAlert">
-        <span id="cuteIcon">🍓</span>
-        <span id="cuteMsg">Halo!</span>
+    <div id="cuteAlert" class="fixed -top-20 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-4 py-2 rounded-full font-bold text-sm shadow-xl z-50 transition-all duration-300 flex items-center gap-2 border border-emerald-400">
+        <span id="cuteIcon">🕌</span> <span id="cuteMsg">Info</span>
     </div>
 
     <div class="main-layout">
+        
         <div id="main-stage">
             <img id="teacher-video-stream" src="" class="opacity-0 transition-opacity duration-500">
             <div id="video-placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-950 z-0">
-                <div class="w-16 h-16 rounded-full bg-slate-900 flex items-center justify-center mb-3 animate-pulse">
-                    <i class="fa-solid fa-satellite-dish text-2xl text-slate-700"></i>
+                <div class="w-12 h-12 rounded-full bg-slate-900 flex items-center justify-center mb-2 animate-pulse border border-emerald-900">
+                    <i class="fa-solid fa-mosque text-xl text-emerald-700"></i>
                 </div>
-                <p class="font-bold text-sm text-slate-400">Menunggu Guru...</p>
+                <p class="font-bold text-xs text-slate-400">Menunggu Guru...</p>
             </div>
+            
             <div id="student-pip-wrapper">
-                <div id="cam-container" class="w-full h-full bg-slate-800 flex items-center justify-center">
-                    <span class="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Kamera Mati</span>
+                <div id="cam-container" class="w-full h-full bg-slate-900 flex items-center justify-center">
+                    <span class="text-[8px] text-slate-500 font-bold">OFF</span>
                 </div>
             </div>
+
             <div class="video-controls">
-                <div class="flex gap-3">
-                    <button id="btn-mic" onclick="toggleMic()" class="ctrl-btn bg-slate-800 hover:bg-slate-700 text-slate-300"><i id="icon-mic" class="fa-solid fa-microphone-slash"></i></button>
-                    <button id="btn-cam" onclick="toggleCamera()" class="ctrl-btn bg-slate-800 hover:bg-slate-700 text-slate-300"><i id="icon-cam" class="fa-solid fa-video-slash"></i></button>
+                <div class="flex gap-2">
+                    <button id="btn-mic" onclick="toggleMic()" class="ctrl-btn bg-slate-800 text-slate-300"><i id="icon-mic" class="fa-solid fa-microphone-slash"></i></button>
+                    <button id="btn-cam" onclick="toggleCamera()" class="ctrl-btn bg-slate-800 text-slate-300"><i id="icon-cam" class="fa-solid fa-video-slash"></i></button>
                 </div>
-                <div class="flex-1 text-center px-2">
-                     <span id="my-status-text" class="text-[10px] bg-black/40 px-2 py-1 rounded-full text-slate-300 backdrop-blur-sm border border-white/5">Siap Belajar</span>
-                </div>
+                <span id="my-status-text" class="text-[9px] bg-black/40 px-2 py-1 rounded text-slate-300 border border-white/5">Siap</span>
                 <button onclick="toggleFullscreen()" class="ctrl-btn text-white"><i id="icon-fullscreen" class="fa-solid fa-expand"></i></button>
             </div>
         </div>
 
         <div id="sidebar-col">
-            <div id="quiz-alert-box" class="hidden bg-gradient-to-r from-pink-600 to-rose-500 rounded-xl p-3 text-white shadow-lg cursor-pointer transform hover:scale-[1.02] transition-transform" onclick="openQuizModal()">
-                <div class="flex justify-between items-center">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm"><i class="fa-solid fa-bolt text-yellow-300 text-sm"></i></div>
-                        <div><h4 class="font-bold text-xs uppercase tracking-wide">Kuis Aktif!</h4><p class="text-[10px] opacity-90">Ketuk untuk mengerjakan</p></div>
+            
+            <div class="glass-panel flex-1 min-h-[350px] border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.1)] relative">
+                <div class="p-3 bg-emerald-900/40 border-b border-emerald-800 flex justify-between items-center">
+                    <h3 class="font-bold text-amber-400 text-xs flex items-center gap-2">
+                        <i class="fa-solid fa-pen-nib"></i> Lembar Jawab
+                    </h3>
+                    <span id="quiz-timer" class="text-[10px] text-slate-300 bg-slate-800 px-2 py-0.5 rounded">Menunggu Soal...</span>
+                </div>
+                
+                <div id="quiz-panel-content" class="flex-1 overflow-y-auto p-4 bg-slate-900/50 space-y-4">
+                    <div class="flex flex-col items-center justify-center h-full text-slate-500 opacity-50">
+                        <i class="fa-regular fa-clipboard text-4xl mb-2"></i>
+                        <p class="text-xs text-center">Belum ada kuis aktif.<br>Soal akan muncul di sini.</p>
                     </div>
-                    <i class="fa-solid fa-chevron-right text-xs opacity-70"></i>
+                </div>
+
+                <div id="quiz-action-bar" class="hidden p-3 bg-slate-900 border-t border-slate-800">
+                    <button onclick="finishQuiz()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-xs font-bold shadow-lg transition-all">
+                        Kirim Jawaban <i class="fa-solid fa-paper-plane ml-1"></i>
+                    </button>
                 </div>
             </div>
 
-            <div class="glass-panel flex-1 min-h-0">
-                <div class="p-3 bg-slate-800/80 border-b border-slate-700 flex justify-between items-center backdrop-blur-sm">
-                    <h3 class="font-bold text-slate-300 text-xs flex items-center gap-2"><i class="fa-regular fa-comments text-pink-500"></i> Diskusi Kelas</h3>
-                    <div class="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">● Online</div>
+            <div class="glass-panel h-[200px] flex-none border-t-2 border-slate-700"> 
+                <div class="px-3 py-2 bg-slate-900 border-b border-slate-800 flex justify-between items-center">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Live Chat</span>
+                    <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
                 </div>
-                <div id="chat-box" class="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-900/50 text-xs text-slate-300"></div>
-                <div class="p-2 bg-slate-800 border-t border-slate-700">
+                
+                <div id="chat-box" class="flex-1 overflow-y-auto p-3 space-y-2 bg-slate-950 text-[11px] text-slate-300"></div>
+
+                <div class="p-2 bg-slate-900 border-t border-slate-800">
                     <div class="flex gap-2">
-                        <input id="chat-input" type="text" placeholder="Ketik pesan..." class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 text-xs focus:border-pink-500 focus:ring-1 focus:ring-pink-500 outline-none transition-all">
-                        <button onclick="sendChat()" class="bg-pink-600 text-white w-9 rounded-lg hover:bg-pink-500 transition-all flex items-center justify-center shadow-lg shadow-pink-500/20"><i class="fa-solid fa-paper-plane text-xs"></i></button>
+                        <input id="chat-input" type="text" placeholder="Ketik pesan..." class="w-full bg-slate-950 border border-slate-700 text-white rounded px-2 py-1.5 text-xs focus:border-emerald-500 outline-none">
+                        <button onclick="sendChat()" class="bg-emerald-600 text-white w-8 rounded hover:bg-emerald-500 flex items-center justify-center">
+                            <i class="fa-solid fa-arrow-up text-xs"></i>
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <div class="glass-panel p-3 flex flex-row items-center gap-3 bg-slate-800/80 flex-none">
-                <div class="w-9 h-9 rounded-lg bg-slate-700 flex items-center justify-center border border-slate-600 text-slate-300 font-bold text-sm"><%= nama_siswa.charAt(0) %></div>
-                <div class="flex-1 min-w-0">
-                    <h2 class="font-bold text-xs text-slate-200 truncate"><%= nama_siswa %></h2>
-                    <div class="flex items-center gap-2 mt-0.5"><p class="text-[10px] text-slate-400">Skor:</p><span id="sidebar-score" class="text-[10px] font-bold text-pink-400 bg-pink-400/10 px-1.5 rounded border border-pink-400/20">0</span></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="quiz-overlay" class="hidden fixed inset-0 bg-slate-900/95 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-2xl h-[90vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl">
-            <div class="bg-pink-600 p-4 flex justify-between items-center text-white flex-none">
-                <div><h2 class="text-xs opacity-80 uppercase font-semibold">Lembar Jawaban</h2><h3 id="quiz-title" class="text-sm font-bold truncate max-w-[200px]">Topik Kuis</h3></div>
-                <button onclick="closeQuiz()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            
-            <div id="quiz-content" class="flex-1 overflow-y-auto p-5 bg-slate-50">
-                <div id="quiz-body" class="space-y-6 pb-10"></div>
-            </div>
-            
-            <div id="quiz-result" class="hidden flex-1 flex flex-col items-center justify-center p-6 text-center bg-white">
-                <div class="text-6xl mb-4 animate-bounce">🏆</div>
-                <h3 class="text-xl font-bold text-slate-800">Selesai!</h3>
-                <div class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-600 my-2" id="final-score-val">0</div>
-                <p id="ai-feedback" class="text-xs text-slate-500 max-w-xs bg-slate-100 p-3 rounded-lg leading-relaxed">Menunggu hasil...</p>
-                <button onclick="closeQuiz()" class="mt-8 text-pink-600 font-bold text-xs hover:underline">Tutup Halaman</button>
-            </div>
-            
-            <div id="quiz-footer" class="p-4 border-t border-slate-200 bg-white flex-none">
-                <button onclick="finishQuiz()" class="w-full bg-pink-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-pink-500/30 hover:bg-pink-500 active:scale-[0.98] transition-all text-sm">Kirim Jawaban <i class="fa-solid fa-rocket ml-2"></i></button>
-            </div>
         </div>
     </div>
 
@@ -252,90 +226,60 @@
         let myStream = null;
         let currentQuizData = null; 
         let isCameraOn = false;
-        let isMicOn = false;
 
+        // --- INIT & KONEKSI ---
         async function initKelasMurid() {
             try {
                 const select = document.getElementById('select-kelas-murid');
                 const res = await fetch(`/api/kelas/${kodeSekolah}`);
                 if(res.ok) {
                     const data = await res.json();
-                    select.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+                    select.innerHTML = '<option value="">-- Kelas --</option>';
                     data.forEach(k => {
                         const isSelected = (k.nama_kelas === kelasTersimpan) ? 'selected' : '';
                         select.innerHTML += `<option value="${k.nama_kelas}" ${isSelected}>${k.nama_kelas}</option>`;
                     });
                 }
-                if(kelasTersimpan && kelasTersimpan !== "null" && kelasTersimpan !== "") {
-                    joinRoomSiswa(kelasTersimpan);
-                }
-            } catch (e) { console.log("Mode UI Only"); }
+                if(kelasTersimpan) joinRoomSiswa(kelasTersimpan);
+            } catch (e) {}
         }
 
-        async function muridPindahKelas() {
+        function muridPindahKelas() {
             const kelasBaru = document.getElementById('select-kelas-murid').value;
             if(!kelasBaru) return;
-            try {
-                await fetch('/api/update-kelas-siswa', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ email: emailSiswa, kelas: kelasBaru })
-                });
-            } catch(e) {}
+            fetch('/api/update-kelas-siswa', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ email: emailSiswa, kelas: kelasBaru }) }).catch(()=>{});
             kelasTersimpan = kelasBaru;
             joinRoomSiswa(kelasBaru);
             showCuteAlert(`Masuk ke ${kelasBaru}`, '🚀');
         }
 
         function joinRoomSiswa(namaKelas) {
-            const newRoom = `${kodeSekolah}-${namaKelas}`;
-            currentRoom = newRoom;
-            socket.emit('join-room', { room: newRoom, nama: namaSiswa, role: 'Siswa' });
-            if(isCameraOn) {
-                socket.emit('join-live', { room: currentRoom, nama: namaSiswa });
-            }
+            currentRoom = `${kodeSekolah}-${namaKelas}`;
+            socket.emit('join-room', { room: currentRoom, nama: namaSiswa, role: 'Siswa' });
+            if(isCameraOn) socket.emit('join-live', { room: currentRoom, nama: namaSiswa });
         }
 
         window.onload = initKelasMurid;
 
+        // --- KAMERA ---
         async function startCamera() {
             try {
-                // PERBAIKAN: Hapus constraint resolusi kaku (width/height) biar lebih kompatibel di HP
                 myStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 const video = document.createElement('video');
-                video.id = 'video-element';
-                video.srcObject = myStream;
-                video.autoplay = true;
-                video.muted = true;
-                
-                // PERBAIKAN: Wajib untuk iOS/Mobile Web
-                video.setAttribute('playsinline', 'true');
-                
-                const container = document.getElementById('cam-container');
-                container.innerHTML = '';
-                container.appendChild(video);
-                
+                video.id = 'video-element'; video.srcObject = myStream; video.autoplay = true; video.muted = true; video.setAttribute('playsinline', 'true');
+                document.getElementById('cam-container').innerHTML = ''; document.getElementById('cam-container').appendChild(video);
                 isCameraOn = true;
-                isMicOn = true; 
                 socket.emit('join-live', { room: currentRoom, nama: namaSiswa });
                 sendFrameToGuru();
                 updateControlUI();
                 showCuteAlert('Kamera Aktif', '📹');
-            } catch (err) { 
-                showCuteAlert('Akses Ditolak / Browser Memblokir', '❌'); 
-                console.error(err);
-            }
+            } catch (err) { showCuteAlert('Gagal Akses Kamera', '❌'); }
         }
 
         function toggleMic() {
             if (!myStream) { showCuteAlert('Nyalakan kamera dulu!', '⚠️'); return; }
             const audioTrack = myStream.getAudioTracks()[0];
-            if (audioTrack) {
-                audioTrack.enabled = !audioTrack.enabled;
-                isMicOn = audioTrack.enabled;
-                updateControlUI();
-                showCuteAlert(isMicOn ? 'Mic On' : 'Mic Muted', isMicOn ? '🎤' : '🔇');
-            }
+            if (audioTrack) { audioTrack.enabled = !audioTrack.enabled; showCuteAlert(audioTrack.enabled ? 'Mic On' : 'Mic Muted', audioTrack.enabled ? '🎤' : '🔇'); }
         }
 
         function toggleCamera() {
@@ -344,50 +288,25 @@
             if (videoTrack) {
                 videoTrack.enabled = !videoTrack.enabled;
                 isCameraOn = videoTrack.enabled;
-                
-                const pip = document.getElementById('cam-container');
-                if(!isCameraOn) {
-                    pip.innerHTML = `<div class="w-full h-full bg-slate-800 flex items-center justify-center"><span class="text-[9px] text-slate-500 font-bold uppercase">Off</span></div>`;
-                } else {
-                    const video = document.createElement('video');
-                    video.id = 'video-element';
-                    video.srcObject = myStream;
-                    video.autoplay = true;
-                    video.muted = true;
-                    video.setAttribute('playsinline', 'true');
-                    pip.innerHTML = '';
-                    pip.appendChild(video);
+                if(!isCameraOn) document.getElementById('cam-container').innerHTML = `<div class="w-full h-full bg-slate-900 flex items-center justify-center"><span class="text-[8px] text-slate-500 font-bold">OFF</span></div>`;
+                else {
+                    const video = document.createElement('video'); video.id = 'video-element'; video.srcObject = myStream; video.autoplay = true; video.muted = true; video.setAttribute('playsinline', 'true');
+                    document.getElementById('cam-container').innerHTML = ''; document.getElementById('cam-container').appendChild(video);
                 }
                 updateControlUI();
-                showCuteAlert(isCameraOn ? 'Cam On' : 'Cam Off', isCameraOn ? '📹' : '🚫');
             }
         }
 
         function updateControlUI() {
-            const btnMic = document.getElementById('btn-mic');
-            const iconMic = document.getElementById('icon-mic');
             const btnCam = document.getElementById('btn-cam');
-            const iconCam = document.getElementById('icon-cam');
-            const statusText = document.getElementById('my-status-text');
-
-            if (isMicOn) {
-                btnMic.className = "ctrl-btn bg-emerald-600 text-white hover:bg-emerald-500 border-emerald-500";
-                iconMic.className = "fa-solid fa-microphone";
-            } else {
-                btnMic.className = "ctrl-btn bg-rose-600 text-white hover:bg-rose-500 border-rose-500";
-                iconMic.className = "fa-solid fa-microphone-slash";
-            }
-
             if (isCameraOn) {
-                btnCam.className = "ctrl-btn bg-emerald-600 text-white hover:bg-emerald-500 border-emerald-500";
-                iconCam.className = "fa-solid fa-video";
-                statusText.innerText = "On Air";
-                statusText.classList.add("text-emerald-400");
+                btnCam.className = "ctrl-btn bg-emerald-600 text-white border-emerald-500";
+                document.getElementById('my-status-text').innerText = "On Air";
+                document.getElementById('my-status-text').classList.add("text-emerald-400");
             } else {
-                btnCam.className = "ctrl-btn bg-rose-600 text-white hover:bg-rose-500 border-rose-500";
-                iconCam.className = "fa-solid fa-video-slash";
-                statusText.innerText = "Paused";
-                statusText.classList.remove("text-emerald-400");
+                btnCam.className = "ctrl-btn bg-rose-600 text-white border-rose-500";
+                document.getElementById('my-status-text').innerText = "Paused";
+                document.getElementById('my-status-text').classList.remove("text-emerald-400");
             }
         }
 
@@ -396,11 +315,9 @@
             const video = document.getElementById('video-element');
             const canvas = document.getElementById('hidden-canvas');
             const ctx = canvas.getContext('2d');
-
             if (video && video.readyState === video.HAVE_ENOUGH_DATA) {
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const frame = canvas.toDataURL('image/jpeg', 0.4); 
-                socket.emit('stream-frame', { room: currentRoom, image: frame });
+                socket.emit('stream-frame', { room: currentRoom, image: canvas.toDataURL('image/jpeg', 0.4) });
             }
             setTimeout(sendFrameToGuru, 250); 
         }
@@ -408,105 +325,127 @@
         socket.on('stream-frame', (data) => {
             const img = document.getElementById('teacher-video-stream');
             if(img && data.role === 'Guru') {
-                img.src = data.image;
-                img.classList.remove('opacity-0');
+                img.src = data.image; img.classList.remove('opacity-0');
                 document.getElementById('video-placeholder').classList.add('hidden');
                 document.getElementById('status-live-indicator').classList.remove('hidden');
             }
         });
 
-        function toggleFullscreen() {
-            const stage = document.getElementById('main-stage');
-            if (!document.fullscreenElement) {
-                stage.requestFullscreen().catch(err => { console.log(err); });
-            } else { document.exitFullscreen(); }
-        }
-
-        function showCuteAlert(msg, icon = '🍓') {
-            const alert = document.getElementById('cuteAlert');
-            document.getElementById('cuteMsg').innerText = msg;
-            document.getElementById('cuteIcon').innerText = icon;
-            alert.classList.add('alert-active');
-            setTimeout(() => alert.classList.remove('alert-active'), 3000);
-        }
-
+        // --- LOGIKA CHAT BARU (DENGAN STATUS CEKLIS) ---
         function sendChat() {
             const input = document.getElementById('chat-input');
-            if(input.value.trim()) {
-                socket.emit('chat-message', { user: namaSiswa, msg: input.value, room: currentRoom, role: 'Siswa' });
-                input.value = '';
+            const msg = input.value.trim();
+            if(!msg) return;
+
+            // Cek Koneksi Socket
+            if(socket.connected) {
+                // Kirim ke server
+                socket.emit('chat-message', { user: namaSiswa, msg: msg, room: currentRoom, role: 'Siswa' });
+            } else {
+                // Jika offline, langsung render pesan GAGAL
+                renderLocalMessage(msg, false);
             }
+            input.value = '';
         }
 
+        // Render pesan lokal jika gagal (Fitur tambahan untuk UX)
+        function renderLocalMessage(msg, success) {
+            const chatBox = document.getElementById('chat-box');
+            const bubbleClass = 'bg-slate-700 text-slate-300 rounded-tr-none border border-red-500 opacity-70';
+            const statusIcon = `<i class="fa-solid fa-xmark text-red-500 ml-1 msg-status" title="Tidak Terkirim"></i>`;
+            
+            chatBox.innerHTML += `
+                <div class="flex justify-end mb-2">
+                    <div class="max-w-[85%]">
+                        <div class="px-2 py-1.5 rounded-xl text-xs leading-relaxed shadow-sm ${bubbleClass}">
+                            ${msg} ${statusIcon}
+                        </div>
+                    </div>
+                </div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // Menerima pesan dari server (Tanda Berhasil Terkirim)
         socket.on('chat-message', (data) => {
             const chatBox = document.getElementById('chat-box');
             const isMe = data.user === namaSiswa;
-            const bubbleClass = isMe ? 'bg-pink-600 text-white rounded-tr-none' : 'bg-slate-700 text-slate-200 rounded-tl-none';
+            
+            // Icon Status: Ceklis Dua Hijau/Biru untuk pesan sendiri
+            let statusIcon = "";
+            if(isMe) {
+                statusIcon = `<i class="fa-solid fa-check-double text-emerald-400 ml-1 msg-status" title="Terkirim"></i>`;
+            }
+
+            const bubbleClass = isMe 
+                ? 'bg-emerald-600 text-white rounded-tr-none' 
+                : 'bg-slate-800 text-slate-300 rounded-tl-none border border-slate-700';
+            
             const align = isMe ? 'justify-end' : 'justify-start';
-            const userLabel = isMe ? '' : `<span class="text-[9px] font-bold text-pink-400 block mb-1 ml-1">${data.user}</span>`;
+            const userLabel = isMe ? '' : `<span class="text-[9px] font-bold text-amber-400 block mb-0.5 ml-1">${data.user}</span>`;
             
             chatBox.innerHTML += `
                 <div class="flex ${align} mb-2 animate-fade-in-up">
-                    <div class="max-w-[80%]">
+                    <div class="max-w-[85%]">
                         ${userLabel}
-                        <div class="px-3 py-2 rounded-2xl text-xs leading-relaxed shadow-sm ${bubbleClass}">
-                            ${data.msg}
+                        <div class="px-2 py-1.5 rounded-xl text-xs leading-relaxed shadow-sm ${bubbleClass}">
+                            ${data.msg} ${statusIcon}
                         </div>
                     </div>
                 </div>`;
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
-        function openQuizModal() {
-             document.getElementById('quiz-overlay').classList.remove('hidden');
-             document.getElementById('quiz-alert-box').classList.add('hidden');
-        }
 
-        function closeQuiz() { document.getElementById('quiz-overlay').classList.add('hidden'); }
-
+        // --- LOGIKA KUIS DI SIDEBAR (BUKAN POPUP) ---
         socket.on('start-quiz', (data) => {
             currentQuizData = data; 
             showCuteAlert('Kuis Dimulai!', '📝');
-            document.getElementById('quiz-alert-box').classList.remove('hidden');
             
-            const body = document.getElementById('quiz-body');
-            document.getElementById('quiz-content').classList.remove('hidden');
-            document.getElementById('quiz-result').classList.add('hidden');
-            document.getElementById('quiz-footer').classList.remove('hidden');
-            document.getElementById('quiz-title').innerText = data.judul;
+            // Ubah konten panel kuis
+            const contentDiv = document.getElementById('quiz-panel-content');
+            const timerDiv = document.getElementById('quiz-timer');
+            const btnBar = document.getElementById('quiz-action-bar');
+            
+            timerDiv.innerText = data.judul; // Tampilkan Judul di header
+            btnBar.classList.remove('hidden'); // Munculkan tombol kirim
 
             let html = "";
+            
+            // Render PG
             if(data.soal_pg && data.soal_pg.length > 0) {
-                html += `<div class="mb-4"><h4 class="text-xs font-bold text-pink-600 uppercase mb-3">Pilihan Ganda</h4>`;
+                html += `<div class="mb-4"><h4 class="text-xs font-bold text-emerald-400 uppercase mb-2 border-b border-emerald-800 pb-1">A. Pilihan Ganda</h4>`;
                 html += data.soal_pg.map((s, idx) => `
-                    <div class="pg-item mb-6 bg-white p-3 rounded-xl border border-slate-100 shadow-sm" data-index="${idx}">
-                        <p class="font-semibold text-slate-700 mb-3 text-sm"><span class="text-pink-500 mr-1">${idx + 1}.</span> ${s.q}</p>
-                        <div class="space-y-2">
-                            ${s.a.map(opsi => `<button onclick="selectOption(this)" class="option-btn w-full text-left p-3 bg-slate-50 rounded-lg border border-slate-200 hover:bg-pink-50 hover:border-pink-200 transition-all text-xs font-medium text-slate-600">${opsi}</button>`).join('')}
+                    <div class="pg-item mb-4" data-index="${idx}">
+                        <p class="font-semibold text-slate-200 mb-2 text-xs"><span class="text-amber-400 mr-1">${idx + 1}.</span> ${s.q}</p>
+                        <div class="space-y-1.5">
+                            ${s.a.map(opsi => `<button onclick="selectOption(this)" class="option-btn w-full text-left p-2 bg-slate-800 rounded border border-slate-700 hover:bg-emerald-900/50 hover:border-emerald-500 transition-all text-[11px] text-slate-300">${opsi}</button>`).join('')}
                         </div>
                     </div>`).join('');
                 html += `</div>`;
             }
-            // PERBAIKAN: Menambahkan Logika Essay
+            
+            // Render Essay
             if(data.soal_essay && data.soal_essay.length > 0) {
-                html += `<div class="mb-4 border-t border-slate-100 pt-4"><h4 class="text-xs font-bold text-purple-600 uppercase mb-3">Soal Essay</h4>`;
+                html += `<div class="mb-2"><h4 class="text-xs font-bold text-amber-400 uppercase mb-2 border-b border-emerald-800 pb-1">B. Essay</h4>`;
                 html += data.soal_essay.map((e, idx) => `
-                    <div class="essay-item mb-6 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                        <p class="font-semibold text-slate-700 mb-2 text-sm"><span class="text-purple-500 mr-1">${idx + 1}.</span> ${e.q}</p>
-                        <textarea class="essay-ans w-full p-3 rounded-lg border border-slate-200 text-xs h-24 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none resize-none bg-slate-50" placeholder="Ketik jawabanmu di sini..."></textarea>
+                    <div class="essay-item mb-4">
+                        <p class="font-semibold text-slate-200 mb-1.5 text-xs"><span class="text-emerald-400 mr-1">${idx + 1}.</span> ${e.q}</p>
+                        <textarea class="essay-ans w-full p-2 rounded bg-slate-800 border border-slate-700 text-white text-xs h-20 focus:border-amber-500 outline-none resize-none placeholder-slate-600" placeholder="Jawaban..."></textarea>
                     </div>`).join('');
                 html += `</div>`;
             }
-            body.innerHTML = html;
+            contentDiv.innerHTML = html;
         });
 
         function selectOption(btn) {
+            // Hapus seleksi sebelumnya di soal yg sama
             btn.closest('.pg-item').querySelectorAll('.option-btn').forEach(b => {
-                b.classList.remove('bg-pink-500', 'text-white', 'border-pink-500', 'option-selected');
-                b.classList.add('bg-slate-50', 'text-slate-600');
+                b.classList.remove('bg-emerald-600', 'text-white', 'border-emerald-500', 'option-selected');
+                b.classList.add('bg-slate-800', 'text-slate-300');
             });
-            btn.classList.remove('bg-slate-50', 'text-slate-600');
-            btn.classList.add('bg-pink-500', 'text-white', 'border-pink-500', 'option-selected');
+            // Aktifkan tombol ini
+            btn.classList.remove('bg-slate-800', 'text-slate-300');
+            btn.classList.add('bg-emerald-600', 'text-white', 'border-emerald-500', 'option-selected');
         }
 
         function finishQuiz() {
@@ -515,17 +454,22 @@
                 const selected = item.querySelector('.option-selected');
                 pgAnswers.push(selected ? selected.innerText.trim() : "");
             });
-
-            // PERBAIKAN: Mengambil jawaban Essay dari Textarea
             const essayAnswers = [];
             document.querySelectorAll('.essay-ans').forEach(txt => {
                 essayAnswers.push(txt.value.trim());
             });
 
-            document.getElementById('quiz-content').classList.add('hidden');
-            document.getElementById('quiz-result').classList.remove('hidden');
-            document.getElementById('quiz-footer').classList.add('hidden');
-            document.getElementById('final-score-val').innerText = "...";
+            // Ganti tampilan jadi loading / selesai
+            const contentDiv = document.getElementById('quiz-panel-content');
+            const btnBar = document.getElementById('quiz-action-bar');
+            
+            btnBar.classList.add('hidden');
+            contentDiv.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full space-y-3">
+                    <div class="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p class="text-xs text-slate-300">Mengirim jawaban...</p>
+                </div>
+            `;
             
             socket.emit('submit-jawaban-siswa', {
                 name: namaSiswa, email: emailSiswa, kelas: kelasTersimpan || 'Umum', room: currentRoom,
@@ -534,14 +478,36 @@
             });
         }
         
+        // Tampilkan Nilai di Panel Kuis (bukan popup)
         socket.on('score-updated-live', (data) => {
             if(data.nama_siswa === namaSiswa) {
-                document.getElementById('final-score-val').innerText = data.skor;
-                document.getElementById('ai-feedback').innerText = data.umpan_balik || "Kerja bagus!";
-                document.getElementById('sidebar-score').innerText = data.skor;
+                const contentDiv = document.getElementById('quiz-panel-content');
+                contentDiv.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-center p-4">
+                        <div class="text-4xl mb-2 animate-bounce">🌙</div>
+                        <h3 class="font-bold text-amber-400 text-sm">Alhamdulillah!</h3>
+                        <div class="text-5xl font-black text-white my-3">${data.skor}</div>
+                        <div class="bg-slate-800 p-2 rounded text-[10px] text-slate-300 w-full">
+                            ${data.umpan_balik || "Jawaban tersimpan."}
+                        </div>
+                    </div>
+                `;
             }
         });
 
+        // UTIL
+        function toggleFullscreen() {
+            const stage = document.getElementById('main-stage');
+            if (!document.fullscreenElement) stage.requestFullscreen().catch(()=>{});
+            else document.exitFullscreen();
+        }
+        function showCuteAlert(msg, icon) {
+            const alert = document.getElementById('cuteAlert');
+            document.getElementById('cuteMsg').innerText = msg;
+            document.getElementById('cuteIcon').innerText = icon;
+            alert.style.top = "20px";
+            setTimeout(() => alert.style.top = "-100px", 3000);
+        }
         document.getElementById('chat-input').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendChat(); });
 
     </script>
