@@ -164,53 +164,73 @@ app.post('/api/update-kelas-siswa', async (req, res) => {
 // ==========================================
 // 🚀 2. SOCKET.IO (MODERN COLLABORATION)
 // ==========================================
+  io.on("connection", (socket) => {
 
-io.on('connection', (socket) => {
-  
-  // Join Room & Absensi
-  socket.on('join-room', (data) => {
-    const roomID = typeof data === 'object' ? data.room : data;
-    const userName = data.nama || 'Anonymous';
-    const userRole = data.role || 'Siswa';
-
+  socket.on("join-room", ({ roomID, userName, role }) => {
     socket.join(roomID);
     socket.userName = userName;
-    socket.userRoom = roomID;
-    socket.userRole = userRole;
+    socket.role = role;
+    socket.roomID = roomID;
 
-    if (!onlineUsers[roomID]) onlineUsers[roomID] = [];
-    
-    // Hindari duplikasi nama dalam satu room
-    if (!onlineUsers[roomID].find(u => u.name === userName)) {
-        onlineUsers[roomID].push({ name: userName, role: userRole });
-    }
-    
-    io.to(roomID).emit('update-attendance', onlineUsers[roomID]);
-    
-    // Beritahu guru ada user baru untuk grid monitoring
-    if (userRole === 'Siswa') {
-        socket.to(roomID).emit('join-live', { name: userName });
-    }
+    socket.to(roomID).emit("user-joined", { name: userName, role });
   });
 
-  // Video Streaming (Guru -> Siswa & Monitoring Siswa -> Guru)
-  socket.on('update-frame', (data) => {
-      // Broadcast frame ke semua orang di room tersebut
-      socket.to(data.room).emit('receive-frame', { 
-          image: data.image, 
-          name: socket.userName 
+  /* ================= LIVE CAMERA ================= */
+
+  socket.on("stream-frame", (data) => {
+    socket.to(data.room).emit("stream-frame", {
+      image: data.image,
+      name: socket.userName,
+      role: socket.role
+    });
+  });
+
+  /* ================= CHAT ================= */
+
+  socket.on("send-chat-message", (data) => {
+    io.to(data.room).emit("chat-message", {
+      name: socket.userName,
+      message: data.message,
+      role: socket.role
+    });
+  });
+
+  /* ================= MATERI ================= */
+
+  socket.on("new-materi", (data) => {
+    socket.to(data.room).emit("new-materi", data);
+  });
+
+  /* ================= QUIZ ================= */
+
+  socket.on("start-quiz", (data) => {
+    io.to(data.room).emit("start-quiz", data);
+  });
+
+  socket.on("submit-jawaban-siswa", (data) => {
+    io.to(data.room).emit("update-score", data);
+  });
+
+  /* ================= VIEW MODE ================= */
+
+  socket.on("change-view-mode", (data) => {
+    socket.to(data.room).emit("change-view-mode", data);
+  });
+
+  /* ================= MUTE ================= */
+
+  socket.on("mute-all", (data) => {
+    socket.to(data.room).emit("mute-all");
+  });
+
+  socket.on("disconnect", () => {
+    if (socket.roomID) {
+      socket.to(socket.roomID).emit("user-left", {
+        name: socket.userName
       });
+    }
   });
-
-  // Chatting Dua Arah (Guru <-> Murid)
-  socket.on('chat-message', (data) => {
-    // Memastikan pengirim disertakan dalam data agar UI bisa membedakan Chat In/Out
-    io.to(data.room).emit('chat-message', {
-        user: data.user,
-        msg: data.msg,
-        role: data.role
-    }); 
-  });
+});
 
   // --- [UPDATE] LOGIKA KUIS AMAN (PERBAIKAN SINKRONISASI) ---
   socket.on('start-quiz', (payload) => {
