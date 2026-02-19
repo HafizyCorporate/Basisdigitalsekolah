@@ -110,6 +110,33 @@ app.post('/auth/register-guru', async (req, res) => {
     }
 });
 
+// ============================================================
+// ✅ PERBAIKAN: ROUTE AKTIVASI GURU (DITAMBAHKAN SESUAI REQUEST)
+// ============================================================
+app.post('/auth/activate-guru', async (req, res) => {
+    const { email, password, kode_sekolah, nama_guru } = req.body;
+    try {
+        // Hash Password
+        const hashed = await bcrypt.hash(password, 10);
+
+        // Masukkan ke tabel global_guru (menyesuaikan struktur DB kamu)
+        await pool.query(
+            'INSERT INTO global_guru (nama_guru, email, password, kode_sekolah) VALUES ($1,$2,$3,$4)',
+            [nama_guru, email, hashed, kode_sekolah]
+        );
+
+        console.log(`Guru ${nama_guru} berhasil diaktivasi.`);
+        // Redirect ke login dengan pesan sukses
+        res.redirect('/login?alert=sukses_aktivasi');
+
+    } catch (err) {
+        console.error("Error Aktivasi Guru:", err);
+        // Jika duplikat atau error, kembalikan ke halaman register/verify dengan pesan
+        res.render('register-guru', { msg: "Gagal Aktivasi: Email mungkin sudah terdaftar atau kesalahan server." });
+    }
+});
+// ============================================================
+
 // REGISTER SISWA
 app.post('/auth/register-siswa', async (req, res) => {
     const { nama, email, pass, kode_sekolah, kelas } = req.body;
@@ -281,11 +308,19 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("send-chat-message", (data) => {
+  // LOGIKA CHAT DARI USER (GURU/SISWA)
+  socket.on("chat-message", (data) => {
+    // data = { room, user, msg, role, isPinned }
+    
+    // Broadcast ke SEMUA ORANG DI ROOM TERSEBUT
+    // Termasuk pengirimnya (kalau mau memastikan sinkronisasi), 
+    // tapi karena di frontend kita pakai Optimistic UI, 
+    // frontend akan filter pesan sendiri.
     io.to(data.room).emit("chat-message", {
-      name: socket.userName,
-      message: data.message,
-      role: socket.role
+      user: data.user,
+      msg: data.msg,
+      role: data.role,
+      isPinned: data.isPinned || false
     });
   });
 
@@ -357,6 +392,12 @@ io.on("connection", (socket) => {
     } catch (err) {
         console.error("Evaluation Error:", err.message);
     }
+  });
+
+  // SINKRONISASI SLIDE (DITAMBAHKAN AGAR GURU BISA KONTROL SLIDE MURID)
+  socket.on('change-slide', (data) => {
+      // data = { room, slideIndex }
+      socket.to(data.room).emit('change-slide', data);
   });
 
   socket.on('disconnect', () => {
