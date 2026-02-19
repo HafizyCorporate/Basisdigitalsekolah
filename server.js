@@ -272,6 +272,59 @@ app.post('/api/generate', async (req, res) => {
   }
 });
 
+// API GAMBAR HUGGING FACE (Dengan Anti Cold-Start)
+app.get('/api/gambar', async (req, res) => {
+    const prompt = req.query.prompt;
+    if (!prompt) return res.status(400).send("Prompt tidak boleh kosong");
+
+    // Pakai model v1-5 karena ukuran file AI-nya lebih kecil, jadi "bangun tidurnya" jauh lebih cepat
+    const hfUrl = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5";
+    
+    let maxRetries = 5; // Kita akan coba maksimal 5 kali kalau API sedang tidur
+    let delay = 5000;   // Tunggu 5 detik setiap kali gagal
+
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            const response = await fetch(hfUrl, {
+                headers: { 
+                    "Authorization": `Bearer ${process.env.HF_API_KEY}`,
+                    "Content-Type": "application/json"
+                },
+                method: "POST",
+                body: JSON.stringify({ inputs: prompt + ", educational illustration, high quality, digital art" }),
+            });
+
+            // JIKA BERHASIL (Gambar terbuat)
+            if (response.ok) {
+                const arrayBuffer = await response.arrayBuffer();
+                const buffer = Buffer.from(arrayBuffer);
+                res.set('Content-Type', 'image/jpeg');
+                return res.send(buffer);
+            }
+
+            // JIKA COLD START (Status 503)
+            if (response.status === 503) {
+                const data = await response.json();
+                console.log(`[Peringatan] HF API Cold Start. Percobaan ke-${i+1}. Tunggu loading model...`);
+                // Tunggu sebentar lalu loop akan mengulang request-nya
+                await new Promise(resolve => setTimeout(resolve, delay));
+                continue; 
+            }
+
+            // Jika error lain (misal token salah/limit habis)
+            throw new Error(`Hugging Face Error: Status ${response.status}`);
+
+        } catch (error) {
+            console.error("Gagal generate gambar:", error.message);
+            break; // Keluar dari loop jika error-nya fatal
+        }
+    }
+
+    // Jika sudah dicoba 5 kali tapi masih gagal terus, tampilkan gambar cadangan
+    res.redirect(`https://placehold.co/800x400/2563eb/ffffff?text=Loading+Lama,+Silakan+Coba+Lagi`);
+});
+
+
 // UPDATE KELAS SISWA
 app.post('/api/update-kelas-siswa', async (req, res) => {
     const { email, kelas } = req.body;
