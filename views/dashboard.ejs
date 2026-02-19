@@ -411,19 +411,58 @@
             btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Generating...`;
             btn.disabled = true;
 
-            // Simulasi delay AI (2 detik)
-            setTimeout(() => {
-                // Generate Mock Data 15 Slides + Soal
-                const slides = [];
-                for(let i=1; i<=15; i++) {
-                    slides.push({
-                        title: `${topic} - Bagian ${i}`,
-                        subTitle: `Pembahasan Mendalam Poin ${i}`,
-                        content: `Ini adalah konten detail mengenai ${topic} untuk halaman ${i}. Materi ini disusun secara komprehensif oleh AI Nano Banana untuk memudahkan pemahaman siswa. Mencakup definisi, contoh kasus, dan analisis mendalam.`,
-                        image: `https://placehold.co/800x400?text=${topic}+Slide+${i}`, // Mockup gambar
-                        keyword: `Visualisasi ${topic} ${i}`
-                    });
-                }
+           // --- GANTI FUNGSI generate() DI DASHBOARD GURU ---
+
+async function generate() {
+    const topic = document.getElementById('prompt').value.trim();
+    if(!topic) return showAlert("Masukkan topik materi dulu!", "⚠️");
+    
+    const btn = document.getElementById('btnGen');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Generating...`;
+    btn.disabled = true;
+
+    try {
+        // 1. PANGGIL API KE SERVER (Real AI)
+        const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ instruksi: topic })
+        });
+
+        const result = await response.json();
+
+        if (result.error) throw new Error(result.error);
+
+        // 2. AMBIL DATA DARI SERVER
+        // Pastikan ai.js di server mengembalikan format: { slides:[], pg:[], essay:[], quiz:[] }
+        lastGeneratedData = {
+            topic: topic,
+            slides: result.slides || [],
+            pg: result.pg || [],
+            essay: result.essay || [],
+            quiz: result.quiz || []
+        };
+
+        document.getElementById('quiz-controller').style.display = 'block';
+        
+        // 3. BROADCAST KE MURID
+        socket.emit('broadcast-materi', { room: activeRoom, slides: lastGeneratedData.slides });
+        
+        // 4. RENDER SLIDE PERTAMA
+        currentSlideIndex = 0;
+        renderSlide();
+
+        showAlert(`Sukses! Materi "${topic}" Siap.`, "✨");
+
+    } catch (error) {
+        console.error(error);
+        showAlert("Gagal: " + error.message, "❌");
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
 
                 // Simpan Data Global
                 lastGeneratedData = {
