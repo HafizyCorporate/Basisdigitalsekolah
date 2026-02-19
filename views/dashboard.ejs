@@ -105,8 +105,13 @@
     </div>
 
     <div class="app-layout">
-        <aside id="sidebar" class="sidebar shadow-2xl">
+                <aside id="sidebar" class="sidebar shadow-2xl">
+            <div class="bg-gradient-to-r from-emerald-600 to-teal-800 text-white text-[10px] font-bold text-center py-2 flex items-center justify-center gap-2 tracking-widest shadow-md">
+                <i class="fa-solid fa-moon text-yellow-300"></i>
+                ✨ SEMANGAT RAMADHAN, SEMANGAT PUASA 2026 🕌
+            </div>
             <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
+
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 rounded-lg bg-brand-100 text-brand-600 flex items-center justify-center font-bold">
                         <i class="fa-solid fa-chalkboard-user"></i>
@@ -212,14 +217,12 @@
             </div>
         </aside>
 
-               <main class="main-stage">
-            <div class="top-status-bar">
-                <div class="status-pill">
-                    <div id="status-dot" class="w-3 h-3 rounded-full bg-yellow-500 shadow-[0_0_12px_rgba(234,179,8,0.8)]"></div>
-                    <span id="status-text" class="text-[11px] font-black tracking-widest text-white/90 uppercase">STANDBY</span>
-                </div>
-            </div>
+            <main class="main-stage">
+            <div class="absolute top-10 left-10 text-4xl animate-bounce drop-shadow-2xl z-0 opacity-40">🏮</div>
+            <div class="absolute top-16 right-24 text-6xl opacity-30 z-0 drop-shadow-[0_0_20px_rgba(253,224,71,0.8)]">🌙</div>
+            <div class="absolute bottom-20 left-1/4 text-3xl animate-pulse drop-shadow-2xl z-0 opacity-30">🏮</div>
 
+               
 <div id="start-overlay" class="start-overlay flex flex-col items-center justify-center" style="background: radial-gradient(circle at 50% 50%, #0f172a 0%, #000000 100%); overflow: hidden; position: absolute; inset:0; z-index:80; transition:opacity 0.4s;">
 
                 <div class="absolute top-0 left-1/4 w-96 h-96 bg-brand-600/20 rounded-full mix-blend-screen filter blur-[100px] animate-pulse pointer-events-none"></div>
@@ -250,16 +253,51 @@
                 </div>
             </div>
 
-            <div id="studio-container" class="studio-container">
-                <div id="guru-video-wrapper" class="video-wrapper default-mode">
+                        <div id="studio-container" class="studio-container">
+                <div id="guru-video-wrapper" class="video-wrapper default-mode relative group">
                     <video id="guru-cam" class="w-full h-full object-cover transform -scale-x-100" autoplay playsinline muted></video>
-                    <div class="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl text-white text-xs font-bold border border-white/10 flex items-center gap-2 shadow-lg">
-                        <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                        <i class="fa-solid fa-user-tie text-brand-400"></i> <%= nama_guru %>
+                    
+                    <div class="absolute top-4 left-4 z-50 transition-opacity duration-500">
+                        <div class="bg-black/50 backdrop-blur-md border border-emerald-500/40 px-4 py-2.5 rounded-2xl flex items-center gap-3 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                            <i class="fa-solid fa-graduation-cap text-emerald-400 text-xl drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]"></i>
+                            <div class="w-[1px] h-5 bg-white/20"></div>
+                            <div id="status-dot" class="w-2 h-2 rounded-full bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.8)]"></div>
+                            <span id="status-text" class="text-[10px] font-black tracking-widest text-white uppercase">STANDBY</span>
+                        </div>
                     </div>
-                </div>
 
-                <div id="integrated-chat" class="integrated-chat">
+                    <button onclick="toggleSidebar()" class="absolute top-4 right-4 z-50 w-12 h-12 bg-black/50 backdrop-blur-md border border-white/20 text-white rounded-2xl flex items-center justify-center hover:bg-emerald-600 hover:border-emerald-400 transition-all duration-300 shadow-lg" title="Buka Menu">
+                        <i class="fa-solid fa-bars-staggered text-lg"></i>
+                    </button>
+
+                    <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/60 backdrop-blur-xl px-4 py-3 rounded-3xl border border-white/10 flex items-center gap-1 z-50 shadow-[0_20px_50px_rgba(0,0,0,0.8)] w-[95%] sm:w-auto justify-between transition-transform duration-300 hover:scale-[1.02]">
+                        <div class="ctrl-btn" onclick="toggleLive()" id="btn-start" title="Mulai / Jeda Live">
+                            <i class="fa-solid fa-power-off ctrl-icon"></i> <span class="ctrl-label">Live</span>
+                        </div>
+                        <div class="divider"></div>
+                        <div class="ctrl-btn" onclick="toggleMuteSelf()" id="btn-mic" title="Matikan/Hidupkan Mic">
+                            <i class="fa-solid fa-microphone ctrl-icon"></i> <span class="ctrl-label">Mic</span>
+                        </div>
+                        <div class="ctrl-btn" onclick="toggleCamSelf()" id="btn-cam" title="Matikan/Hidupkan Kamera">
+                            <i class="fa-solid fa-video ctrl-icon"></i> <span class="ctrl-label">Cam</span>
+                        </div>
+                        <div class="ctrl-btn" onclick="toggleScreenSize()" id="btn-screen" title="Ubah Layar">
+                            <i class="fa-solid fa-expand ctrl-icon"></i> <span class="ctrl-label">Layar</span>
+                        </div>
+                        <div class="divider"></div>
+                        <div class="ctrl-btn" onclick="toggleGridView()" id="btn-grid-murid" title="Tampilkan Semua Siswa">
+                            <i class="fa-solid fa-users-viewfinder ctrl-icon"></i> <span class="ctrl-label">Siswa</span>
+                        </div>
+                        <div class="ctrl-btn" onclick="toggleMateriView()" id="btn-grid-materi" title="Tampilkan Materi">
+                            <i class="fa-solid fa-chalkboard ctrl-icon"></i> <span class="ctrl-label">Materi</span>
+                        </div>
+                    
+                                            <div class="divider hidden sm:block"></div>
+                        <div class="ctrl-btn danger hidden sm:flex" onclick="muteAllStudents()" title="Bisukan Siswa">
+                            <i class="fa-solid fa-volume-xmark ctrl-icon"></i> <span class="ctrl-label">Mute All</span>
+                        </div>
+                    </div>
+                </div> <div id="integrated-chat" class="integrated-chat">
                     <div class="bg-black/40 p-3 border-b border-white/10 flex justify-between items-center">
                         <div class="flex items-center gap-2">
                             <i class="fa-solid fa-messages text-brand-400 animate-bounce"></i>
@@ -270,13 +308,14 @@
                     <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-hide text-sm">
                         <div class="text-center text-xs text-slate-400 italic py-6">Ruang obrolan kelas siap digunakan...</div>
                     </div>
-               
-                                           <div class="p-2 bg-black/40 border-t border-white/10">
+                    <div class="p-2 bg-black/40 border-t border-white/10">
                        <form onsubmit="kirimChat(event)" class="flex gap-2">
                             <input type="text" id="chat-input" class="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-xs text-white outline-none focus:border-brand-500 transition" placeholder="Sapa siswa Anda..." autocomplete="off">
                             <button type="submit" class="bg-brand-600 text-white rounded-xl w-12 h-10 flex items-center justify-center hover:bg-brand-500 transition shadow-lg"><i class="fa-solid fa-paper-plane"></i></button>
                         </form>
-                    </div> </div> <div id="student-grid-view" class="stage-overlay"></div>
+                    </div> 
+                </div> </div> <div id="student-grid-view" class="stage-overlay"></div>
+
 
             
             <div id="presentation-stage" class="stage-overlay flex flex-col h-full bg-slate-50 text-slate-800 p-0 overflow-hidden">
@@ -300,35 +339,6 @@
                 </div>
             </div>
 
-            <div class="control-bar">
-                <div class="ctrl-btn" onclick="toggleSidebar()" title="Buka Menu Pengaturan">
-                    <i class="fa-solid fa-bars-staggered ctrl-icon text-white"></i> <span class="ctrl-label text-white">Menu</span>
-                </div>
-                <div class="divider"></div>
-                <div class="ctrl-btn" onclick="toggleLive()" id="btn-start" title="Mulai / Jeda Live">
-                    <i class="fa-solid fa-power-off ctrl-icon"></i> <span class="ctrl-label">Live</span>
-                </div>
-                <div class="divider"></div>
-                <div class="ctrl-btn" onclick="toggleMuteSelf()" id="btn-mic" title="Matikan/Hidupkan Mic">
-                    <i class="fa-solid fa-microphone ctrl-icon"></i> <span class="ctrl-label">Mic</span>
-                </div>
-                <div class="ctrl-btn" onclick="toggleCamSelf()" id="btn-cam" title="Matikan/Hidupkan Kamera">
-                    <i class="fa-solid fa-video ctrl-icon"></i> <span class="ctrl-label">Cam</span>
-                </div>
-                <div class="ctrl-btn" onclick="toggleScreenSize()" id="btn-screen" title="Ubah Layar">
-                    <i class="fa-solid fa-expand ctrl-icon"></i> <span class="ctrl-label">Layar</span>
-                </div>
-                <div class="divider"></div>
-                <div class="ctrl-btn" onclick="toggleGridView()" id="btn-grid-murid" title="Tampilkan Semua Siswa">
-                    <i class="fa-solid fa-users-viewfinder ctrl-icon"></i> <span class="ctrl-label">Siswa</span>
-                </div>
-                <div class="ctrl-btn" onclick="toggleMateriView()" id="btn-grid-materi" title="Tampilkan Materi">
-                    <i class="fa-solid fa-chalkboard ctrl-icon"></i> <span class="ctrl-label">Materi</span>
-                </div>
-                <div class="divider"></div>
-                <div class="ctrl-btn danger" onclick="muteAllStudents()" title="Bisukan Siswa">
-                    <i class="fa-solid fa-volume-xmark ctrl-icon"></i> <span class="ctrl-label">Mute All</span>
-                </div>
             </div>
         </main>
     </div>
@@ -789,33 +799,22 @@ async function simpanKelasBaru() {
             if(peers[data.id]) { peers[data.id].close(); delete peers[data.id]; }
         });
 
-                function toggleLive() {
+                        function toggleLive() {
             const overlay = document.getElementById('start-overlay');
             const statusDot = document.getElementById('status-dot');
             const statusText = document.getElementById('status-text');
             const btnStart = document.getElementById('btn-start');
             const iconStart = btnStart.querySelector('i');
             const labelStart = btnStart.querySelector('span');
-            
             if (!isLive) {
-                startCamera(); 
-                isLive = true; 
-                
-                // --- KODE TAMBAHAN UNTUK MEMAKSA LAYAR AWAL HILANG ---
-                overlay.style.display = 'none'; 
-                // ---------------------------------------------------
-                
+                startCamera(); isLive = true; 
+                overlay.style.display = 'none'; // PERUBAHAN: Paksa sembunyikan layar awal
                 statusDot.className = "w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.6)]";
-                statusText.innerText = "LIVE ON AIR"; iconStart.className = "fa-solid fa-pause ctrl-icon"; labelStart.innerText = "Pause"; btnStart.classList.add('active');
+                statusText.innerText = "SIAP MENGAJAR, <%= nama_guru %>".toUpperCase(); iconStart.className = "fa-solid fa-pause ctrl-icon"; labelStart.innerText = "Pause"; btnStart.classList.add('active');
                 showAlert(`Anda Live di ${activeRoom.includes('-') ? 'Kelas ' + activeRoom.split('-')[1] : 'Lobi Utama'}`, "📡");
             } else {
-                stopCamera(); 
-                isLive = false; 
-                
-                // --- KODE TAMBAHAN UNTUK MEMUNCULKAN LAGI JIKA DIJEDA ---
-                overlay.style.display = 'flex'; 
-                // ------------------------------------------------------
-                
+                stopCamera(); isLive = false; 
+                overlay.style.display = 'flex'; // PERUBAHAN: Paksa munculkan lagi jika dimatikan
                 statusDot.className = "w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]";
                 statusText.innerText = "PAUSED"; iconStart.className = "fa-solid fa-play ctrl-icon"; labelStart.innerText = "Start"; btnStart.classList.remove('active');
                 showAlert("Live Dijeda", "⏸️");
