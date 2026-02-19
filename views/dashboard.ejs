@@ -535,37 +535,38 @@
             showAlert(`Berhasil ekspor ${dataType} ke ${format}`, "chk");
         }
 
-            function renderSlide() {
+             function renderSlide() {
             if(!lastGeneratedData || !lastGeneratedData.slides.length) return;
             const slide = lastGeneratedData.slides[currentSlideIndex];
             
             document.getElementById('slide-judul-besar').innerText = lastGeneratedData.topic;
             
-            // --- JURUS PAMUNGKAS: LOADING & SMART FALLBACK ---
             let rawKeyword = slide.keyword_gambar || "Materi";
-            let cleanKeyword = rawKeyword.split(',')[0].trim(); // Ambil kata sebelum koma
+            // Ambil kata kunci pertama agar gampang digambar AI
+            let cleanKeyword = rawKeyword.split(',')[0].trim(); 
             
             const imgEl = document.getElementById('slide-img');
             
-            // 1. Tampilkan tulisan Loading dulu biar layar terlihat sedang bekerja
-            imgEl.src = `https://placehold.co/800x400/2563eb/ffffff?text=Mencari+Visual...`;
+            // 1. Teks Loading
+            imgEl.src = `https://placehold.co/800x400/2563eb/ffffff?text=Melukis+Visual...`;
             
-            // 2. Coba panggil AI Pollinations pakai server jalur terbaru mereka
+            // 2. URL AI YANG BENAR (image.pollinations.ai/prompt)
+            const finalPrompt = encodeURIComponent(cleanKeyword + ", historical realistic illustration, highly detailed");
+            const targetUrl = `https://image.pollinations.ai/prompt/${finalPrompt}?width=800&height=400&nologo=true`;
+            
             let imgTemp = new Image();
-            imgTemp.src = `https://pollinations.ai/p/${encodeURIComponent(cleanKeyword + " realistic illustration")}?width=800&height=400&nologo=true`;
+            imgTemp.src = targetUrl;
             
             imgTemp.onload = function() {
-                // Kalau AI berhasil dan tidak diblokir provider internetmu, tampilkan!
+                // Gambar berhasil dibuat AI
                 imgEl.src = this.src;
             };
             
             imgTemp.onerror = function() {
-                // Kalau AI diblokir/lemot, kita ambil FOTO ASLI dari database bebas blokir
-                // Kita ambil kata pertama saja (misal dari "World War" jadi "World") agar akurat
-                let fallbackWord = encodeURIComponent(cleanKeyword.split(' ')[0]); 
-                imgEl.src = `https://loremflickr.com/800/400/${fallbackWord},history,education/all`;
+                // Kalau AI beneran diblokir, kita pakai foto bernuansa gelap estetik (Bukan kucing lagi!)
+                const randomSeed = encodeURIComponent(cleanKeyword.replace(/\s/g, ''));
+                imgEl.src = `https://picsum.photos/seed/${randomSeed}/800/400?grayscale`;
             };
-            // --------------------------------------------------
             
             document.getElementById('slide-keyword').innerText = `Visual: ${slide.keyword_gambar || 'Umum'}`;
             document.getElementById('slide-subjudul').innerText = slide.judul_slide; 
