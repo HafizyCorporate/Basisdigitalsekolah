@@ -272,38 +272,31 @@ app.post('/api/generate', async (req, res) => {
   }
 });
 
-// API GAMBAR 100% GRATIS (Lexica.art + Filter Cerdas)
+// API GAMBAR (Pollinations AI + Filter Pemotong Teks)
 app.get('/api/gambar', async (req, res) => {
     let prompt = req.query.prompt || "Education";
 
     try {
-        // TRIK 1: Ambil kalimat pertama saja sebelum tanda koma agar pencarian lebih gampang
+        // TRIK CERDAS: Ambil kalimat pertama saja sebelum tanda koma.
+        // Contoh: "GERMAN V2 ROCKET, BRITISH RADAR..." -> hanya diambil "GERMAN V2 ROCKET"
+        // Ini bikin AI nggak pusing dan URL nggak kepanjangan!
         let cleanPrompt = prompt.split(',')[0].trim(); 
         
-        // Kita tambahkan embel-embel agar hasilnya berwujud ilustrasi keren
-        let query = encodeURIComponent(cleanPrompt + " cinematic fantasy concept art");
+        // Gabungkan dengan gaya gambar yang realistis/edukatif
+        let query = encodeURIComponent(cleanPrompt + ", high quality, historical educational illustration");
 
-        const response = await fetch(`https://lexica.art/api/v1/search?q=${query}`);
-        const data = await response.json();
+        // Tembak ke Pollinations (AI yang langsung menggambar sesuai request)
+        const imageUrl = `https://image.pollinations.ai/prompt/${query}?width=800&height=400&nologo=true`;
 
-        // Jika ketemu gambarnya
-        if (data && data.images && data.images.length > 0) {
-            const imageUrl = data.images[0].src;
-            return res.redirect(imageUrl);
-        } else {
-            throw new Error("Gambar tidak ditemukan di database");
-        }
+        // Lempar gambarnya langsung ke layar presentasi
+        res.redirect(imageUrl);
 
     } catch (error) {
-        console.error("Gagal cari gambar:", error.message);
-        
-        // TRIK 2: Jika gagal, JANGAN tampilkan kotak tulisan lagi. 
-        // Tampilkan foto pemandangan estetik dengan efek blur sedikit (sangat elegan untuk background)
-        const randomSeed = Math.floor(Math.random() * 1000);
-        res.redirect(`https://picsum.photos/seed/${randomSeed}/800/400?blur=1`);
+        console.error("Gagal load gambar:", error.message);
+        // Kalau server ngadat, kembali ke kotak elegan (bukan pohon lagi hehe)
+        res.redirect(`https://placehold.co/800x400/1e293b/ffffff?text=Visual+Materi`);
     }
 });
-
 
 // UPDATE KELAS SISWA
 app.post('/api/update-kelas-siswa', async (req, res) => {
