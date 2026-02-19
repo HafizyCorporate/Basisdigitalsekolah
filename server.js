@@ -272,35 +272,32 @@ app.post('/api/generate', async (req, res) => {
   }
 });
 
-// API GAMBAR POLLINATIONS.AI (Super Cepat & Tanpa API Key)
+ // API GAMBAR 100% GRATIS (Mencari di Database AI Lexica.art)
 app.get('/api/gambar', async (req, res) => {
     const prompt = req.query.prompt;
     if (!prompt) return res.status(400).send("Prompt tidak boleh kosong");
 
     try {
-        // Kita gabungkan prompt dari AI dengan gaya gambar yang kita inginkan
-        // encodeURIComponent penting agar spasi dan simbol aman masuk ke dalam URL
-        const gayaGambar = ", high quality realistic fantasy illustration, highly detailed";
-        const promptAman = encodeURIComponent(prompt + gayaGambar);
-        
-        // Memanggil URL Pollinations langsung
-        const pollUrl = `https://image.pollinations.ai/prompt/${promptAman}?width=800&height=400&nologo=true`;
-        
-        const response = await fetch(pollUrl);
+        // Kita cari gambar yang sudah pernah dibuat oleh AI sebelumnya (jutaan database)
+        // Ini instan, 100% GRATIS, dan tanpa API Key!
+        const response = await fetch(`https://lexica.art/api/v1/search?q=${encodeURIComponent(prompt)}`);
+        const data = await response.json();
 
-        if (!response.ok) throw new Error("Server gambar sibuk");
-
-        // Mengambil data binary gambar dan mengirimkannya ke frontend
-        const arrayBuffer = await response.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-
-        res.set('Content-Type', 'image/jpeg');
-        return res.send(buffer);
+        // Jika gambar ditemukan di database mereka
+        if (data && data.images && data.images.length > 0) {
+            // Ambil URL gambar pertama yang paling relevan & resolusi bagus
+            const imageUrl = data.images[0].src;
+            
+            // Langsung arahkan browser siswa ke gambar tersebut (Super Cepat!)
+            return res.redirect(imageUrl);
+        } else {
+            throw new Error("Gambar tidak ditemukan");
+        }
 
     } catch (error) {
-        console.error("Gagal generate gambar:", error.message);
-        // Fallback jika gagal, tampilkan kotak biru
-        res.redirect(`https://placehold.co/800x400/2563eb/ffffff?text=Visual+Gagal+Dimuat`);
+        console.error("Gagal cari gambar:", error.message);
+        // Gambar darurat warna gelap estetik kalau internet ngadat
+        res.redirect(`https://placehold.co/800x400/1e293b/ffffff?text=Visual+Materi`);
     }
 });
 
