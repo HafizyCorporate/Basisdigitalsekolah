@@ -542,10 +542,13 @@
             // Mengambil judul besar dari topik
             document.getElementById('slide-judul-besar').innerText = lastGeneratedData.topic;
             
-            // AI hanya memberikan "keyword_gambar", jadi kita pakai URL placeholder gratis (placehold.co) agar tidak blank
-            const keywordEncoded = encodeURIComponent(slide.keyword_gambar || "Materi Pembelajaran");
-            document.getElementById('slide-img').src = `https://image.pollinations.ai/prompt/${keywordEncoded}, high quality realistic fantasy illustration?width=800&height=400&nologo=true`;
-
+          
+            // Langsung tembak ke Pollinations dari Frontend agar cepat dan tidak error
+            const keyword = slide.keyword_gambar || "Materi Pembelajaran";
+            const gayaVisual = ", high quality educational illustration, clear details";
+            const promptFinal = encodeURIComponent(keyword + gayaVisual);
+            
+            document.getElementById('slide-img').src = `https://image.pollinations.ai/prompt/${promptFinal}?width=800&height=400&nologo=true`;
 
             
             // Sesuaikan dengan key dari ai.js
