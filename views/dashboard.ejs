@@ -542,13 +542,25 @@
             // Mengambil judul besar dari topik
             document.getElementById('slide-judul-besar').innerText = lastGeneratedData.topic;
             
-          
-            // Langsung tembak ke Pollinations dari Frontend agar cepat dan tidak error
-            const keyword = slide.keyword_gambar || "Materi Pembelajaran";
-            const gayaVisual = ", high quality educational illustration, clear details";
-            const promptFinal = encodeURIComponent(keyword + gayaVisual);
+                       // 1. Ambil keyword dari materi AI
+            let rawKeyword = slide.keyword_gambar || "Materi Pembelajaran";
             
-            document.getElementById('slide-img').src = `https://image.pollinations.ai/prompt/${promptFinal}?width=800&height=400&nologo=true`;
+            // 2. Potong teks secukupnya (Lexica lebih suka keyword pendek)
+            if (rawKeyword.length > 50) {
+                rawKeyword = rawKeyword.substring(0, 50);
+            }
+
+            const imgEl = document.getElementById('slide-img');
+            
+            // 3. Minta gambar ke backend Lexica kita
+            imgEl.src = `/api/gambar?prompt=${encodeURIComponent(rawKeyword)}`;
+
+            // 4. Pelampung anti-rusak
+            imgEl.onerror = function() {
+                this.onerror = null; 
+                this.src = `https://placehold.co/800x400/1e293b/ffffff?text=Gambar+Edukasi`;
+            };
+
 
             
             // Sesuaikan dengan key dari ai.js
