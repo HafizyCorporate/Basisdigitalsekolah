@@ -399,7 +399,7 @@
         }
 
         // --- GANTI FUNGSI generate() SESUAI INSTRUKSI ---
-        async function generate() {
+              async function generate() {
             const topic = document.getElementById('prompt').value.trim();
             if(!topic) return showAlert("Masukkan topik materi dulu!", "⚠️");
             
@@ -409,7 +409,6 @@
             btn.disabled = true;
 
             try {
-                // 1. PANGGIL API KE SERVER (Real AI)
                 const response = await fetch('/api/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -420,21 +419,19 @@
 
                 if (result.error) throw new Error(result.error);
 
-                // 2. AMBIL DATA DARI SERVER
+                // PENYESUAIAN: Sesuaikan dengan key bahasa Indonesia dari ai.js
                 lastGeneratedData = {
-                    topic: topic,
+                    topic: result.judul_besar || topic, 
                     slides: result.slides || [],
-                    pg: result.pg || [],
-                    essay: result.essay || [],
-                    quiz: result.quiz || []
+                    pg: result.soal_pg || [],       // Diubah dari result.pg
+                    essay: result.soal_essay || [], // Diubah dari result.essay
+                    quiz: result.soal_quiz || []    // Diubah dari result.quiz
                 };
 
                 document.getElementById('quiz-controller').style.display = 'block';
                 
-                // 3. BROADCAST KE MURID
                 socket.emit('broadcast-materi', { room: activeRoom, slides: lastGeneratedData.slides });
                 
-                // 4. RENDER SLIDE PERTAMA
                 currentSlideIndex = 0;
                 renderSlide();
 
@@ -538,16 +535,26 @@
             showAlert(`Berhasil ekspor ${dataType} ke ${format}`, "chk");
         }
 
-        function renderSlide() {
+             function renderSlide() {
             if(!lastGeneratedData || !lastGeneratedData.slides.length) return;
             const slide = lastGeneratedData.slides[currentSlideIndex];
-            document.getElementById('slide-judul-besar').innerText = slide.title;
-            document.getElementById('slide-img').src = slide.image;
-            document.getElementById('slide-keyword').innerText = `Visual: ${slide.keyword}`;
-            document.getElementById('slide-subjudul').innerText = slide.subTitle;
-            document.getElementById('slide-konten').innerHTML = slide.content;
+            
+            // Mengambil judul besar dari topik
+            document.getElementById('slide-judul-besar').innerText = lastGeneratedData.topic;
+            
+            // AI hanya memberikan "keyword_gambar", jadi kita pakai URL placeholder gratis (placehold.co) agar tidak blank
+            const keywordEncoded = encodeURIComponent(slide.keyword_gambar || "Materi Pembelajaran");
+            document.getElementById('slide-img').src = `https://placehold.co/800x400/2563eb/ffffff?text=${keywordEncoded}`;
+            
+            // Sesuaikan dengan key dari ai.js
+            document.getElementById('slide-keyword').innerText = `Visual: ${slide.keyword_gambar || 'Umum'}`;
+            document.getElementById('slide-subjudul').innerText = slide.judul_slide; // Diubah dari slide.subTitle
+            document.getElementById('slide-konten').innerHTML = slide.konten_html;   // Diubah dari slide.content
+            
             document.getElementById('page-indicator').innerText = `${currentSlideIndex + 1} / ${lastGeneratedData.slides.length}`;
         }
+
+        
         function nextSlide() {
             if(!lastGeneratedData || currentSlideIndex >= lastGeneratedData.slides.length - 1) return;
             currentSlideIndex++; renderSlide();
