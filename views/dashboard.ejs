@@ -541,34 +541,38 @@
             
             document.getElementById('slide-judul-besar').innerText = lastGeneratedData.topic;
             
-            // --- JURUS BYPASS CLOUDFLARE ---
-            let rawKeyword = slide.keyword_gambar || "Materi Pembelajaran";
+            // --- JURUS PAMUNGKAS: LOADING & SMART FALLBACK ---
+            let rawKeyword = slide.keyword_gambar || "Materi";
+            let cleanKeyword = rawKeyword.split(',')[0].trim(); // Ambil kata sebelum koma
             
-            // Potong teks agar URL tidak kepanjangan
-            let cleanKeyword = rawKeyword.split(',')[0].trim();
-            
-            // Gabungkan dengan gaya edukasi
-            const promptFinal = encodeURIComponent(cleanKeyword + ", high quality educational illustration");
-            
-            // Tembak ke Pollinations
             const imgEl = document.getElementById('slide-img');
-            imgEl.src = `https://image.pollinations.ai/prompt/${promptFinal}?width=800&height=400&nologo=true`;
-
-            // Pelampung darurat kalau internet siswa ngadat
-            imgEl.onerror = function() {
-                this.onerror = null; 
-                this.src = `https://placehold.co/800x400/1e293b/ffffff?text=Visual+Materi`;
-            };
-            // -------------------------------
             
-            // Update teks di layar
+            // 1. Tampilkan tulisan Loading dulu biar layar terlihat sedang bekerja
+            imgEl.src = `https://placehold.co/800x400/2563eb/ffffff?text=Mencari+Visual...`;
+            
+            // 2. Coba panggil AI Pollinations pakai server jalur terbaru mereka
+            let imgTemp = new Image();
+            imgTemp.src = `https://pollinations.ai/p/${encodeURIComponent(cleanKeyword + " realistic illustration")}?width=800&height=400&nologo=true`;
+            
+            imgTemp.onload = function() {
+                // Kalau AI berhasil dan tidak diblokir provider internetmu, tampilkan!
+                imgEl.src = this.src;
+            };
+            
+            imgTemp.onerror = function() {
+                // Kalau AI diblokir/lemot, kita ambil FOTO ASLI dari database bebas blokir
+                // Kita ambil kata pertama saja (misal dari "World War" jadi "World") agar akurat
+                let fallbackWord = encodeURIComponent(cleanKeyword.split(' ')[0]); 
+                imgEl.src = `https://loremflickr.com/800/400/${fallbackWord},history,education/all`;
+            };
+            // --------------------------------------------------
+            
             document.getElementById('slide-keyword').innerText = `Visual: ${slide.keyword_gambar || 'Umum'}`;
             document.getElementById('slide-subjudul').innerText = slide.judul_slide; 
             document.getElementById('slide-konten').innerHTML = slide.konten_html;   
             document.getElementById('page-indicator').innerText = `${currentSlideIndex + 1} / ${lastGeneratedData.slides.length}`;
         }
-            
-                     
+
                      
         function nextSlide() {
             if(!lastGeneratedData || currentSlideIndex >= lastGeneratedData.slides.length - 1) return;
