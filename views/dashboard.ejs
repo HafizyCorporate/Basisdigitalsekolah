@@ -544,7 +544,10 @@
             
             // AI hanya memberikan "keyword_gambar", jadi kita pakai URL placeholder gratis (placehold.co) agar tidak blank
             const keywordEncoded = encodeURIComponent(slide.keyword_gambar || "Materi Pembelajaran");
-            document.getElementById('slide-img').src = `https://placehold.co/800x400/2563eb/ffffff?text=${keywordEncoded}`;
+// Arahkan ke endpoint backend kita sendiri
+document.getElementById('slide-img').src = `/api/gambar?prompt=${keywordEncoded}`;
+
+
             
             // Sesuaikan dengan key dari ai.js
             document.getElementById('slide-keyword').innerText = `Visual: ${slide.keyword_gambar || 'Umum'}`;
