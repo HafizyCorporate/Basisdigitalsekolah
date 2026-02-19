@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Teacher Studio - Pro Live</title>
     
-    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
@@ -253,24 +254,27 @@
                 </div>
             </div>
 
-                        <div id="studio-container" class="studio-container">
+                                <div id="studio-container" class="studio-container">
+                
+                <div class="w-full flex justify-between items-center z-50 px-2" style="max-width: 900px;">
+                    <div class="bg-black/50 backdrop-blur-md border border-emerald-500/40 px-4 py-2.5 rounded-2xl flex items-center gap-3 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                        <i class="fa-solid fa-graduation-cap text-emerald-400 text-xl drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]"></i>
+                        <div class="w-[1px] h-5 bg-white/20"></div>
+                        <div id="status-dot" class="w-2 h-2 rounded-full bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.8)]"></div>
+                        <span id="status-text" class="text-[10px] font-black tracking-widest text-white uppercase">STANDBY</span>
+                    </div>
+
+                    <button onclick="toggleSidebar()" class="w-12 h-12 bg-black/50 backdrop-blur-md border border-white/20 text-white rounded-2xl flex items-center justify-center hover:bg-emerald-600 hover:border-emerald-400 transition-all duration-300 shadow-lg" title="Buka Menu">
+                        <i class="fa-solid fa-bars-staggered text-lg"></i>
+                    </button>
+                </div>
+
                 <div id="guru-video-wrapper" class="video-wrapper default-mode relative group">
                     <video id="guru-cam" class="w-full h-full object-cover transform -scale-x-100" autoplay playsinline muted></video>
                     
-                    <div class="absolute top-4 left-4 z-50 transition-opacity duration-500">
-                        <div class="bg-black/50 backdrop-blur-md border border-emerald-500/40 px-4 py-2.5 rounded-2xl flex items-center gap-3 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-                            <i class="fa-solid fa-graduation-cap text-emerald-400 text-xl drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]"></i>
-                            <div class="w-[1px] h-5 bg-white/20"></div>
-                            <div id="status-dot" class="w-2 h-2 rounded-full bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.8)]"></div>
-                            <span id="status-text" class="text-[10px] font-black tracking-widest text-white uppercase">STANDBY</span>
-                        </div>
-                    </div>
-
-                    <button onclick="toggleSidebar()" class="absolute top-4 right-4 z-50 w-12 h-12 bg-black/50 backdrop-blur-md border border-white/20 text-white rounded-2xl flex items-center justify-center hover:bg-emerald-600 hover:border-emerald-400 transition-all duration-300 shadow-lg" title="Buka Menu">
-                        <i class="fa-solid fa-bars-staggered text-lg"></i>
-                    </button>
-
                     <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/60 backdrop-blur-xl px-4 py-3 rounded-3xl border border-white/10 flex items-center gap-1 z-50 shadow-[0_20px_50px_rgba(0,0,0,0.8)] w-[95%] sm:w-auto justify-between transition-transform duration-300 hover:scale-[1.02]">
+
+                    
                         <div class="ctrl-btn" onclick="toggleLive()" id="btn-start" title="Mulai / Jeda Live">
                             <i class="fa-solid fa-power-off ctrl-icon"></i> <span class="ctrl-label">Live</span>
                         </div>
