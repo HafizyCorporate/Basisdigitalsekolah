@@ -78,7 +78,7 @@
         #quiz-controller { display: none; margin-top: 15px; padding: 10px; background: #f1f5f9; border-radius: 12px; border: 1px solid #e2e8f0; animation: slideDown 0.3s ease-out; }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-        #customAlert { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); transition: top 0.5s; z-index: 100; background: white; color: black; padding: 10px 20px; rounded-full; font-weight: bold; border: 2px solid #e2e8f0; display: flex; align-items: center; gap: 8px; }
+        #customAlert { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); transition: top 0.5s; z-index: 100; background: white; color: black; padding: 10px 20px; border: 2px solid #e2e8f0; display: flex; align-items: center; gap: 8px; border-radius: 9999px; }
         
         .student-card { background: #1e293b; border-radius: 12px; overflow: hidden; position: relative; aspect-ratio: 16/9; border: 1px solid #334155; }
         .student-card video { width: 100%; height: 100%; object-fit: cover; }
@@ -381,17 +381,16 @@
         let isChatPinned = false;
         
         // --- DATA STATE UNTUK EXPORT ---
-        let lastGeneratedData = null; // Menyimpan data materi/soal
+        let lastGeneratedData = null; 
         let currentSlideIndex = 0;
-        let attendanceData = []; // Menyimpan data absen
-        let scoresData = [];     // Menyimpan data nilai
+        let attendanceData = []; 
+        let scoresData = [];     
         
         // --- WEBRTC GLOBALS ---
         let localStream;
         let peers = {};
         const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
-        // --- CORE UI LOGIC ---
         function toggleSidebar() {
             const body = document.body;
             const sidebar = document.getElementById('sidebar');
@@ -399,10 +398,8 @@
             else { body.classList.toggle('sidebar-closed'); }
         }
 
-        // --- EXPORT & GENERATE LOGIC (BARU DITAMBAHKAN) ---
-
-        // 1. FUNGSI GENERATE MATERI (SIMULASI AI)
-        function generate() {
+        // --- GANTI FUNGSI generate() SESUAI INSTRUKSI ---
+        async function generate() {
             const topic = document.getElementById('prompt').value.trim();
             if(!topic) return showAlert("Masukkan topik materi dulu!", "⚠️");
             
@@ -411,84 +408,49 @@
             btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Generating...`;
             btn.disabled = true;
 
-           // --- GANTI FUNGSI generate() DI DASHBOARD GURU ---
+            try {
+                // 1. PANGGIL API KE SERVER (Real AI)
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ instruksi: topic })
+                });
 
-async function generate() {
-    const topic = document.getElementById('prompt').value.trim();
-    if(!topic) return showAlert("Masukkan topik materi dulu!", "⚠️");
-    
-    const btn = document.getElementById('btnGen');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Generating...`;
-    btn.disabled = true;
+                const result = await response.json();
 
-    try {
-        // 1. PANGGIL API KE SERVER (Real AI)
-        const response = await fetch('/api/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ instruksi: topic })
-        });
+                if (result.error) throw new Error(result.error);
 
-        const result = await response.json();
-
-        if (result.error) throw new Error(result.error);
-
-        // 2. AMBIL DATA DARI SERVER
-        // Pastikan ai.js di server mengembalikan format: { slides:[], pg:[], essay:[], quiz:[] }
-        lastGeneratedData = {
-            topic: topic,
-            slides: result.slides || [],
-            pg: result.pg || [],
-            essay: result.essay || [],
-            quiz: result.quiz || []
-        };
-
-        document.getElementById('quiz-controller').style.display = 'block';
-        
-        // 3. BROADCAST KE MURID
-        socket.emit('broadcast-materi', { room: activeRoom, slides: lastGeneratedData.slides });
-        
-        // 4. RENDER SLIDE PERTAMA
-        currentSlideIndex = 0;
-        renderSlide();
-
-        showAlert(`Sukses! Materi "${topic}" Siap.`, "✨");
-
-    } catch (error) {
-        console.error(error);
-        showAlert("Gagal: " + error.message, "❌");
-    } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    }
-}
-
-                // Simpan Data Global
+                // 2. AMBIL DATA DARI SERVER
                 lastGeneratedData = {
                     topic: topic,
-                    slides: slides,
-                    pg: Array(15).fill(0).map((_,i) => ({ q: `Pertanyaan PG ${i+1} tentang ${topic}?`, options: ['A','B','C','D'], ans: 'A' })),
-                    essay: Array(5).fill(0).map((_,i) => ({ q: `Jelaskan analisis anda tentang ${topic} aspek ke-${i+1}?` })),
-                    quiz: Array(10).fill(0).map((_,i) => ({ q: `Cepat tepat: Apa inti dari ${topic} bagian ${i+1}?` }))
+                    slides: result.slides || [],
+                    pg: result.pg || [],
+                    essay: result.essay || [],
+                    quiz: result.quiz || []
                 };
 
-                // UI Updates
+                document.getElementById('quiz-controller').style.display = 'block';
+                
+                // 3. BROADCAST KE MURID
+                socket.emit('broadcast-materi', { room: activeRoom, slides: lastGeneratedData.slides });
+                
+                // 4. RENDER SLIDE PERTAMA
+                currentSlideIndex = 0;
+                renderSlide();
+
+                showAlert(`Sukses! Materi "${topic}" Siap.`, "✨");
+
+            } catch (error) {
+                console.error(error);
+                showAlert("Gagal: " + error.message, "❌");
+            } finally {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
-                document.getElementById('quiz-controller').style.display = 'block'; 
-                
-                // Kirim Materi ke Murid via Socket (Background)
-                socket.emit('broadcast-materi', { room: activeRoom, slides: slides });
-                
-                showAlert(`Sukses! 15 Slide & Soal "${topic}" Siap.`, "✨");
-            }, 2000);
+            }
         }
 
-        // 2. FUNGSI DISTRIBUSI KUIS
         function distributeQuiz(type) {
             if(!lastGeneratedData) return showAlert("Belum ada materi! Generate dulu.", "⚠️");
-            
             let payload = {};
             let msg = "";
 
@@ -502,30 +464,19 @@ async function generate() {
                 payload = { type: 'QUIZ', data: lastGeneratedData.quiz, limit: 10 };
                 msg = "10 Flash Quiz Dikirim ke Siswa!";
             }
-
-            // Kirim ke socket room
             socket.emit('start-exam', { room: activeRoom, content: payload });
             showAlert(msg, "🚀");
         }
 
-        // 3. FUNGSI EXPORT DATA (PDF, EXCEL, WORD)
         function exportData(dataType, format) {
             let dataToExport = [];
             let fileName = "";
 
-            // Menyiapkan Data Berdasarkan Tipe
             if(dataType === 'Nilai') {
-                // Gunakan scoresData yang asli
-                dataToExport = scoresData.length > 0 ? scoresData : [
-                     // Dummy jika kosong untuk demo
-                    { Waktu: '08:10', Nama: 'Contoh Siswa', Tipe: 'PG', Skor: 85 } 
-                ];
+                dataToExport = scoresData.length > 0 ? scoresData : [{ Waktu: 'N/A', Nama: 'N/A', Tipe: 'N/A', Skor: 0 }];
                 fileName = `Rekap_Nilai_${namaGuru}`;
             } else if (dataType === 'Absen') {
-                dataToExport = attendanceData.length > 0 ? attendanceData : [
-                    // Dummy
-                    { Tanggal: new Date().toLocaleDateString(), Waktu: '08:00', Nama: 'Contoh Siswa', Status: 'Hadir' }
-                ];
+                dataToExport = attendanceData.length > 0 ? attendanceData : [{ Tanggal: 'N/A', Waktu: 'N/A', Nama: 'N/A', Status: 'N/A' }];
                 fileName = `Absensi_Kelas`;
             } else if (dataType === 'Materi') {
                 if(!lastGeneratedData) return showAlert("Belum ada materi untuk diunduh.", "❌");
@@ -533,7 +484,6 @@ async function generate() {
                 fileName = `Materi_${lastGeneratedData.topic}`;
             }
 
-            // Logika Download per Format
             if (format === 'Excel') {
                 const ws = XLSX.utils.json_to_sheet(dataToExport);
                 const wb = XLSX.utils.book_new();
@@ -543,19 +493,16 @@ async function generate() {
             else if (format === 'PDF') {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
-                
                 doc.setFontSize(14);
                 doc.text(`Laporan ${dataType} - Teacher Studio`, 14, 20);
                 doc.setFontSize(10);
                 doc.text(`Guru: ${namaGuru} | Tanggal: ${new Date().toLocaleDateString()}`, 14, 28);
 
                 if (dataType !== 'Materi') {
-                    // Tabel untuk Nilai & Absen
                     const headers = Object.keys(dataToExport[0]);
                     const body = dataToExport.map(obj => Object.values(obj));
                     doc.autoTable({ head: [headers], body: body, startY: 35 });
                 } else {
-                    // Teks Paragraph untuk Materi
                     let yPos = 40;
                     dataToExport.forEach((item, i) => {
                         if(yPos > 270) { doc.addPage(); yPos = 20; }
@@ -591,19 +538,18 @@ async function generate() {
             showAlert(`Berhasil ekspor ${dataType} ke ${format}`, "chk");
         }
 
-        // 4. NAVIGASI SLIDE
         function renderSlide() {
-            if(!lastGeneratedData) return;
+            if(!lastGeneratedData || !lastGeneratedData.slides.length) return;
             const slide = lastGeneratedData.slides[currentSlideIndex];
             document.getElementById('slide-judul-besar').innerText = slide.title;
             document.getElementById('slide-img').src = slide.image;
-            document.getElementById('slide-keyword').innerText = slide.keyword;
+            document.getElementById('slide-keyword').innerText = `Visual: ${slide.keyword}`;
             document.getElementById('slide-subjudul').innerText = slide.subTitle;
-            document.getElementById('slide-konten').innerText = slide.content;
-            document.getElementById('page-indicator').innerText = `${currentSlideIndex + 1} / 15`;
+            document.getElementById('slide-konten').innerHTML = slide.content;
+            document.getElementById('page-indicator').innerText = `${currentSlideIndex + 1} / ${lastGeneratedData.slides.length}`;
         }
         function nextSlide() {
-            if(!lastGeneratedData || currentSlideIndex >= 14) return;
+            if(!lastGeneratedData || currentSlideIndex >= lastGeneratedData.slides.length - 1) return;
             currentSlideIndex++; renderSlide();
         }
         function prevSlide() {
@@ -611,7 +557,6 @@ async function generate() {
             currentSlideIndex--; renderSlide();
         }
 
-        // --- MANAGEMEN KELAS & WEBRTC (ASLI) ---
         async function muatDaftarKelas() {
             try {
                 const res = await fetch('/api/kelas/<%= kode %>');
@@ -634,11 +579,8 @@ async function generate() {
             document.getElementById('mini-list-siswa').innerHTML = '<li class="text-[11px] text-slate-400 italic text-center py-4 bg-slate-50 rounded-lg">Menunggu siswa di kelas baru...</li>';
             document.getElementById('student-grid-view').innerHTML = '';
             document.getElementById('count-badge').innerText = '0';
-            
-            // Reset Data Session
             attendanceData = [];
             scoresData = [];
-            document.getElementById('empty-history').style.display = 'table-row';
             document.getElementById('history-table-body').innerHTML = '<tr id="empty-history"><td colspan="4" class="p-10 text-center text-slate-400 italic text-xs">Belum ada data nilai masuk sesi ini.</td></tr>';
         }
 
@@ -666,12 +608,9 @@ async function generate() {
             if (pc && data.candidate) { try { await pc.addIceCandidate(data.candidate); } catch(e){} }
         });
 
-        // [MODIFIED] User Joined + Record Attendance
         socket.on('user-joined', (user) => {
             if(user.role === 'Siswa') {
                 addStudentToList(user.id, user.name);
-                
-                // Simpan Data Absen untuk Export
                 attendanceData.push({
                     Tanggal: new Date().toLocaleDateString(),
                     Waktu: new Date().toLocaleTimeString(),
@@ -681,12 +620,17 @@ async function generate() {
             }
         });
 
-        // [NEW] Score Listener
-        socket.on('student-submit-score', (data) => {
-            // data format: { name, score, type, time }
-            scoresData.push(data);
+        // --- UBAH NAMA EVENT DI DASHBOARD GURU SESUAI INSTRUKSI ---
+        socket.on('score-updated-live', (data) => {
+            const scoreEntry = {
+                name: data.nama_siswa,
+                score: data.skor,
+                type: 'Kuis', 
+                time: data.waktu
+            };
+
+            scoresData.push(scoreEntry);
             
-            // Update Scoreboard UI
             const tbody = document.getElementById('history-table-body');
             const emptyRow = document.getElementById('empty-history');
             if(emptyRow) emptyRow.style.display = 'none';
@@ -694,13 +638,13 @@ async function generate() {
             const tr = document.createElement('tr');
             tr.className = "border-b border-slate-50 hover:bg-slate-50 transition";
             tr.innerHTML = `
-                <td class="p-4 font-mono text-xs text-slate-500">${data.time || new Date().toLocaleTimeString()}</td>
-                <td class="p-4 font-bold text-slate-700">${data.name}</td>
-                <td class="p-4"><span class="bg-blue-100 text-blue-600 px-2 py-1 rounded text-[10px] font-bold">${data.type}</span></td>
-                <td class="p-4 text-right font-black text-slate-800">${data.score}</td>
+                <td class="p-4 font-mono text-xs text-slate-500">${scoreEntry.time}</td>
+                <td class="p-4 font-bold text-slate-700">${scoreEntry.name}</td>
+                <td class="p-4"><span class="bg-blue-100 text-blue-600 px-2 py-1 rounded text-[10px] font-bold">Kuis</span></td>
+                <td class="p-4 text-right font-black text-slate-800">${scoreEntry.score}</td>
             `;
             tbody.prepend(tr);
-            showAlert(`${data.name} selesai mengerjakan ${data.type}!`, "bell");
+            showAlert(`${scoreEntry.name} selesai mengerjakan!`, "bell");
         });
 
         async function createPeerConnection(studentId, offerSignal) {
