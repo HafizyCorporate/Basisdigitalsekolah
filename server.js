@@ -43,7 +43,7 @@ let activeQuizzes = {};
 let onlineUsers = {}; 
 
 // ==========================================
-// 🎯 ROUTES
+// 🎯 ROUTES VIEW (HALAMAN)
 // ==========================================
 
 app.get('/', (req, res) => res.render('landing'));
@@ -55,9 +55,17 @@ app.get('/register-guru', (req, res) => res.render('register-guru', { msg: null 
 app.get('/register-siswa', (req, res) => res.render('register_siswa', { msg: null }));
 app.get('/verify-guru', (req, res) => res.render('verify-guru', { msg: null, email: req.query.email || "" }));
 
+// [BARU] Route Halaman Lupa Password
+app.get('/forget', (req, res) => res.render('forget', { msg: null, step: 1 }));
+app.get('/forget-siswa', (req, res) => res.render('forget_siswa', { msg: null, step: 1 }));
+
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// REGISTER INSTANSI
+// ==========================================
+// 🔐 AUTHENTICATION ROUTES
+// ==========================================
+
+// 1. REGISTER INSTANSI (ADMIN SEKOLAH)
 app.post('/auth/register', async (req, res) => {
   const { nama, email, pass } = req.body;
   const kode = "SCH-" + Math.random().toString(36).substring(2, 7).toUpperCase();
@@ -88,14 +96,38 @@ app.post('/auth/register', async (req, res) => {
     );
     
     await sendMail(email, "Kode Verifikasi", `OTP: ${otp}, Kode Sekolah: ${kode}`);
-    res.render('verify-guru', { msg: `Masukkan OTP untuk: ${email}`, email });
+    
+    // [UPDATE] Render ke verify.ejs (bukan verify-guru) untuk Admin
+    res.render('verify', { msg: `Masukkan OTP yang dikirim ke: ${email}`, email });
 
   } catch (err) {
+    console.error("Register Error:", err);
+    if (err.code === '23505') {
+        return res.render('register', { msg: "Email instansi sudah terdaftar." });
+    }
     res.status(500).send("Error: " + err.message);
   }
 });
 
-// REGISTER GURU
+// [BARU] VERIFIKASI OTP INSTANSI
+app.post('/auth/verify', async (req, res) => {
+    const { kode, otp } = req.body;
+    try {
+        const result = await pool.query('SELECT * FROM global_instansi WHERE kode_instansi = $1', [kode]);
+        
+        if (result.rows.length === 0) return res.render('verify', { msg: "Kode Sekolah Salah!" });
+        if (result.rows[0].otp !== otp) return res.render('verify', { msg: "OTP Salah!" });
+
+        // Hapus OTP setelah verified
+        await pool.query('UPDATE global_instansi SET otp = null WHERE kode_instansi = $1', [kode]);
+
+        res.render('login', { msg: "Verifikasi Berhasil! Silakan Login Guru." });
+    } catch (err) {
+        res.render('verify', { msg: "Terjadi kesalahan server." });
+    }
+});
+
+// 2. REGISTER GURU
 app.post('/auth/register-guru', async (req, res) => {
     const { nama, email, pass, kode_sekolah } = req.body;
     try {
@@ -110,34 +142,23 @@ app.post('/auth/register-guru', async (req, res) => {
     }
 });
 
-// ============================================================
-// ✅ PERBAIKAN: ROUTE AKTIVASI GURU (DITAMBAHKAN SESUAI REQUEST)
-// ============================================================
+// 3. AKTIVASI GURU (Route yang sebelumnya hilang)
 app.post('/auth/activate-guru', async (req, res) => {
     const { email, password, kode_sekolah, nama_guru } = req.body;
     try {
-        // Hash Password
         const hashed = await bcrypt.hash(password, 10);
-
-        // Masukkan ke tabel global_guru (menyesuaikan struktur DB kamu)
         await pool.query(
             'INSERT INTO global_guru (nama_guru, email, password, kode_sekolah) VALUES ($1,$2,$3,$4)',
             [nama_guru, email, hashed, kode_sekolah]
         );
-
-        console.log(`Guru ${nama_guru} berhasil diaktivasi.`);
-        // Redirect ke login dengan pesan sukses
         res.redirect('/login?alert=sukses_aktivasi');
-
     } catch (err) {
         console.error("Error Aktivasi Guru:", err);
-        // Jika duplikat atau error, kembalikan ke halaman register/verify dengan pesan
-        res.render('register-guru', { msg: "Gagal Aktivasi: Email mungkin sudah terdaftar atau kesalahan server." });
+        res.render('register-guru', { msg: "Gagal Aktivasi: Email mungkin sudah terdaftar." });
     }
 });
-// ============================================================
 
-// REGISTER SISWA
+// 4. REGISTER SISWA
 app.post('/auth/register-siswa', async (req, res) => {
     const { nama, email, pass, kode_sekolah, kelas } = req.body;
     try {
@@ -148,11 +169,11 @@ app.post('/auth/register-siswa', async (req, res) => {
         );
         res.render('login_siswa', { msg: "Pendaftaran Siswa Berhasil! Silakan Login." });
     } catch {
-        res.render('register_siswa', { msg: "Gagal mendaftar siswa." });
+        res.render('register_siswa', { msg: "Gagal mendaftar siswa. Email mungkin sudah ada." });
     }
 });
 
-// LOGIN GURU
+// 5. LOGIN GURU
 app.post('/auth/login-guru', async (req, res) => {
   const { email, pass } = req.body;
 
@@ -178,7 +199,7 @@ app.post('/auth/login-guru', async (req, res) => {
   }
 });
 
-// LOGIN SISWA
+// 6. LOGIN SISWA
 app.post('/auth/login-siswa', async (req, res) => {
     const { email, pass } = req.body;
     try {
@@ -199,6 +220,48 @@ app.post('/auth/login-siswa', async (req, res) => {
     }
 });
 
+// [BARU] 7. FORGOT PASSWORD (GURU)
+app.post('/auth/forget', async (req, res) => {
+    const { email } = req.body;
+    // Di sini Anda bisa tambahkan logika kirim email OTP asli
+    // Untuk sekarang simulasi sukses agar tidak error
+    res.render('forget', { msg: "OTP telah dikirim ke email Anda (Simulasi)", step: 2, email: email });
+});
+
+app.post('/auth/reset-password', async (req, res) => {
+    const { email, otp, newPass } = req.body;
+    // Logika validasi OTP disini
+    try {
+        const hashed = await bcrypt.hash(newPass, 10);
+        await pool.query('UPDATE global_guru SET password = $1 WHERE email = $2', [hashed, email]);
+        res.render('login', { msg: "Password berhasil diubah! Silakan login." });
+    } catch (e) {
+        res.render('forget', { msg: "Gagal reset password.", step: 2, email });
+    }
+});
+
+// [BARU] 8. FORGOT PASSWORD (SISWA)
+app.post('/auth/forget-siswa', async (req, res) => {
+    const { email } = req.body;
+    res.render('forget_siswa', { msg: "OTP dikirim (Simulasi)", step: 2, email: email });
+});
+
+app.post('/auth/reset-password-siswa', async (req, res) => {
+    const { email, newPass } = req.body;
+    try {
+        const hashed = await bcrypt.hash(newPass, 10);
+        await pool.query('UPDATE global_siswa SET password = $1 WHERE email = $2', [hashed, email]);
+        res.render('login_siswa', { msg: "Password berhasil diubah!" });
+    } catch (e) {
+        res.render('forget_siswa', { msg: "Gagal reset password.", step: 2, email });
+    }
+});
+
+
+// ==========================================
+// 📡 API ROUTES (DATA & AI)
+// ==========================================
+
 // API AI
 app.post('/api/generate', async (req, res) => {
   try {
@@ -209,7 +272,7 @@ app.post('/api/generate', async (req, res) => {
   }
 });
 
-// UPDATE KELAS
+// UPDATE KELAS SISWA
 app.post('/api/update-kelas-siswa', async (req, res) => {
     const { email, kelas } = req.body;
     try {
@@ -220,13 +283,11 @@ app.post('/api/update-kelas-siswa', async (req, res) => {
     }
 });
 
-// ==========================================
-// 🛠️ API TAMBAH KELAS (DARI GURU)
-// ==========================================
+// TAMBAH KELAS (DARI GURU)
 app.post('/api/tambah-kelas', async (req, res) => {
     const { kode_sekolah, nama_kelas } = req.body;
     try {
-        // Cek apakah kelas sudah ada di sekolah tersebut agar tidak duplikat
+        // Cek duplikat
         const cek = await pool.query(
             'SELECT * FROM global_kelas WHERE kode_sekolah = $1 AND nama_kelas = $2', 
             [kode_sekolah, nama_kelas]
@@ -238,14 +299,14 @@ app.post('/api/tambah-kelas', async (req, res) => {
                 [kode_sekolah, nama_kelas]
             );
         }
-        res.json({ status: 'ok', message: 'Kelas berhasil disimpan dan akan muncul di dashboard murid.' });
+        res.json({ status: 'ok', message: 'Kelas berhasil disimpan.' });
     } catch (err) {
         console.error("Error Tambah Kelas:", err);
         res.status(500).json({ error: "Gagal membuat kelas." });
     }
 });
 
-// API GET DAFTAR KELAS (UNTUK DROP-DOWN MURID)
+// GET DAFTAR KELAS
 app.get('/api/kelas/:kode_sekolah', async (req, res) => {
     try {
         const result = await pool.query(
@@ -273,32 +334,27 @@ io.on("connection", (socket) => {
     socket.to(roomID).emit("user-joined", { name: userName, role });
   });
 
-  // --- START WEBRTC SIGNALING EVENTS ---
+  // --- WEBRTC SIGNALING ---
 
-  // 1. Guru siap streaming, beri tahu semua siswa di room
   socket.on("teacher-ready", (data) => {
     socket.to(data.room).emit("teacher-ready", { teacherId: socket.id });
   });
 
-  // 2. Relay sinyal dari Siswa ke Guru
   socket.on("student-signal", (data) => {
-    // Kirim sinyal ke targetId (Guru) beserta ID pengirimnya (Siswa)
     io.to(data.targetId).emit("student-signal", {
       signal: data.signal,
       senderId: socket.id
     });
   });
 
-  // 3. Relay sinyal dari Guru ke Siswa
   socket.on("teacher-signal", (data) => {
-    // Kirim sinyal ke targetId (Siswa)
     io.to(data.targetId).emit("teacher-signal", {
       signal: data.signal,
       senderId: socket.id
     });
   });
 
-  // --- END WEBRTC SIGNALING EVENTS ---
+  // --- STREAM & CHAT ---
 
   socket.on("stream-frame", (data) => {
     socket.to(data.room).emit("stream-frame", {
@@ -308,14 +364,7 @@ io.on("connection", (socket) => {
     });
   });
 
-  // LOGIKA CHAT DARI USER (GURU/SISWA)
   socket.on("chat-message", (data) => {
-    // data = { room, user, msg, role, isPinned }
-    
-    // Broadcast ke SEMUA ORANG DI ROOM TERSEBUT
-    // Termasuk pengirimnya (kalau mau memastikan sinkronisasi), 
-    // tapi karena di frontend kita pakai Optimistic UI, 
-    // frontend akan filter pesan sendiri.
     io.to(data.room).emit("chat-message", {
       user: data.user,
       msg: data.msg,
@@ -336,10 +385,9 @@ io.on("connection", (socket) => {
     socket.to(data.room).emit("mute-all");
   });
 
-  // QUIZ START (AMAN)
+  // QUIZ START
   socket.on('start-quiz', (payload) => {
     const { room } = payload;
-
     activeQuizzes[room] = payload;
 
     const cleanData = JSON.parse(JSON.stringify(payload));
@@ -375,6 +423,7 @@ io.on("connection", (socket) => {
             [name,hasilAI.skor_total,hasilAI.analisis,kelas]
         );
 
+        // Kirim update skor ke semua di room (scoreboard)
         io.to(room).emit('score-updated-live', {
             nama_siswa: name,
             skor: hasilAI.skor_total,
@@ -383,20 +432,13 @@ io.on("connection", (socket) => {
             waktu: new Date().toLocaleTimeString()
         });
 
-        socket.emit('score-updated-live', {
-            nama_siswa: name,
-            skor: hasilAI.skor_total,
-            umpan_balik: hasilAI.analisis
-        });
-
     } catch (err) {
         console.error("Evaluation Error:", err.message);
     }
   });
 
-  // SINKRONISASI SLIDE (DITAMBAHKAN AGAR GURU BISA KONTROL SLIDE MURID)
+  // SINKRONISASI SLIDE
   socket.on('change-slide', (data) => {
-      // data = { room, slideIndex }
       socket.to(data.room).emit('change-slide', data);
   });
 
