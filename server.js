@@ -272,32 +272,35 @@ app.post('/api/generate', async (req, res) => {
   }
 });
 
- // API GAMBAR 100% GRATIS (Mencari di Database AI Lexica.art)
+// API GAMBAR 100% GRATIS (Lexica.art + Filter Cerdas)
 app.get('/api/gambar', async (req, res) => {
-    const prompt = req.query.prompt;
-    if (!prompt) return res.status(400).send("Prompt tidak boleh kosong");
+    let prompt = req.query.prompt || "Education";
 
     try {
-        // Kita cari gambar yang sudah pernah dibuat oleh AI sebelumnya (jutaan database)
-        // Ini instan, 100% GRATIS, dan tanpa API Key!
-        const response = await fetch(`https://lexica.art/api/v1/search?q=${encodeURIComponent(prompt)}`);
+        // TRIK 1: Ambil kalimat pertama saja sebelum tanda koma agar pencarian lebih gampang
+        let cleanPrompt = prompt.split(',')[0].trim(); 
+        
+        // Kita tambahkan embel-embel agar hasilnya berwujud ilustrasi keren
+        let query = encodeURIComponent(cleanPrompt + " cinematic fantasy concept art");
+
+        const response = await fetch(`https://lexica.art/api/v1/search?q=${query}`);
         const data = await response.json();
 
-        // Jika gambar ditemukan di database mereka
+        // Jika ketemu gambarnya
         if (data && data.images && data.images.length > 0) {
-            // Ambil URL gambar pertama yang paling relevan & resolusi bagus
             const imageUrl = data.images[0].src;
-            
-            // Langsung arahkan browser siswa ke gambar tersebut (Super Cepat!)
             return res.redirect(imageUrl);
         } else {
-            throw new Error("Gambar tidak ditemukan");
+            throw new Error("Gambar tidak ditemukan di database");
         }
 
     } catch (error) {
         console.error("Gagal cari gambar:", error.message);
-        // Gambar darurat warna gelap estetik kalau internet ngadat
-        res.redirect(`https://placehold.co/800x400/1e293b/ffffff?text=Visual+Materi`);
+        
+        // TRIK 2: Jika gagal, JANGAN tampilkan kotak tulisan lagi. 
+        // Tampilkan foto pemandangan estetik dengan efek blur sedikit (sangat elegan untuk background)
+        const randomSeed = Math.floor(Math.random() * 1000);
+        res.redirect(`https://picsum.photos/seed/${randomSeed}/800/400?blur=1`);
     }
 });
 
