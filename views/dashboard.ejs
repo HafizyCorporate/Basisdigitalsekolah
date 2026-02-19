@@ -535,7 +535,7 @@
             showAlert(`Berhasil ekspor ${dataType} ke ${format}`, "chk");
         }
 
-                     function renderSlide() {
+            function renderSlide() {
             if(!lastGeneratedData || !lastGeneratedData.slides.length) return;
             const slide = lastGeneratedData.slides[currentSlideIndex];
             
@@ -544,41 +544,32 @@
             // --- JURUS BYPASS CLOUDFLARE ---
             let rawKeyword = slide.keyword_gambar || "Materi Pembelajaran";
             
-            // TRIK 1: Potong teksnya. Hanya ambil kata sebelum tanda koma pertama.
-            // Biar AI tidak pusing dan URL tidak kepanjangan.
+            // Potong teks agar URL tidak kepanjangan
             let cleanKeyword = rawKeyword.split(',')[0].trim();
             
-            // TRIK 2: Gabungkan dengan gaya edukasi
+            // Gabungkan dengan gaya edukasi
             const promptFinal = encodeURIComponent(cleanKeyword + ", high quality educational illustration");
             
-            // TRIK 3: Tembak langsung dari Browser Frontend! (Aman dari blokir server)
+            // Tembak ke Pollinations
             const imgEl = document.getElementById('slide-img');
             imgEl.src = `https://image.pollinations.ai/prompt/${promptFinal}?width=800&height=400&nologo=true`;
 
-            // Pelampung darurat
+            // Pelampung darurat kalau internet siswa ngadat
             imgEl.onerror = function() {
                 this.onerror = null; 
                 this.src = `https://placehold.co/800x400/1e293b/ffffff?text=Visual+Materi`;
             };
             // -------------------------------
             
+            // Update teks di layar
             document.getElementById('slide-keyword').innerText = `Visual: ${slide.keyword_gambar || 'Umum'}`;
             document.getElementById('slide-subjudul').innerText = slide.judul_slide; 
             document.getElementById('slide-konten').innerHTML = slide.konten_html;   
-            
             document.getElementById('page-indicator').innerText = `${currentSlideIndex + 1} / ${lastGeneratedData.slides.length}`;
         }
-
             
-            // Sesuaikan dengan key dari ai.js
-            document.getElementById('slide-keyword').innerText = `Visual: ${slide.keyword_gambar || 'Umum'}`;
-            document.getElementById('slide-subjudul').innerText = slide.judul_slide; // Diubah dari slide.subTitle
-            document.getElementById('slide-konten').innerHTML = slide.konten_html;   // Diubah dari slide.content
-            
-            document.getElementById('page-indicator').innerText = `${currentSlideIndex + 1} / ${lastGeneratedData.slides.length}`;
-        }
-
-        
+                     
+                     
         function nextSlide() {
             if(!lastGeneratedData || currentSlideIndex >= lastGeneratedData.slides.length - 1) return;
             currentSlideIndex++; renderSlide();
