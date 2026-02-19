@@ -544,8 +544,7 @@
             
             // AI hanya memberikan "keyword_gambar", jadi kita pakai URL placeholder gratis (placehold.co) agar tidak blank
             const keywordEncoded = encodeURIComponent(slide.keyword_gambar || "Materi Pembelajaran");
-// Arahkan ke endpoint backend kita sendiri
-document.getElementById('slide-img').src = `/api/gambar?prompt=${keywordEncoded}`;
+            document.getElementById('slide-img').src = `https://image.pollinations.ai/prompt/${keywordEncoded}, high quality realistic fantasy illustration?width=800&height=400&nologo=true`;
 
 
             
