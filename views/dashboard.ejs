@@ -34,66 +34,67 @@
         body.sidebar-closed .app-layout { grid-template-columns: 0px 1fr; }
         .sidebar { background: #ffffff; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow: hidden; white-space: nowrap; position: relative; z-index: 50; }
         
-        .main-stage { position: relative; background: #0f172a; display: flex; align-items: center; justify-content: center; overflow: hidden; width: 100%; height: 100%; }
+        /* Main Stage & Background Kosmik */
+        .main-stage { position: relative; background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #020617 80%); display: flex; align-items: center; justify-content: center; overflow: hidden; width: 100%; height: 100%; flex-direction: column; }
         
-        /* VIDEO WRAPPER */
-        .video-wrapper { position: relative; transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); background: #000; z-index: 10; }
-        .video-wrapper.default-mode { width: 85%; height: 75%; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); }
-        .video-wrapper.full-mode { width: 100%; height: 100%; border-radius: 0; border: none; }
-        .video-wrapper.pip-mode { position: absolute; bottom: 140px; right: 20px; width: 200px; height: 150px; z-index: 60; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.2); }
+        /* Container Studio (Kamera + Chat) */
+        .studio-container { display: flex; flex-direction: column; align-items: center; gap: 20px; width: 100%; max-width: 900px; transition: all 0.5s ease; z-index: 10; height: 80%; justify-content: center; }
+        
+        /* VIDEO WRAPPER PREMIUM */
+        .video-wrapper { position: relative; transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); background: #000; z-index: 10; }
+        .video-wrapper.default-mode { width: 100%; height: 60%; border-radius: 24px; border: 2px solid rgba(255,255,255,0.1); }
+        .video-wrapper.full-mode { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 0; border: none; z-index: 50; }
+        .video-wrapper.pip-mode { position: absolute; bottom: 120px; right: 20px; width: 240px; height: 160px; z-index: 60; border-radius: 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.8); border: 2px solid rgba(59, 130, 246, 0.5); }
+        
+        /* INTEGRATED CHAT (Di Bawah Kamera) */
+        .integrated-chat { width: 100%; height: 35%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border-radius: 24px; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; overflow: hidden; box-shadow: inset 0 2px 20px rgba(0,0,0,0.5); transition: opacity 0.3s, transform 0.3s; }
+        .integrated-chat.hidden-mode { opacity: 0; pointer-events: none; transform: translateY(20px) scale(0.95); position: absolute; z-index: -1; }
         
         .stage-overlay { position: absolute; inset: 0; z-index: 40; background: #0f172a; display: none; opacity: 0; transition: opacity 0.3s; }
         .stage-overlay.active { display: block; opacity: 1; }
         
-        #student-grid-view { display: none; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; padding: 20px; align-content: start; overflow-y: auto; }
+        #student-grid-view { display: none; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; padding: 30px; align-content: start; overflow-y: auto; background: radial-gradient(circle at top, #1e293b, #020617); }
         #student-grid-view.active { display: grid; }
 
-        #presentation-stage { padding: 0; overflow: hidden; background: white; color: #1e293b; display: none; flex-direction: column; z-index: 40; }
+        #presentation-stage { padding: 0; overflow: hidden; background: #ffffff; display: none; flex-direction: column; z-index: 40; }
         #presentation-stage.active { display: flex; }
         
-        /* UI Components */
-        .top-controls { position: absolute; top: 20px; left: 20px; right: 20px; z-index: 70; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; }
-        .hamburger-btn { pointer-events: auto; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.1); color: white; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; transition: 0.2s; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-        .hamburger-btn:hover { background: rgba(0,0,0,0.6); transform: scale(1.05); }
+        /* Top Status Bar (Mewah) */
+        .top-status-bar { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 70; pointer-events: none; }
+        .status-pill { background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); padding: 8px 20px; border-radius: 99px; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: all 0.3s; }
         
-        .start-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.9); z-index: 80; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(10px); transition: opacity 0.4s; }
-        .start-overlay.hidden { opacity: 0; pointer-events: none; }
-        
-        .control-bar { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(20px); padding: 10px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; gap: 8px; z-index: 70; box-shadow: 0 20px 50px rgba(0,0,0,0.6); white-space: nowrap; }
-        .ctrl-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 54px; height: 54px; border-radius: 12px; color: #94a3b8; cursor: pointer; transition: all 0.2s; gap: 4px; background: transparent; }
-        .ctrl-btn:hover { background: rgba(255,255,255,0.08); color: white; transform: translateY(-2px); }
-        .ctrl-btn.active { background: #2563eb; color: white; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4); }
-        .ctrl-btn.danger { color: #f87171; }
-        .ctrl-btn.danger.active { background: #ef4444; color: white; }
-        .ctrl-icon { font-size: 18px; margin-bottom: 2px; }
-        .ctrl-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-        .divider { width: 1px; height: 32px; background: rgba(255,255,255,0.1); margin: 0 4px; }
-        
-        .floating-chat-btn { position: fixed; bottom: 140px; right: 25px; z-index: 90; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; box-shadow: 0 8px 25px rgba(37, 99, 235, 0.5); border: 2px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; }
-        .floating-chat-btn:hover { transform: scale(1.1) rotate(-5deg); }
-        .chat-panel-float { position: fixed; bottom: 210px; right: 25px; width: 320px; height: 400px; background: white; border-radius: 20px; z-index: 89; box-shadow: 0 20px 60px rgba(0,0,0,0.3); border: 1px solid #e2e8f0; display: none; flex-direction: column; transform-origin: bottom right; animation: popUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .chat-panel-float.active { display: flex; }
-        @keyframes popUp { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
-        
-        #quiz-controller { display: none; margin-top: 15px; padding: 10px; background: #f1f5f9; border-radius: 12px; border: 1px solid #e2e8f0; animation: slideDown 0.3s ease-out; }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Control Bar Super Premium */
+        .control-bar { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(25px); padding: 12px 20px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; gap: 10px; z-index: 70; box-shadow: 0 25px 50px rgba(0,0,0,0.8); white-space: nowrap; transition: all 0.3s; }
+        .control-bar:hover { border-color: rgba(255,255,255,0.3); }
+        .ctrl-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 60px; height: 60px; border-radius: 16px; color: #94a3b8; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); gap: 6px; background: rgba(255,255,255,0.03); border: 1px solid transparent; }
+        .ctrl-btn:hover { background: rgba(255,255,255,0.1); color: white; transform: translateY(-3px); border-color: rgba(255,255,255,0.1); }
+        .ctrl-btn.active { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; box-shadow: 0 8px 20px rgba(37, 99, 235, 0.5); border: none; }
+        .ctrl-btn.danger { background: rgba(239, 68, 68, 0.1); color: #f87171; }
+        .ctrl-btn.danger:hover { background: rgba(239, 68, 68, 0.2); transform: translateY(-3px); }
+        .ctrl-btn.danger.active { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; box-shadow: 0 8px 20px rgba(239, 68, 68, 0.5); }
+        .ctrl-icon { font-size: 20px; }
+        .ctrl-label { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        .divider { width: 2px; height: 36px; background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.1), transparent); margin: 0 6px; }
 
-        #customAlert { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); transition: top 0.5s; z-index: 100; background: white; color: black; padding: 10px 20px; border: 2px solid #e2e8f0; display: flex; align-items: center; gap: 8px; border-radius: 9999px; }
+        /* Custom Alert */
+        #customAlert { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); transition: top 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 100; background: linear-gradient(to right, #ffffff, #f8fafc); color: #0f172a; padding: 14px 28px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 12px; border-radius: 99px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); font-weight: 700; font-size: 14px; }
         
-        .student-card { background: #1e293b; border-radius: 12px; overflow: hidden; position: relative; aspect-ratio: 16/9; border: 1px solid #334155; }
+        .student-card { background: #1e293b; border-radius: 16px; overflow: hidden; position: relative; aspect-ratio: 16/9; border: 1px solid #334155; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         .student-card video { width: 100%; height: 100%; object-fit: cover; }
-        .student-label { position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.6); color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+        .student-label { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); color: white; padding: 4px 12px; border-radius: 8px; font-size: 11px; font-weight: bold; border: 1px solid rgba(255,255,255,0.1); }
 
         @media (max-width: 1024px) {
             .app-layout { grid-template-columns: 1fr; }
             .sidebar { position: fixed; inset: 0; width: 100%; transform: translateX(-100%); transition: transform 0.3s; z-index: 100;}
             .sidebar.open { transform: translateX(0); }
             body.sidebar-closed .app-layout { grid-template-columns: 1fr; }
-            .control-bar { padding: 8px 12px; bottom: 80px; width: 95%; max-width: 450px; justify-content: space-around; gap: 2px;}
-            .ctrl-btn { width: 48px; height: 48px; }
+            .control-bar { bottom: 20px; padding: 10px; width: 95%; max-width: 500px; justify-content: space-between; gap: 2px;}
+            .ctrl-btn { width: 50px; height: 50px; }
+            .ctrl-icon { font-size: 16px; }
             .ctrl-label { font-size: 8px; }
-            .video-wrapper.default-mode { width: 92%; height: 60%; }
+            .studio-container { height: 85%; }
         }
+        
     </style>
 </head>
 <body class="sidebar-closed"> 
@@ -101,30 +102,6 @@
     <div id="customAlert">
         <span id="alertIcon" class="text-xl"></span>
         <span id="alertMsg">Info</span>
-    </div>
-
-    <div class="floating-chat-btn" onclick="toggleChat()" title="Buka Chat">
-        <i class="fa-solid fa-comments text-2xl"></i>
-    </div>
-    <div id="chat-panel" class="chat-panel-float">
-        <div class="bg-slate-50 p-4 border-b border-slate-100 flex justify-between items-center rounded-t-2xl">
-            <div class="flex items-center gap-2">
-                <i class="fa-solid fa-comment-dots text-brand-600"></i>
-                <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Live Chat</span>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="toggleChat()" class="text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-        </div>
-        <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-3 bg-white text-sm text-slate-800 scrollbar-hide">
-            <div class="text-center text-[10px] text-slate-400 italic py-10">Belum ada pesan masuk.</div>
-        </div>
-        <div class="p-3 bg-white border-t border-slate-100 rounded-b-2xl">
-            <form onsubmit="kirimChat(event)" class="flex gap-2">
-                <input type="text" id="chat-input" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs outline-none" placeholder="Tulis pesan..." autocomplete="off">
-                <button type="submit" class="bg-brand-600 text-white rounded-xl w-10 h-9 flex items-center justify-center"><i class="fa-solid fa-paper-plane text-xs"></i></button>
-            </form>
-        </div>
     </div>
 
     <div class="app-layout">
@@ -235,16 +212,15 @@
             </div>
         </aside>
 
-        <main class="main-stage">
-            <div class="top-controls">
-                <div class="bg-black/60 backdrop-blur-md border border-white/10 pl-3 pr-4 py-1.5 rounded-full flex items-center gap-2 pointer-events-auto shadow-lg">
-                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]"></div>
-                    <span id="status-text" class="text-[10px] font-bold tracking-widest text-white/90">STANDBY</span>
+               <main class="main-stage">
+            <div class="top-status-bar">
+                <div class="status-pill">
+                    <div id="status-dot" class="w-3 h-3 rounded-full bg-yellow-500 shadow-[0_0_12px_rgba(234,179,8,0.8)]"></div>
+                    <span id="status-text" class="text-[11px] font-black tracking-widest text-white/90 uppercase">STANDBY</span>
                 </div>
-                <button onclick="toggleSidebar()" class="hamburger-btn" title="Buka Menu Sidebar"><i class="fa-solid fa-bars text-lg"></i></button>
             </div>
 
-                            <div id="start-overlay" class="start-overlay" style="background: radial-gradient(circle at 50% 50%, #0f172a 0%, #000000 100%); overflow: hidden;">
+            <div id="start-overlay" class="start-overlay" style="background: radial-gradient(circle at 50% 50%, #0f172a 0%, #000000 100%); overflow: hidden; position: absolute; inset:0; z-index:80; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:opacity 0.4s;">
                 <div class="absolute top-0 left-1/4 w-96 h-96 bg-brand-600/20 rounded-full mix-blend-screen filter blur-[100px] animate-pulse pointer-events-none"></div>
                 <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-600/20 rounded-full mix-blend-screen filter blur-[100px] animate-pulse pointer-events-none" style="animation-delay: 2s;"></div>
 
@@ -252,21 +228,14 @@
                     <div class="w-24 h-24 bg-gradient-to-tr from-brand-600 to-indigo-600 rounded-[2rem] flex items-center justify-center shadow-[0_0_40px_rgba(37,99,235,0.4)] mb-6 mx-auto border border-white/20">
                         <i class="fa-solid fa-chalkboard-user text-5xl text-white drop-shadow-lg"></i>
                     </div>
-                    
                     <h2 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-300 mb-2 tracking-tight drop-shadow-sm">Teacher Studio</h2>
                     <p class="text-slate-400 text-sm mb-8">Pilih atau buat kelas terlebih dahulu</p>
                     
                     <div class="bg-white/10 backdrop-blur-xl border border-white/20 p-5 rounded-2xl shadow-2xl mb-8 text-left relative z-20">
-                        <label class="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-3">
-                            <i class="fa-solid fa-school text-brand-400 mr-2"></i>Daftar Kelas
-                        </label>
+                        <label class="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-3"><i class="fa-solid fa-school text-brand-400 mr-2"></i>Daftar Kelas</label>
                         <div class="flex gap-2">
-                            <input type="text" id="nama-kelas" list="list-kelas-guru" onchange="pilihKelasExisting()"
-                                class="flex-1 bg-slate-900/50 border border-slate-600 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-500 transition" 
-                                placeholder="Ketik nama kelas...">
-                            <button onclick="simpanKelasBaru()" class="bg-brand-600 text-white px-4 py-3 rounded-xl hover:bg-brand-500 hover:shadow-[0_0_20px_rgba(37,99,235,0.5)] transition flex items-center justify-center gap-2 shadow-lg" title="Simpan Kelas Baru">
-                                <i class="fa-solid fa-floppy-disk text-lg"></i> <span class="hidden sm:inline text-xs font-bold">Simpan</span>
-                            </button>
+                            <input type="text" id="nama-kelas" list="list-kelas-guru" onchange="pilihKelasExisting()" class="flex-1 bg-slate-900/50 border border-slate-600 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-500 transition" placeholder="Ketik nama kelas...">
+                            <button onclick="simpanKelasBaru()" class="bg-brand-600 text-white px-4 py-3 rounded-xl hover:bg-brand-500 transition flex items-center justify-center gap-2"><i class="fa-solid fa-floppy-disk"></i> <span class="hidden sm:inline text-xs font-bold">Simpan</span></button>
                         </div>
                         <datalist id="list-kelas-guru"></datalist>
                         <div class="mt-3 flex items-center gap-2">
@@ -274,49 +243,69 @@
                             <p class="text-[11px] text-slate-400 font-medium" id="status-kelas-info">Menunggu Anda memilih kelas...</p>
                         </div>
                     </div>
-
-                    <button onclick="toggleLive()" class="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl font-bold text-lg shadow-[0_10px_30px_rgba(16,185,129,0.3)] hover:shadow-[0_15px_40px_rgba(16,185,129,0.5)] hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 border border-white/20">
-                        <i class="fa-solid fa-video text-xl"></i> MULAI LIVE SEKARANG
+                    <button onclick="toggleLive()" class="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl font-bold text-lg shadow-[0_10px_30px_rgba(16,185,129,0.3)] hover:-translate-y-1 transition flex items-center justify-center gap-3 border border-white/20">
+                        <i class="fa-solid fa-video text-xl"></i> MULAI LIVE
                     </button>
                 </div>
             </div>
 
-            
-            
-            <div id="guru-video-wrapper" class="video-wrapper default-mode">
-                <video id="guru-cam" class="w-full h-full object-cover transform -scale-x-100" autoplay playsinline muted></video>
-                <div class="absolute bottom-4 left-4 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full text-white text-[10px] font-semibold border border-white/10 flex items-center gap-2">
-                    <i class="fa-solid fa-user-tie text-brand-400"></i> <%= nama_guru %>
-                </div>
-            </div>
-
-            <div id="student-grid-view" class="stage-overlay"></div>
-            
-            <div id="presentation-stage" class="stage-overlay flex flex-col h-full bg-white text-slate-800 p-0 overflow-hidden">
-                <div class="bg-yellow-400 p-4 flex justify-between items-center shadow-md z-10">
-                    <h1 id="slide-judul-besar" class="text-lg font-black text-white drop-shadow-md uppercase tracking-wide truncate max-w-[50%]">Judul Materi</h1>
-                    <div class="flex gap-2 items-center">
-                        <button onclick="prevSlide()" class="w-8 h-8 bg-white text-yellow-600 rounded-full flex items-center justify-center hover:scale-110 transition shadow"><i class="fa-solid fa-chevron-left"></i></button>
-                        <span id="page-indicator" class="bg-white/20 text-white px-3 py-1 rounded-full font-bold text-xs">1 / 15</span>
-                        <button onclick="nextSlide()" class="w-8 h-8 bg-white text-yellow-600 rounded-full flex items-center justify-center hover:scale-110 transition shadow"><i class="fa-solid fa-chevron-right"></i></button>
+            <div id="studio-container" class="studio-container">
+                <div id="guru-video-wrapper" class="video-wrapper default-mode">
+                    <video id="guru-cam" class="w-full h-full object-cover transform -scale-x-100" autoplay playsinline muted></video>
+                    <div class="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl text-white text-xs font-bold border border-white/10 flex items-center gap-2 shadow-lg">
+                        <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                        <i class="fa-solid fa-user-tie text-brand-400"></i> <%= nama_guru %>
                     </div>
                 </div>
 
+                <div id="integrated-chat" class="integrated-chat">
+                    <div class="bg-black/40 p-3 border-b border-white/10 flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-messages text-brand-400 animate-bounce"></i>
+                            <span class="text-xs font-black text-white uppercase tracking-wider">Live Chat Siswa</span>
+                        </div>
+                        <span class="text-[10px] bg-brand-600/30 text-brand-300 px-2 py-1 rounded font-bold">Aktif</span>
+                    </div>
+                    <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-hide text-sm">
+                        <div class="text-center text-xs text-slate-400 italic py-6">Ruang obrolan kelas siap digunakan...</div>
+                    </div>
+               
+                                           <div class="p-2 bg-black/40 border-t border-white/10">
+                       <form onsubmit="kirimChat(event)" class="flex gap-2">
+                            <input type="text" id="chat-input" class="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-xs text-white outline-none focus:border-brand-500 transition" placeholder="Sapa siswa Anda..." autocomplete="off">
+                            <button type="submit" class="bg-brand-600 text-white rounded-xl w-12 h-10 flex items-center justify-center hover:bg-brand-500 transition shadow-lg"><i class="fa-solid fa-paper-plane"></i></button>
+                        </form>
+                    </div> </div> <div id="student-grid-view" class="stage-overlay"></div>
+
+            
+            <div id="presentation-stage" class="stage-overlay flex flex-col h-full bg-slate-50 text-slate-800 p-0 overflow-hidden">
+                <div class="bg-slate-900 p-4 flex justify-between items-center shadow-lg z-10 border-b-4 border-brand-500">
+                    <h1 id="slide-judul-besar" class="text-lg font-black text-white tracking-wide truncate max-w-[50%] flex items-center gap-3"><i class="fa-solid fa-book-open-reader text-brand-400"></i> Materi</h1>
+                    <div class="flex gap-2 items-center">
+                        <button onclick="prevSlide()" class="w-10 h-10 bg-slate-800 text-white rounded-xl flex items-center justify-center hover:bg-brand-600 transition shadow border border-slate-700"><i class="fa-solid fa-chevron-left"></i></button>
+                        <span id="page-indicator" class="bg-black/50 text-brand-400 px-4 py-2 rounded-xl font-bold text-xs border border-slate-700">1 / 1</span>
+                        <button onclick="nextSlide()" class="w-10 h-10 bg-slate-800 text-white rounded-xl flex items-center justify-center hover:bg-brand-600 transition shadow border border-slate-700"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                </div>
                 <div class="flex-1 overflow-y-auto p-6 md:p-10 relative scrollbar-hide">
-                    <div class="mb-6 rounded-2xl overflow-hidden h-48 md:h-64 bg-slate-100 relative group border-4 border-yellow-100 shadow-sm">
+                    <div class="mb-6 rounded-3xl overflow-hidden h-48 md:h-72 bg-slate-200 relative group shadow-2xl border border-slate-300">
                         <img id="slide-img" src="" class="w-full h-full object-cover transition duration-700 group-hover:scale-105">
-                        <div class="absolute bottom-0 left-0 right-0 bg-black/60 p-2 text-center">
-                            <p id="slide-keyword" class="text-white text-[10px] uppercase font-bold tracking-widest">Visual: ...</p>
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4 text-left">
+                            <p id="slide-keyword" class="text-brand-300 text-[10px] uppercase font-black tracking-widest"><i class="fa-solid fa-image mr-1"></i> Visual: ...</p>
                         </div>
                     </div>
-                    <h2 id="slide-subjudul" class="text-2xl font-black text-slate-800 mb-4">Sub Judul</h2>
-                    <div id="slide-konten" class="prose prose-sm md:prose-lg prose-yellow max-w-none text-slate-600 leading-relaxed"></div>
+                    <h2 id="slide-subjudul" class="text-3xl font-black text-slate-900 mb-4 border-l-4 border-brand-500 pl-4">Sub Judul</h2>
+                    <div id="slide-konten" class="prose prose-lg max-w-none text-slate-700 leading-relaxed font-medium"></div>
                 </div>
             </div>
 
             <div class="control-bar">
+                <div class="ctrl-btn" onclick="toggleSidebar()" title="Buka Menu Pengaturan">
+                    <i class="fa-solid fa-bars-staggered ctrl-icon text-white"></i> <span class="ctrl-label text-white">Menu</span>
+                </div>
+                <div class="divider"></div>
                 <div class="ctrl-btn" onclick="toggleLive()" id="btn-start" title="Mulai / Jeda Live">
-                    <i class="fa-solid fa-play ctrl-icon"></i> <span class="ctrl-label">Start</span>
+                    <i class="fa-solid fa-power-off ctrl-icon"></i> <span class="ctrl-label">Live</span>
                 </div>
                 <div class="divider"></div>
                 <div class="ctrl-btn" onclick="toggleMuteSelf()" id="btn-mic" title="Matikan/Hidupkan Mic">
@@ -325,18 +314,18 @@
                 <div class="ctrl-btn" onclick="toggleCamSelf()" id="btn-cam" title="Matikan/Hidupkan Kamera">
                     <i class="fa-solid fa-video ctrl-icon"></i> <span class="ctrl-label">Cam</span>
                 </div>
-                <div class="ctrl-btn" onclick="toggleScreenSize()" id="btn-screen" title="Ubah Ukuran Layar">
-                    <i class="fa-solid fa-expand ctrl-icon"></i> <span class="ctrl-label">Full Scr</span>
+                <div class="ctrl-btn" onclick="toggleScreenSize()" id="btn-screen" title="Ubah Layar">
+                    <i class="fa-solid fa-expand ctrl-icon"></i> <span class="ctrl-label">Layar</span>
                 </div>
                 <div class="divider"></div>
                 <div class="ctrl-btn" onclick="toggleGridView()" id="btn-grid-murid" title="Tampilkan Semua Siswa">
-                    <i class="fa-solid fa-table-cells ctrl-icon"></i> <span class="ctrl-label">Grid</span>
+                    <i class="fa-solid fa-users-viewfinder ctrl-icon"></i> <span class="ctrl-label">Siswa</span>
                 </div>
-                <div class="ctrl-btn" onclick="toggleMateriView()" id="btn-grid-materi" title="Review Materi">
-                    <i class="fa-solid fa-book-open ctrl-icon"></i> <span class="ctrl-label">Review</span>
+                <div class="ctrl-btn" onclick="toggleMateriView()" id="btn-grid-materi" title="Tampilkan Materi">
+                    <i class="fa-solid fa-chalkboard ctrl-icon"></i> <span class="ctrl-label">Materi</span>
                 </div>
                 <div class="divider"></div>
-                <div class="ctrl-btn danger" onclick="muteAllStudents()" title="Bisukan Semua Siswa">
+                <div class="ctrl-btn danger" onclick="muteAllStudents()" title="Bisukan Siswa">
                     <i class="fa-solid fa-volume-xmark ctrl-icon"></i> <span class="ctrl-label">Mute All</span>
                 </div>
             </div>
@@ -542,8 +531,17 @@
                 link.download = `${fileName}.doc`;
                 link.click();
             }
-            showAlert(`Berhasil ekspor ${dataType} ke ${format}`, "chk");
+            
+             // Tambahkan animasi loading pura-pura biar terlihat PRO
+            showAlert(`Memproses Ekspor ${dataType}...`, "⏳");
+            
+            setTimeout(() => {
+                showAlert(`Berhasil ekspor ${dataType} ke ${format}`, "✅");
+            }, 1500); // Jeda 1.5 detik
         }
+
+
+            
 
              function renderSlide() {
             if(!lastGeneratedData || !lastGeneratedData.slides.length) return;
@@ -595,14 +593,41 @@
         }
 
         async function muatDaftarKelas() {
-            try {
-                const res = await fetch('/api/kelas/<%= kode %>');
-                const data = await res.json();
-                const datalist = document.getElementById('list-kelas-guru');
-                datalist.innerHTML = data.map(k => `<option value="${escapeHtml(k.nama_kelas)}">`).join('');
-            } catch (e) { console.error("Gagal muat kelas", e); }
-        }
+    try {
+        const res = await fetch(`/api/kelas/<%= kode %>`); // Gunakan template literal yang benar
+        const data = await res.json();
+        const datalist = document.getElementById('list-kelas-guru');
+        datalist.innerHTML = data.map(k => `<option value="${escapeHtml(k.nama_kelas)}">`).join('');
+    } catch (e) { 
+        console.error("Gagal muat kelas", e); 
+    }
+}
 
+async function simpanKelasBaru() { 
+    const namaKelas = document.getElementById('nama-kelas').value.trim(); 
+    if (!namaKelas) return showAlert("Ketik nama kelas!", "⚠️"); 
+    
+    try {
+        await fetch('/api/tambah-kelas', { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify({ kode_sekolah: "<%= kode %>", nama_kelas: namaKelas }) 
+        }); 
+        
+        await muatDaftarKelas(); // Tunggu daftar kelas dimuat ulang
+        
+        // Opsional: Set value input nama-kelas agar pilihKelasExisting otomatis menggunakan nama ini
+        document.getElementById('nama-kelas').value = namaKelas; 
+        
+        pilihKelasExisting(); 
+    } catch (e) {
+        console.error("Gagal menyimpan kelas", e);
+        showAlert("Gagal menyimpan kelas", "❌");
+    }
+}
+
+        
+        
         function pilihKelasExisting() {
             const namaKelas = document.getElementById('nama-kelas').value.trim();
             if(!namaKelas) return;
@@ -656,6 +681,31 @@
                 });
             }
         });
+        
+                // --- TAMBAHKAN KODE INI UNTUK MENERIMA PESAN DARI SISWA ---
+        socket.on('receive-chat', (data) => {
+            const chatContainer = document.getElementById('chat-container');
+            
+            // Hapus tulisan default jika masih ada
+            if (chatContainer.innerHTML.includes('italic py-6')) {
+                chatContainer.innerHTML = ''; 
+            }
+            
+            // Tambahkan balon pesan siswa ke layar (Warna gelap, di sebelah kiri)
+            chatContainer.innerHTML += `
+                <div class="flex justify-start mb-2 animate-[fadeIn_0.3s_ease-out]">
+                    <div class="bg-slate-800 border border-slate-700 text-white px-3 py-2 rounded-xl rounded-tl-sm max-w-[80%] text-xs shadow-md">
+                        <div class="font-bold text-[9px] text-brand-400 mb-1 flex justify-between gap-3">${escapeHtml(data.sender)} <span>${new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</span></div>
+                        ${escapeHtml(data.message)}
+                    </div>
+                </div>
+            `;
+            
+            // Scroll otomatis ke bawah
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        });
+        // -----------------------------------------------------------
+
 
         // --- UBAH NAMA EVENT DI DASHBOARD GURU SESUAI INSTRUKSI ---
         socket.on('score-updated-live', (data) => {
@@ -758,7 +808,14 @@
             }
         }
 
-        function toggleMuteSelf() { isMutedSelf = !isMutedSelf; if(localStream) { localStream.getAudioTracks()[0].enabled = !isMutedSelf; } updateBtnUI('btn-mic', isMutedSelf, 'fa-microphone-slash', 'fa-microphone', 'Unmute', 'Mic'); }
+        function toggleMuteSelf() { isMutedSelf = !isMutedSelf; if(localStream) { localStream.getAudioTracks()[0].enabled = !isMutedSelf; } updateBtnUI('btn-mic', isMutedSelf, 'fa-microphone-slash', 'fa-microphone', 'Unmute', 'Mic'); }   
+        function muteAllStudents() {
+        if (!activeRoom || !isLive) return showAlert("Anda belum Live di kelas!", "⚠️");
+            
+            // Mengirim perintah ke server agar semua siswa di-mute
+            socket.emit('mute-all-students', { room: activeRoom });
+            showAlert("Semua mikrofon siswa dinonaktifkan!", "🔇");
+        }
         function toggleCamSelf() { isCamSelfOff = !isCamSelfOff; if(localStream) { localStream.getVideoTracks()[0].enabled = !isCamSelfOff; } updateBtnUI('btn-cam', isCamSelfOff, 'fa-video-slash', 'fa-video', 'Cam On', 'Cam'); }
         function updateBtnUI(id, active, iconOn, iconOff, textOn, textOff) {
             const btn = document.getElementById(id); const icon = btn.querySelector('i'); const label = btn.querySelector('span');
@@ -766,29 +823,63 @@
             else { btn.classList.remove('danger', 'active'); icon.className = `fa-solid ${iconOff} ctrl-icon`; label.innerText = textOff; }
         }
 
-        function toggleScreenSize() {
+                        function toggleScreenSize() {
             const wrapper = document.getElementById('guru-video-wrapper'); const btn = document.getElementById('btn-screen'); const icon = btn.querySelector('i'); const label = btn.querySelector('span');
+            const chat = document.getElementById('integrated-chat');
             isFullScreen = !isFullScreen;
-            if (isFullScreen) { wrapper.classList.remove('default-mode'); wrapper.classList.add('full-mode'); icon.className = "fa-solid fa-compress ctrl-icon"; label.innerText = "Kecilkan"; btn.classList.add('active'); } 
-            else { wrapper.classList.remove('full-mode'); wrapper.classList.add('default-mode'); icon.className = "fa-solid fa-expand ctrl-icon"; label.innerText = "Full Scr"; btn.classList.remove('active'); }
+            if (isFullScreen) { 
+                wrapper.classList.remove('default-mode'); wrapper.classList.add('full-mode'); 
+                icon.className = "fa-solid fa-compress ctrl-icon"; label.innerText = "Kecilkan"; btn.classList.add('active'); 
+                chat.classList.add('hidden-mode'); // Sembunyikan Chat
+            } else { 
+                wrapper.classList.remove('full-mode'); wrapper.classList.add('default-mode'); 
+                icon.className = "fa-solid fa-expand ctrl-icon"; label.innerText = "Layar"; btn.classList.remove('active'); 
+                if(activeView === 'normal') chat.classList.remove('hidden-mode'); // Munculkan Chat
+            }
         }
 
         function toggleGridView() {
-            if (activeView === 'grid') { resetViews(); activeView = 'normal'; } 
-            else { resetViews(); document.getElementById('student-grid-view').classList.add('active'); const wrapper = document.getElementById('guru-video-wrapper'); wrapper.classList.remove('default-mode', 'full-mode'); wrapper.classList.add('pip-mode'); document.getElementById('btn-grid-murid').classList.add('active'); activeView = 'grid'; showAlert("Mode Grid Siswa", "👥"); }
+            const chat = document.getElementById('integrated-chat');
+            if (activeView === 'grid') { 
+                resetViews(); activeView = 'normal'; 
+                if(!isFullScreen) chat.classList.remove('hidden-mode');
+            } else { 
+                resetViews(); document.getElementById('student-grid-view').classList.add('active'); 
+                const wrapper = document.getElementById('guru-video-wrapper'); 
+                wrapper.classList.remove('default-mode', 'full-mode'); wrapper.classList.add('pip-mode'); 
+                document.getElementById('btn-grid-murid').classList.add('active'); activeView = 'grid'; 
+                chat.classList.add('hidden-mode'); // Sembunyikan Chat
+                showAlert("Mode Grid Siswa Aktif", "👥"); 
+            }
         }
 
         function toggleMateriView() {
             if(!lastGeneratedData) return showAlert("Belum ada materi untuk direview!", "⚠️");
-            if (activeView === 'materi') { resetViews(); activeView = 'normal'; } 
-            else { resetViews(); document.getElementById('presentation-stage').classList.add('active'); const wrapper = document.getElementById('guru-video-wrapper'); wrapper.classList.remove('default-mode', 'full-mode'); wrapper.classList.add('pip-mode'); document.getElementById('btn-grid-materi').classList.add('active'); activeView = 'materi'; renderSlide(); showAlert("Mode Review Materi", "📖"); }
+            const chat = document.getElementById('integrated-chat');
+            if (activeView === 'materi') { 
+                resetViews(); activeView = 'normal'; 
+                if(!isFullScreen) chat.classList.remove('hidden-mode');
+            } else { 
+                resetViews(); document.getElementById('presentation-stage').classList.add('active'); 
+                const wrapper = document.getElementById('guru-video-wrapper'); 
+                wrapper.classList.remove('default-mode', 'full-mode'); wrapper.classList.add('pip-mode'); 
+                document.getElementById('btn-grid-materi').classList.add('active'); activeView = 'materi'; 
+                chat.classList.add('hidden-mode'); // Sembunyikan Chat
+                renderSlide(); showAlert("Mode Materi Aktif", "📖"); 
+            }
         }
 
         function resetViews() {
-            document.getElementById('student-grid-view').classList.remove('active'); document.getElementById('presentation-stage').classList.remove('active'); document.getElementById('guru-video-wrapper').classList.remove('pip-mode');
-            const wrapper = document.getElementById('guru-video-wrapper'); wrapper.classList.add('default-mode');
-            document.getElementById('btn-grid-murid').classList.remove('active'); document.getElementById('btn-grid-materi').classList.remove('active');
+            document.getElementById('student-grid-view').classList.remove('active'); 
+            document.getElementById('presentation-stage').classList.remove('active'); 
+            const wrapper = document.getElementById('guru-video-wrapper'); 
+            wrapper.classList.remove('pip-mode');
+            if(!isFullScreen) wrapper.classList.add('default-mode');
+            else wrapper.classList.add('full-mode');
+            document.getElementById('btn-grid-murid').classList.remove('active'); 
+            document.getElementById('btn-grid-materi').classList.remove('active');
         }
+
 
         function toggleHistoryModal() {
             const modal = document.getElementById('history-modal'); const content = document.getElementById('history-content');
@@ -796,17 +887,68 @@
             else { modal.classList.add('opacity-0'); content.classList.add('scale-95'); setTimeout(() => modal.classList.add('hidden'), 300); }
         }
 
-        function toggleChat() {
-            const panel = document.getElementById('chat-panel');
-            panel.classList.toggle('active');
+        function kirimChat(e) { 
+            e.preventDefault(); 
+            const inputEl = document.getElementById('chat-input');
+            const pesan = inputEl.value.trim();
+
+            if (pesan) {
+                // Kirim pesan ke server
+                socket.emit('send-chat', { room: activeRoom, sender: namaGuru, message: pesan });
+                
+                // --- BAGIAN YANG DIPERBAIKI (Diaktifkan) ---
+                const chatContainer = document.getElementById('chat-container');
+                
+                // Hapus tulisan "Ruang obrolan kelas siap digunakan..." jika masih ada
+                if (chatContainer.innerHTML.includes('italic py-6')) {
+                    chatContainer.innerHTML = ''; 
+                }
+                
+                // Tambahkan balon pesan sendiri ke layar (Warna biru, di sebelah kanan)
+                chatContainer.innerHTML += `
+                    <div class="flex justify-end mb-2">
+                        <div class="bg-brand-600 text-white px-3 py-2 rounded-xl rounded-tr-sm max-w-[80%] text-xs shadow-md">
+                            <div class="font-bold text-[9px] text-brand-200 mb-1 flex justify-between gap-3">Anda <span>${new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</span></div>
+                            ${escapeHtml(pesan)}
+                        </div>
+                    </div>
+                `;
+                
+                // Scroll otomatis ke bawah agar pesan terbaru selalu terlihat
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                // ------------------------------------------
+                
+                inputEl.value = ''; // Kosongkan input setelah mengirim
+            }
         }
 
-        function kirimChat(e) { e.preventDefault(); document.getElementById('chat-input').value = ''; }
+        
         function escapeHtml(text) { if (!text) return text; return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
         function showAlert(msg, icon) { const el = document.getElementById('customAlert'); document.getElementById('alertMsg').innerText = msg; document.getElementById('alertIcon').innerText = icon || ""; el.style.top = "30px"; setTimeout(() => el.style.top = "-100px", 3000); }
-        async function simpanKelasBaru() { const namaKelas = document.getElementById('nama-kelas').value.trim(); if (!namaKelas) return showAlert("Ketik nama kelas!", "⚠️"); await fetch('/api/tambah-kelas', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ kode_sekolah: "<%= kode %>", nama_kelas: namaKelas }) }); muatDaftarKelas(); pilihKelasExisting(); }
+      
+        // Fungsi ini HARUS ada agar tombol simpan berfungsi
+        async function simpanKelasBaru() { 
+            const namaKelas = document.getElementById('nama-kelas').value.trim(); 
+            if (!namaKelas) return showAlert("Ketik nama kelas!", "⚠️"); 
+            
+            try {
+                await fetch('/api/tambah-kelas', { 
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify({ kode_sekolah: "<%= kode %>", nama_kelas: namaKelas }) 
+                }); 
+                
+                await muatDaftarKelas(); // Tunggu daftar kelas dimuat ulang
+                document.getElementById('nama-kelas').value = namaKelas; 
+                pilihKelasExisting(); 
+            } catch (e) {
+                console.error("Gagal menyimpan kelas", e);
+                showAlert("Gagal menyimpan kelas", "❌");
+            }
+        }
 
         muatDaftarKelas();
+
     </script>
 </body>
 </html>
