@@ -38,15 +38,27 @@
         /* Main Stage & Background Kosmik */
         .main-stage { position: relative; background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #020617 80%); display: flex; align-items: center; justify-content: center; overflow: hidden; width: 100%; height: 100%; flex-direction: column; }
         
-        /* Container Studio (Kamera + Chat) */
-        .studio-container { display: flex; flex-direction: column; align-items: center; gap: 20px; width: 100%; max-width: 900px; transition: all 0.5s ease; z-index: 10; height: 80%; justify-content: center; }
+         /* Container Studio (Kamera + Chat) */
+        .studio-container { display: flex; flex-direction: column; align-items: center; gap: 20px; width: 100%; max-width: 900px; transition: all 0.5s ease; z-index: 50; height: 80%; justify-content: center; pointer-events: none; }
+        .studio-container > * { pointer-events: auto; }
         
         /* VIDEO WRAPPER PREMIUM */
         .video-wrapper { position: relative; transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); background: #000; z-index: 10; }
         .video-wrapper.default-mode { width: 100%; height: 60%; border-radius: 24px; border: 2px solid rgba(255,255,255,0.1); }
-        .video-wrapper.full-mode { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 0; border: none; z-index: 50; }
-        .video-wrapper.pip-mode { position: absolute; bottom: 120px; right: 20px; width: 240px; height: 160px; z-index: 60; border-radius: 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.8); border: 2px solid rgba(59, 130, 246, 0.5); }
+        .video-wrapper.full-mode { position: fixed; inset: 0; width: 100vw; height: 100vh; border-radius: 0; border: none; z-index: 100; }
         
+        /* PIP MODE (Kamera Gurunya Saja yang Mengecil ke Kanan Bawah) */
+        .video-wrapper.pip-mode { position: fixed; bottom: 20px; right: 20px; width: 280px; height: 160px; z-index: 100; border-radius: 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.8); border: 2px solid rgba(16, 185, 129, 0.8); }
+
+        /* TRIK VISUAL: Menahan Control Bar & Header Tetap di Tempat Utama Saat Mode PiP */
+        .video-wrapper.pip-mode .control-bar { position: fixed !important; bottom: 30px !important; left: 50% !important; transform: translateX(-50%) !important; z-index: 110 !important; width: max-content; }
+        .video-wrapper.pip-mode .top-4.left-4 { position: fixed !important; top: 20px !important; left: 20px !important; z-index: 110 !important; }
+        .video-wrapper.pip-mode .top-4.right-4 { position: fixed !important; top: 20px !important; right: 20px !important; z-index: 110 !important; }
+
+        /* TRIK AKAL-AKALAN AGAR CONTROL BAR TIDAK MENGHALANGI MATERI/GRID (Ruang kosong di bawah layar) */
+        #student-grid-view, #presentation-stage { padding-bottom: 120px !important; }
+
+
         /* INTEGRATED CHAT (Di Bawah Kamera) */
         .integrated-chat { width: 100%; height: 35%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border-radius: 24px; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; overflow: hidden; box-shadow: inset 0 2px 20px rgba(0,0,0,0.5); transition: opacity 0.3s, transform 0.3s; }
         .integrated-chat.hidden-mode { opacity: 0; pointer-events: none; transform: translateY(20px) scale(0.95); position: absolute; z-index: -1; }
@@ -256,8 +268,8 @@
 
                                 <div id="studio-container" class="studio-container">
                 
-                <div class="w-full flex justify-between items-center z-50 px-2" style="max-width: 900px;">
-                    <div class="bg-black/50 backdrop-blur-md border border-emerald-500/40 px-4 py-2.5 rounded-2xl flex items-center gap-3 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                           <div id="top-header-bar" class="w-full flex justify-between items-center z-[150] px-2 transition-all duration-300" style="max-width: 900px;">
+                    <div class="bg-black/50 backdrop-blur-md border border-emerald-500/40 px-4 py-2.5 rounded-2xl flex items-center gap-3 shadow-[0_0_20px_rgba(16,185,129,0.2)]">                    
                         <i class="fa-solid fa-graduation-cap text-emerald-400 text-xl drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]"></i>
                         <div class="w-[1px] h-5 bg-white/20"></div>
                         <div id="status-dot" class="w-2 h-2 rounded-full bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.8)]"></div>
@@ -856,8 +868,9 @@ async function simpanKelasBaru() {
             }
         }
 
-        function toggleGridView() {
+                function toggleGridView() {
             const chat = document.getElementById('integrated-chat');
+            const header = document.getElementById('top-header-bar');
             if (activeView === 'grid') { 
                 resetViews(); activeView = 'normal'; 
                 if(!isFullScreen) chat.classList.remove('hidden-mode');
@@ -867,6 +880,7 @@ async function simpanKelasBaru() {
                 wrapper.classList.remove('default-mode', 'full-mode'); wrapper.classList.add('pip-mode'); 
                 document.getElementById('btn-grid-murid').classList.add('active'); activeView = 'grid'; 
                 chat.classList.add('hidden-mode'); // Sembunyikan Chat
+                if(header) header.classList.add('hidden'); // Sembunyikan Logo & Menu
                 showAlert("Mode Grid Siswa Aktif", "👥"); 
             }
         }
@@ -874,6 +888,7 @@ async function simpanKelasBaru() {
         function toggleMateriView() {
             if(!lastGeneratedData) return showAlert("Belum ada materi untuk direview!", "⚠️");
             const chat = document.getElementById('integrated-chat');
+            const header = document.getElementById('top-header-bar');
             if (activeView === 'materi') { 
                 resetViews(); activeView = 'normal'; 
                 if(!isFullScreen) chat.classList.remove('hidden-mode');
@@ -883,6 +898,7 @@ async function simpanKelasBaru() {
                 wrapper.classList.remove('default-mode', 'full-mode'); wrapper.classList.add('pip-mode'); 
                 document.getElementById('btn-grid-materi').classList.add('active'); activeView = 'materi'; 
                 chat.classList.add('hidden-mode'); // Sembunyikan Chat
+                if(header) header.classList.add('hidden'); // Sembunyikan Logo & Menu
                 renderSlide(); showAlert("Mode Materi Aktif", "📖"); 
             }
         }
@@ -892,10 +908,16 @@ async function simpanKelasBaru() {
             document.getElementById('presentation-stage').classList.remove('active'); 
             const wrapper = document.getElementById('guru-video-wrapper'); 
             wrapper.classList.remove('pip-mode');
+            
             if(!isFullScreen) wrapper.classList.add('default-mode');
             else wrapper.classList.add('full-mode');
+            
             document.getElementById('btn-grid-murid').classList.remove('active'); 
             document.getElementById('btn-grid-materi').classList.remove('active');
+
+            // Munculkan kembali Logo & Menu
+            const header = document.getElementById('top-header-bar');
+            if(header) header.classList.remove('hidden');
         }
 
 
