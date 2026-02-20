@@ -47,8 +47,8 @@
         .video-wrapper.default-mode { width: 100%; height: 60%; border-radius: 24px; border: 2px solid rgba(255,255,255,0.1); }
         .video-wrapper.full-mode { position: fixed; inset: 0; width: 100vw; height: 100vh; border-radius: 0; border: none; z-index: 100; }
         
-        /* PIP MODE: Kamera ke kanan bawah, posisinya DINAIKKAN (bottom: 110px) agar tidak tertabrak control bar */
-        .video-wrapper.pip-mode { position: fixed; bottom: 110px; right: 20px; width: 280px; height: 160px; z-index: 150; border-radius: 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.8); border: 2px solid rgba(16, 185, 129, 0.8); }
+         /* PIP MODE: Kamera ke kanan bawah, posisinya DINAIKKAN (bottom: 110px) agar tidak tertabrak control bar */
+        .video-wrapper.pip-mode { position: fixed; bottom: 110px; right: 20px; width: 180px; height: 100px; z-index: 150; border-radius: 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.8); border: 2px solid rgba(16, 185, 129, 0.8); }
         
         /* TRIK VISUAL: Paksa Control Bar lepas dari kamera saat PiP dan diam di tengah bawah */
         .video-wrapper.pip-mode #main-control-bar { position: fixed !important; bottom: 30px !important; left: 50% !important; transform: translateX(-50%) !important; z-index: 200 !important; width: max-content !important; }
@@ -267,16 +267,22 @@
             </div>
 
                                 <div id="studio-container" class="studio-container">
-                
-                           <div id="top-header-bar" class="w-full flex justify-between items-center z-[150] px-2 transition-all duration-300" style="max-width: 900px;">
-                    <div class="bg-black/50 backdrop-blur-md border border-emerald-500/40 px-4 py-2.5 rounded-2xl flex items-center gap-3 shadow-[0_0_20px_rgba(16,185,129,0.2)]">                    
-                        <i class="fa-solid fa-graduation-cap text-emerald-400 text-xl drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]"></i>
-                        <div class="w-[1px] h-5 bg-white/20"></div>
-                        <div id="status-dot" class="w-2 h-2 rounded-full bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.8)]"></div>
-                        <span id="status-text" class="text-[10px] font-black tracking-widest text-white uppercase">STANDBY</span>
+                                <div id="top-header-bar" class="w-full flex justify-between items-center z-[150] px-2 transition-all duration-300" style="max-width: 900px;">
+                    <div class="flex items-center gap-2 sm:gap-3">
+                        <div class="bg-white/10 backdrop-blur-md px-3 py-2 rounded-xl border border-white/20 flex items-center gap-2 shadow-lg">
+                            <i class="fa-solid fa-earth-americas text-brand-400 text-lg"></i>
+                            <span class="text-[10px] sm:text-xs font-black text-white tracking-widest uppercase hidden sm:block">Global School</span>
+                        </div>
+                        
+                        <div class="bg-black/50 backdrop-blur-md border border-emerald-500/40 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl flex items-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.2)]">                    
+                            <div id="status-dot" class="w-2 h-2 rounded-full bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.8)]"></div>
+                            <span id="status-text" class="text-[9px] sm:text-[10px] font-black tracking-widest text-white uppercase">STANDBY</span>
+                        </div>
                     </div>
 
-                    <button onclick="toggleSidebar()" class="w-12 h-12 bg-black/50 backdrop-blur-md border border-white/20 text-white rounded-2xl flex items-center justify-center hover:bg-emerald-600 hover:border-emerald-400 transition-all duration-300 shadow-lg" title="Buka Menu">
+                    <button onclick="toggleSidebar()" class="w-10 h-10 sm:w-12 sm:h-12 bg-black/50 backdrop-blur-md border border-white/20 text-white rounded-xl flex items-center justify-center hover:bg-emerald-600 hover:border-emerald-400 transition-all duration-300 shadow-lg" title="Buka Menu">
+
+    
                         <i class="fa-solid fa-bars-staggered text-lg"></i>
                     </button>
                 </div>
@@ -306,10 +312,11 @@
                         <div class="ctrl-btn" onclick="toggleMateriView()" id="btn-grid-materi" title="Tampilkan Materi">
                             <i class="fa-solid fa-chalkboard ctrl-icon"></i> <span class="ctrl-label">Materi</span>
                         </div>
-                        <div class="divider hidden sm:block"></div>
-                        <div class="ctrl-btn danger hidden sm:flex" onclick="muteAllStudents()" title="Bisukan Siswa">
+                                            <div class="divider"></div>
+                        <div class="ctrl-btn danger flex" onclick="muteAllStudents()" title="Bisukan Siswa">
                             <i class="fa-solid fa-volume-xmark ctrl-icon"></i> <span class="ctrl-label">Mute All</span>
                         </div>
+                        
                     </div>
                 </div> <div id="integrated-chat" class="integrated-chat">
 
