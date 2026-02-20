@@ -46,17 +46,11 @@
         .video-wrapper { position: relative; transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); background: #000; z-index: 10; }
         .video-wrapper.default-mode { width: 100%; height: 60%; border-radius: 24px; border: 2px solid rgba(255,255,255,0.1); }
         .video-wrapper.full-mode { position: fixed; inset: 0; width: 100vw; height: 100vh; border-radius: 0; border: none; z-index: 100; }
+        .video-wrapper.pip-mode { position: fixed; bottom: 20px; right: 20px; width: 280px; height: 160px; z-index: 150; border-radius: 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.8); border: 2px solid rgba(16, 185, 129, 0.8); }
         
-        /* PIP MODE (Kamera Gurunya Saja yang Mengecil ke Kanan Bawah) */
-        .video-wrapper.pip-mode { position: fixed; bottom: 20px; right: 20px; width: 280px; height: 160px; z-index: 100; border-radius: 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.8); border: 2px solid rgba(16, 185, 129, 0.8); }
+        /* Ruang kosong di bawah agar Control Bar tidak menghalangi materi/grid */
+        #student-grid-view, #presentation-stage { padding-bottom: 140px !important; }
 
-        /* TRIK VISUAL: Menahan Control Bar & Header Tetap di Tempat Utama Saat Mode PiP */
-        .video-wrapper.pip-mode .control-bar { position: fixed !important; bottom: 30px !important; left: 50% !important; transform: translateX(-50%) !important; z-index: 110 !important; width: max-content; }
-        .video-wrapper.pip-mode .top-4.left-4 { position: fixed !important; top: 20px !important; left: 20px !important; z-index: 110 !important; }
-        .video-wrapper.pip-mode .top-4.right-4 { position: fixed !important; top: 20px !important; right: 20px !important; z-index: 110 !important; }
-
-        /* TRIK AKAL-AKALAN AGAR CONTROL BAR TIDAK MENGHALANGI MATERI/GRID (Ruang kosong di bawah layar) */
-        #student-grid-view, #presentation-stage { padding-bottom: 120px !important; }
 
 
         /* INTEGRATED CHAT (Di Bawah Kamera) */
@@ -281,40 +275,58 @@
                     </button>
                 </div>
 
-                <div id="guru-video-wrapper" class="video-wrapper default-mode relative group">
+                             <div id="guru-video-wrapper" class="video-wrapper default-mode relative group">
                     <video id="guru-cam" class="w-full h-full object-cover transform -scale-x-100" autoplay playsinline muted></video>
-                    
-                    <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/60 backdrop-blur-xl px-4 py-3 rounded-3xl border border-white/10 flex items-center gap-1 z-50 shadow-[0_20px_50px_rgba(0,0,0,0.8)] w-[95%] sm:w-auto justify-between transition-transform duration-300 hover:scale-[1.02]">
+                </div> 
 
-                    
-                        <div class="ctrl-btn" onclick="toggleLive()" id="btn-start" title="Mulai / Jeda Live">
-                            <i class="fa-solid fa-power-off ctrl-icon"></i> <span class="ctrl-label">Live</span>
-                        </div>
-                        <div class="divider"></div>
-                        <div class="ctrl-btn" onclick="toggleMuteSelf()" id="btn-mic" title="Matikan/Hidupkan Mic">
-                            <i class="fa-solid fa-microphone ctrl-icon"></i> <span class="ctrl-label">Mic</span>
-                        </div>
-                        <div class="ctrl-btn" onclick="toggleCamSelf()" id="btn-cam" title="Matikan/Hidupkan Kamera">
-                            <i class="fa-solid fa-video ctrl-icon"></i> <span class="ctrl-label">Cam</span>
-                        </div>
-                        <div class="ctrl-btn" onclick="toggleScreenSize()" id="btn-screen" title="Ubah Layar">
-                            <i class="fa-solid fa-expand ctrl-icon"></i> <span class="ctrl-label">Layar</span>
-                        </div>
-                        <div class="divider"></div>
-                        <div class="ctrl-btn" onclick="toggleGridView()" id="btn-grid-murid" title="Tampilkan Semua Siswa">
-                            <i class="fa-solid fa-users-viewfinder ctrl-icon"></i> <span class="ctrl-label">Siswa</span>
-                        </div>
-                        <div class="ctrl-btn" onclick="toggleMateriView()" id="btn-grid-materi" title="Tampilkan Materi">
-                            <i class="fa-solid fa-chalkboard ctrl-icon"></i> <span class="ctrl-label">Materi</span>
-                        </div>
-                    
-                                            <div class="divider hidden sm:block"></div>
-                        <div class="ctrl-btn danger hidden sm:flex" onclick="muteAllStudents()" title="Bisukan Siswa">
-                            <i class="fa-solid fa-volume-xmark ctrl-icon"></i> <span class="ctrl-label">Mute All</span>
-                        </div>
+                <div id="main-control-bar" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-black/70 backdrop-blur-2xl px-6 py-3 rounded-[2rem] border border-white/20 flex items-center gap-1 z-[200] shadow-[0_20px_50px_rgba(0,0,0,0.9)] w-[95%] sm:w-auto justify-between transition-all duration-300">
+                    <div class="ctrl-btn" onclick="toggleLive()" id="btn-start" title="Mulai / Jeda Live">
+                        <i class="fa-solid fa-power-off ctrl-icon"></i> <span class="ctrl-label">Live</span>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="ctrl-btn" onclick="toggleMuteSelf()" id="btn-mic" title="Matikan/Hidupkan Mic">
+                        <i class="fa-solid fa-microphone ctrl-icon"></i> <span class="ctrl-label">Mic</span>
+                    </div>
+                    <div class="ctrl-btn" onclick="toggleCamSelf()" id="btn-cam" title="Matikan/Hidupkan Kamera">
+                        <i class="fa-solid fa-video ctrl-icon"></i> <span class="ctrl-label">Cam</span>
+                    </div>
+                    <div class="ctrl-btn" onclick="toggleScreenSize()" id="btn-screen" title="Ubah Layar">
+                        <i class="fa-solid fa-expand ctrl-icon"></i> <span class="ctrl-label">Layar</span>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="ctrl-btn" onclick="toggleGridView()" id="btn-grid-murid" title="Tampilkan Semua Siswa">
+                        <i class="fa-solid fa-users-viewfinder ctrl-icon"></i> <span class="ctrl-label">Siswa</span>
+                    </div>
+                    <div class="ctrl-btn" onclick="toggleMateriView()" id="btn-grid-materi" title="Tampilkan Materi">
+                        <i class="fa-solid fa-chalkboard ctrl-icon"></i> <span class="ctrl-label">Materi</span>
+                    </div>
+                  
+                                         <div class="divider hidden sm:block"></div>
+                    <div class="ctrl-btn danger hidden sm:flex" onclick="muteAllStudents()" title="Bisukan Siswa">
+                        <i class="fa-solid fa-volume-xmark ctrl-icon"></i> <span class="ctrl-label">Mute All</span>
                     </div>
                 </div> <div id="integrated-chat" class="integrated-chat">
                     <div class="bg-black/40 p-3 border-b border-white/10 flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-messages text-brand-400 animate-bounce"></i>
+                            <span class="text-xs font-black text-white uppercase tracking-wider">Live Chat Siswa</span>
+                        </div>
+                        <span class="text-[10px] bg-brand-600/30 text-brand-300 px-2 py-1 rounded font-bold">Aktif</span>
+                    </div>
+                    <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-hide text-sm">
+                        <div class="text-center text-xs text-slate-400 italic py-6">Ruang obrolan kelas siap digunakan...</div>
+                    </div>
+                    <div class="p-2 bg-black/40 border-t border-white/10">
+                       <form onsubmit="kirimChat(event)" class="flex gap-2">
+                            <input type="text" id="chat-input" class="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-xs text-white outline-none focus:border-brand-500 transition" placeholder="Sapa siswa Anda..." autocomplete="off">
+                            <button type="submit" class="bg-brand-600 text-white rounded-xl w-12 h-10 flex items-center justify-center hover:bg-brand-500 transition shadow-lg"><i class="fa-solid fa-paper-plane"></i></button>
+                        </form>
+                    </div> 
+                </div> 
+            </div> <div id="student-grid-view" class="stage-overlay"></div>
+
+                  
+                  
                         <div class="flex items-center gap-2">
                             <i class="fa-solid fa-messages text-brand-400 animate-bounce"></i>
                             <span class="text-xs font-black text-white uppercase tracking-wider">Live Chat Siswa</span>
@@ -853,22 +865,35 @@ async function simpanKelasBaru() {
             else { btn.classList.remove('danger', 'active'); icon.className = `fa-solid ${iconOff} ctrl-icon`; label.innerText = textOff; }
         }
 
-                        function toggleScreenSize() {
+                              function toggleScreenSize() {
             const wrapper = document.getElementById('guru-video-wrapper'); const btn = document.getElementById('btn-screen'); const icon = btn.querySelector('i'); const label = btn.querySelector('span');
             const chat = document.getElementById('integrated-chat');
+            const header = document.getElementById('top-header-bar');
+            const controlBar = document.getElementById('main-control-bar');
+            
             isFullScreen = !isFullScreen;
             if (isFullScreen) { 
                 wrapper.classList.remove('default-mode'); wrapper.classList.add('full-mode'); 
                 icon.className = "fa-solid fa-compress ctrl-icon"; label.innerText = "Kecilkan"; btn.classList.add('active'); 
                 chat.classList.add('hidden-mode'); // Sembunyikan Chat
+                
+                // Hilangkan Header (Logo & Hamburger) dan Besarkan Control Bar
+                if(header) header.classList.add('hidden'); 
+                controlBar.classList.replace('py-3', 'py-5');
+                controlBar.classList.replace('bottom-6', 'bottom-10');
             } else { 
                 wrapper.classList.remove('full-mode'); wrapper.classList.add('default-mode'); 
                 icon.className = "fa-solid fa-expand ctrl-icon"; label.innerText = "Layar"; btn.classList.remove('active'); 
                 if(activeView === 'normal') chat.classList.remove('hidden-mode'); // Munculkan Chat
+                
+                // Munculkan Header dan Kembalikan Ukuran Control Bar
+                if(activeView === 'normal' && header) header.classList.remove('hidden');
+                controlBar.classList.replace('py-5', 'py-3');
+                controlBar.classList.replace('bottom-10', 'bottom-6');
             }
         }
 
-                function toggleGridView() {
+        function toggleGridView() {
             const chat = document.getElementById('integrated-chat');
             const header = document.getElementById('top-header-bar');
             if (activeView === 'grid') { 
@@ -908,17 +933,16 @@ async function simpanKelasBaru() {
             document.getElementById('presentation-stage').classList.remove('active'); 
             const wrapper = document.getElementById('guru-video-wrapper'); 
             wrapper.classList.remove('pip-mode');
-            
             if(!isFullScreen) wrapper.classList.add('default-mode');
             else wrapper.classList.add('full-mode');
-            
             document.getElementById('btn-grid-murid').classList.remove('active'); 
             document.getElementById('btn-grid-materi').classList.remove('active');
-
-            // Munculkan kembali Logo & Menu
+            
+            // Munculkan kembali Logo & Menu jika tidak Fullscreen
             const header = document.getElementById('top-header-bar');
-            if(header) header.classList.remove('hidden');
+            if(!isFullScreen && header) header.classList.remove('hidden');
         }
+  
 
 
         function toggleHistoryModal() {
