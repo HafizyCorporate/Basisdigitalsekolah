@@ -102,9 +102,11 @@
             .sidebar.open { transform: translateX(0); }
             body.sidebar-closed .app-layout { grid-template-columns: 1fr; }
             .control-bar { bottom: 20px; padding: 10px; width: 95%; max-width: 500px; justify-content: space-between; gap: 2px;}
-            .ctrl-btn { width: 50px; height: 50px; }
-            .ctrl-icon { font-size: 16px; }
-            .ctrl-label { font-size: 8px; }
+            /* Tombol diperkecil agar muat 7 tombol berjejer di HP */
+            .ctrl-btn { width: 44px !important; height: 44px !important; }
+            .ctrl-icon { font-size: 14px !important; }
+            .ctrl-label { font-size: 7px !important; }
+
             .studio-container { height: 85%; }
         }
         
@@ -267,7 +269,7 @@
             </div>
 
                                 <div id="studio-container" class="studio-container">
-                                <div id="top-header-bar" class="w-full flex justify-between items-center z-[150] px-2 transition-all duration-300" style="max-width: 900px;">
+                                  <div id="top-header-bar" class="w-full flex justify-between items-center z-[150] px-2 mt-6 sm:mt-2 transition-all duration-300" style="max-width: 900px;">
                     <div class="flex items-center gap-2 sm:gap-3">
                         <div class="bg-white/10 backdrop-blur-md px-3 py-2 rounded-xl border border-white/20 flex items-center gap-2 shadow-lg">
                             <i class="fa-solid fa-earth-americas text-brand-400 text-lg"></i>
@@ -291,31 +293,33 @@
                                                       <div id="guru-video-wrapper" class="video-wrapper default-mode relative group">
                     <video id="guru-cam" class="w-full h-full object-cover transform -scale-x-100" autoplay playsinline muted></video>
                 
-                    <div id="main-control-bar" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/70 backdrop-blur-2xl px-6 py-3 rounded-[2rem] border border-white/20 flex items-center gap-1 z-[200] shadow-[0_20px_50px_rgba(0,0,0,0.9)] w-[95%] sm:w-auto justify-between transition-all duration-300">
-                        <div class="ctrl-btn" onclick="toggleLive()" id="btn-start" title="Mulai / Jeda Live">
+                          <div id="main-control-bar" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/70 backdrop-blur-2xl px-2 sm:px-6 py-2 sm:py-3 rounded-[2rem] border border-white/20 flex items-center gap-0.5 sm:gap-1 z-[200] shadow-[0_20px_50px_rgba(0,0,0,0.9)] w-[98%] sm:w-auto justify-between transition-all duration-300 overflow-x-auto scrollbar-hide">
+                        <div class="ctrl-btn shrink-0" onclick="toggleLive()" id="btn-start" title="Mulai / Jeda Live">
                             <i class="fa-solid fa-power-off ctrl-icon"></i> <span class="ctrl-label">Live</span>
                         </div>
                         <div class="divider"></div>
-                        <div class="ctrl-btn" onclick="toggleMuteSelf()" id="btn-mic" title="Matikan/Hidupkan Mic">
+                        <div class="ctrl-btn shrink-0" onclick="toggleMuteSelf()" id="btn-mic" title="Matikan/Hidupkan Mic">
                             <i class="fa-solid fa-microphone ctrl-icon"></i> <span class="ctrl-label">Mic</span>
                         </div>
-                        <div class="ctrl-btn" onclick="toggleCamSelf()" id="btn-cam" title="Matikan/Hidupkan Kamera">
+                        <div class="ctrl-btn shrink-0" onclick="toggleCamSelf()" id="btn-cam" title="Matikan/Hidupkan Kamera">
                             <i class="fa-solid fa-video ctrl-icon"></i> <span class="ctrl-label">Cam</span>
                         </div>
-                        <div class="ctrl-btn" onclick="toggleScreenSize()" id="btn-screen" title="Ubah Layar">
+                        <div class="ctrl-btn shrink-0" onclick="toggleScreenSize()" id="btn-screen" title="Ubah Layar">
                             <i class="fa-solid fa-expand ctrl-icon"></i> <span class="ctrl-label">Layar</span>
                         </div>
                         <div class="divider"></div>
-                        <div class="ctrl-btn" onclick="toggleGridView()" id="btn-grid-murid" title="Tampilkan Semua Siswa">
+                        <div class="ctrl-btn shrink-0" onclick="toggleGridView()" id="btn-grid-murid" title="Tampilkan Semua Siswa">
                             <i class="fa-solid fa-users-viewfinder ctrl-icon"></i> <span class="ctrl-label">Siswa</span>
                         </div>
-                        <div class="ctrl-btn" onclick="toggleMateriView()" id="btn-grid-materi" title="Tampilkan Materi">
+                        <div class="ctrl-btn shrink-0" onclick="toggleMateriView()" id="btn-grid-materi" title="Tampilkan Materi">
                             <i class="fa-solid fa-chalkboard ctrl-icon"></i> <span class="ctrl-label">Materi</span>
                         </div>
-                                            <div class="divider"></div>
-                        <div class="ctrl-btn danger flex" onclick="muteAllStudents()" title="Bisukan Siswa">
+                        <div class="divider"></div>
+                        <div class="ctrl-btn danger flex shrink-0" onclick="muteAllStudents()" id="btn-mute-all" title="Bisukan Siswa">
                             <i class="fa-solid fa-volume-xmark ctrl-icon"></i> <span class="ctrl-label">Mute All</span>
                         </div>
+                    </div>
+
                         
                     </div>
                 </div> <div id="integrated-chat" class="integrated-chat">
@@ -845,14 +849,26 @@ async function simpanKelasBaru() {
         }
 
         
-        function toggleMuteSelf() { isMutedSelf = !isMutedSelf; if(localStream) { localStream.getAudioTracks()[0].enabled = !isMutedSelf; } updateBtnUI('btn-mic', isMutedSelf, 'fa-microphone-slash', 'fa-microphone', 'Unmute', 'Mic'); }   
-        function muteAllStudents() {
-        if (!activeRoom || !isLive) return showAlert("Anda belum Live di kelas!", "⚠️");
+                        function muteAllStudents() {
+            if (!activeRoom || !isLive) return showAlert("Anda belum Live di kelas!", "⚠️");
             
-            // Mengirim perintah ke server agar semua siswa di-mute
-            socket.emit('mute-all-students', { room: activeRoom });
-            showAlert("Semua mikrofon siswa dinonaktifkan!", "🔇");
+            // Simpan status mute di dalam window
+            window.isAllMuted = !window.isAllMuted; 
+            
+            if(window.isAllMuted) {
+                // Beri perintah MUTE
+                socket.emit('mute-all-students', { room: activeRoom });
+                showAlert("Semua mikrofon siswa dinonaktifkan!", "🔇");
+                updateBtnUI('btn-mute-all', true, 'fa-volume-high', 'fa-volume-xmark', 'Unmute', 'Mute All');
+            } else {
+                // Beri perintah UNMUTE
+                socket.emit('unmute-all-students', { room: activeRoom });
+                showAlert("Mikrofon siswa diizinkan kembali!", "🔊");
+                updateBtnUI('btn-mute-all', false, 'fa-volume-high', 'fa-volume-xmark', 'Unmute', 'Mute All');
+            }
         }
+
+
         function toggleCamSelf() { isCamSelfOff = !isCamSelfOff; if(localStream) { localStream.getVideoTracks()[0].enabled = !isCamSelfOff; } updateBtnUI('btn-cam', isCamSelfOff, 'fa-video-slash', 'fa-video', 'Cam On', 'Cam'); }
         function updateBtnUI(id, active, iconOn, iconOff, textOn, textOff) {
             const btn = document.getElementById(id); const icon = btn.querySelector('i'); const label = btn.querySelector('span');
